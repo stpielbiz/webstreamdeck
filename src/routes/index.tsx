@@ -93,6 +93,9 @@ function Landing() {
           <Button asChild variant="outline" size="lg">
             <Link to="/auth">I already have one</Link>
           </Button>
+          <Button asChild variant="ghost" size="lg">
+            <Link to="/get-app">Watch on Firestick</Link>
+          </Button>
         </div>
         <p className="mt-4 text-xs text-muted-foreground">
           Stream Deck hosts no channels of its own — you use your own subscription details.
