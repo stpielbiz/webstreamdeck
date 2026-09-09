@@ -58,6 +58,25 @@ export function VideoPlayer({
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimerRef = useRef<number | null>(null);
+
+  // Show controls on any pointer activity; auto-hide after 3s while playing.
+  const showControls = useCallback(() => {
+    setControlsVisible(true);
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = window.setTimeout(() => {
+      const video = videoRef.current;
+      if (video && !video.paused) setControlsVisible(false);
+    }, 3000);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    },
+    [],
+  );
 
   // Attach the source: hls.js for HLS, native playback for progressive files.
   useEffect(() => {
@@ -172,6 +191,9 @@ export function VideoPlayer({
   return (
     <div
       ref={shellRef}
+      onMouseMove={showControls}
+      onTouchStart={showControls}
+      onClick={showControls}
       className={cn(
         "group relative isolate aspect-video w-full overflow-hidden rounded-lg border border-border bg-black",
         className,
@@ -192,7 +214,10 @@ export function VideoPlayer({
             setStatus("ready");
           }}
           onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
-          onPlay={() => setPlaying(true)}
+          onPlay={() => {
+            setPlaying(true);
+            showControls();
+          }}
           onPause={() => setPlaying(false)}
           onVolumeChange={(event) => {
             setMuted(event.currentTarget.muted);
@@ -235,7 +260,14 @@ export function VideoPlayer({
       )}
 
       {src && (
-        <div className="absolute inset-x-0 bottom-0 translate-y-2 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-3 pt-10 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100 focus-within:translate-y-0 focus-within:opacity-100">
+        <div
+          className={cn(
+            "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-3 pt-10 transition-all",
+            controlsVisible || !playing
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-2 opacity-0",
+          )}
+        >
           {title && (
             <p className="mb-2 truncate font-display text-sm font-semibold text-white">{title}</p>
           )}
