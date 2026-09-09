@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { CatalogBrowser } from "@/components/catalog-browser";
 
-export const Route = createFileRoute("/_authenticated/movies")({
+export const Route = createFileRoute("/_authenticated/movies/")({
   head: () => ({
     meta: [
       { title: "Movies — Stream Deck" },
