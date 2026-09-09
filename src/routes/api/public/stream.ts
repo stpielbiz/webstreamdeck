@@ -16,6 +16,15 @@ export const Route = createFileRoute("/api/public/stream")({
 
 const MANIFEST_HINTS = ["mpegurl", "m3u8", "x-mpegurl"];
 
+/** Equivalent forms of an Xtream stream URL, tried when the first one is refused. */
+function alternates(url: string): string[] {
+  const match = /^(.*?)(\.[a-z0-9]{2,5})?(\?.*)?$/i.exec(url);
+  if (!match) return [];
+  const [, stem, ext = "", query = ""] = match;
+  const exts = [".m3u8", ".ts", ".mp4", ".mkv", ""];
+  return exts.filter((value) => value !== ext.toLowerCase()).map((value) => `${stem}${value}${query}`);
+}
+
 async function handle(request: Request): Promise<Response> {
   const { verifyStreamToken, signStreamToken } = await import("@/lib/stream-token.server");
   const { providerFetch } = await import("@/lib/iptv.server");
