@@ -20,11 +20,15 @@ export interface VideoPlayerProps {
   title?: string;
   poster?: string | null;
   live?: boolean;
+  hls?: boolean;
+  loading?: boolean;
+  failureMessage?: string | null;
   startPosition?: number;
   className?: string;
   onProgress?: (positionSeconds: number, durationSeconds: number | null) => void;
   onEnded?: () => void;
 }
+
 
 function formatTime(value: number): string {
   if (!Number.isFinite(value) || value < 0) return "0:00";
