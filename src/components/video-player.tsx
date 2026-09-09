@@ -214,7 +214,10 @@ export function VideoPlayer({
             setStatus("ready");
           }}
           onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
-          onPlay={() => setPlaying(true)}
+          onPlay={() => {
+            setPlaying(true);
+            showControls();
+          }}
           onPause={() => setPlaying(false)}
           onVolumeChange={(event) => {
             setMuted(event.currentTarget.muted);
