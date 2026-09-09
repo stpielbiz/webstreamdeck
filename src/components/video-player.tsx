@@ -265,6 +265,26 @@ export function VideoPlayer({
             >
               {playing ? <Pause className="size-5" /> : <Play className="size-5" />}
             </button>
+            {!live && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => skipBy(-10)}
+                  className="rounded-md p-1.5 text-white transition hover:bg-white/15"
+                  aria-label="Rewind 10 seconds"
+                >
+                  <RotateCcw className="size-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => skipBy(10)}
+                  className="rounded-md p-1.5 text-white transition hover:bg-white/15"
+                  aria-label="Fast forward 10 seconds"
+                >
+                  <RotateCw className="size-5" />
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={() => {
