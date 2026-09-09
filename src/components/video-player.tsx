@@ -191,6 +191,9 @@ export function VideoPlayer({
   return (
     <div
       ref={shellRef}
+      onMouseMove={showControls}
+      onTouchStart={showControls}
+      onClick={showControls}
       className={cn(
         "group relative isolate aspect-video w-full overflow-hidden rounded-lg border border-border bg-black",
         className,
