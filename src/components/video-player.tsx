@@ -77,7 +77,7 @@ export function VideoPlayer({
     setStatus("loading");
     setErrorMessage(null);
 
-    const isHls = src.includes("m3u8") || live;
+    const isHls = hlsHint ?? (src.includes("m3u8") || live);
 
     const attach = async () => {
       if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
