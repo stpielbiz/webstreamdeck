@@ -266,10 +266,17 @@ function LivePage() {
       <section className="min-w-0 space-y-4 p-4">
         <VideoPlayer
           src={playback.data?.url ?? null}
+          loading={!!selected && playback.isPending}
+          failureMessage={
+            playback.isError
+              ? ((playback.error as Error)?.message ?? "This channel could not be started.")
+              : null
+          }
           title={selected?.name ?? ""}
           poster={selected?.image ?? null}
           live
         />
+
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="truncate font-display text-xl font-bold">
