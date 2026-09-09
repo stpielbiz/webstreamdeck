@@ -28,7 +28,8 @@ export function PosterTile({
       <Link
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         to={to as any}
-        {...(params ? { params } : {})}
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {...(params ? { params: params as any } : {})}
         className="block overflow-hidden rounded-lg border border-border bg-card transition focus-visible:tile-focus hover:border-primary/60"
       >
         <div className="relative aspect-[2/3] w-full bg-muted">
