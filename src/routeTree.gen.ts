@@ -10,33 +10,179 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFavoritesRouteImport } from './routes/_authenticated/favorites'
+import { Route as AuthenticatedGuideRouteImport } from './routes/_authenticated/guide'
+import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
+import { Route as AuthenticatedMoviesRouteImport } from './routes/_authenticated/movies'
+import { Route as AuthenticatedPlaylistsRouteImport } from './routes/_authenticated/playlists'
+import { Route as AuthenticatedSeriesRouteImport } from './routes/_authenticated/series'
+import { Route as AuthenticatedMoviesIdRouteImport } from './routes/_authenticated/movies.$id'
+import { Route as AuthenticatedSeriesIdRouteImport } from './routes/_authenticated/series.$id'
+import { Route as ApiPublicStreamRouteImport } from './routes/api/public/stream'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFavoritesRoute = AuthenticatedFavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedGuideRoute = AuthenticatedGuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLiveRoute = AuthenticatedLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMoviesRoute = AuthenticatedMoviesRouteImport.update({
+  id: '/movies',
+  path: '/movies',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPlaylistsRoute = AuthenticatedPlaylistsRouteImport.update({
+  id: '/playlists',
+  path: '/playlists',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSeriesRoute = AuthenticatedSeriesRouteImport.update({
+  id: '/series',
+  path: '/series',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMoviesIdRoute = AuthenticatedMoviesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedMoviesRoute,
+} as any)
+const AuthenticatedSeriesIdRoute = AuthenticatedSeriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedSeriesRoute,
+} as any)
+const ApiPublicStreamRoute = ApiPublicStreamRouteImport.update({
+  id: '/api/public/stream',
+  path: '/api/public/stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/favorites': typeof AuthenticatedFavoritesRoute
+  '/guide': typeof AuthenticatedGuideRoute
+  '/live': typeof AuthenticatedLiveRoute
+  '/movies': typeof AuthenticatedMoviesRouteWithChildren
+  '/playlists': typeof AuthenticatedPlaylistsRoute
+  '/series': typeof AuthenticatedSeriesRouteWithChildren
+  '/movies/$id': typeof AuthenticatedMoviesIdRoute
+  '/series/$id': typeof AuthenticatedSeriesIdRoute
+  '/api/public/stream': typeof ApiPublicStreamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/favorites': typeof AuthenticatedFavoritesRoute
+  '/guide': typeof AuthenticatedGuideRoute
+  '/live': typeof AuthenticatedLiveRoute
+  '/movies': typeof AuthenticatedMoviesRouteWithChildren
+  '/playlists': typeof AuthenticatedPlaylistsRoute
+  '/series': typeof AuthenticatedSeriesRouteWithChildren
+  '/movies/$id': typeof AuthenticatedMoviesIdRoute
+  '/series/$id': typeof AuthenticatedSeriesIdRoute
+  '/api/public/stream': typeof ApiPublicStreamRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/favorites': typeof AuthenticatedFavoritesRoute
+  '/_authenticated/guide': typeof AuthenticatedGuideRoute
+  '/_authenticated/live': typeof AuthenticatedLiveRoute
+  '/_authenticated/movies': typeof AuthenticatedMoviesRouteWithChildren
+  '/_authenticated/playlists': typeof AuthenticatedPlaylistsRoute
+  '/_authenticated/series': typeof AuthenticatedSeriesRouteWithChildren
+  '/_authenticated/movies/$id': typeof AuthenticatedMoviesIdRoute
+  '/_authenticated/series/$id': typeof AuthenticatedSeriesIdRoute
+  '/api/public/stream': typeof ApiPublicStreamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/favorites'
+    | '/guide'
+    | '/live'
+    | '/movies'
+    | '/playlists'
+    | '/series'
+    | '/movies/$id'
+    | '/series/$id'
+    | '/api/public/stream'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/favorites'
+    | '/guide'
+    | '/live'
+    | '/movies'
+    | '/playlists'
+    | '/series'
+    | '/movies/$id'
+    | '/series/$id'
+    | '/api/public/stream'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/favorites'
+    | '/_authenticated/guide'
+    | '/_authenticated/live'
+    | '/_authenticated/movies'
+    | '/_authenticated/playlists'
+    | '/_authenticated/series'
+    | '/_authenticated/movies/$id'
+    | '/_authenticated/series/$id'
+    | '/api/public/stream'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ApiPublicStreamRoute: typeof ApiPublicStreamRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +194,143 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/favorites': {
+      id: '/_authenticated/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof AuthenticatedFavoritesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/guide': {
+      id: '/_authenticated/guide'
+      path: '/guide'
+      fullPath: '/guide'
+      preLoaderRoute: typeof AuthenticatedGuideRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/live': {
+      id: '/_authenticated/live'
+      path: '/live'
+      fullPath: '/live'
+      preLoaderRoute: typeof AuthenticatedLiveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/movies': {
+      id: '/_authenticated/movies'
+      path: '/movies'
+      fullPath: '/movies'
+      preLoaderRoute: typeof AuthenticatedMoviesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playlists': {
+      id: '/_authenticated/playlists'
+      path: '/playlists'
+      fullPath: '/playlists'
+      preLoaderRoute: typeof AuthenticatedPlaylistsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/series': {
+      id: '/_authenticated/series'
+      path: '/series'
+      fullPath: '/series'
+      preLoaderRoute: typeof AuthenticatedSeriesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/movies/$id': {
+      id: '/_authenticated/movies/$id'
+      path: '/$id'
+      fullPath: '/movies/$id'
+      preLoaderRoute: typeof AuthenticatedMoviesIdRouteImport
+      parentRoute: typeof AuthenticatedMoviesRoute
+    }
+    '/_authenticated/series/$id': {
+      id: '/_authenticated/series/$id'
+      path: '/$id'
+      fullPath: '/series/$id'
+      preLoaderRoute: typeof AuthenticatedSeriesIdRouteImport
+      parentRoute: typeof AuthenticatedSeriesRoute
+    }
+    '/api/public/stream': {
+      id: '/api/public/stream'
+      path: '/api/public/stream'
+      fullPath: '/api/public/stream'
+      preLoaderRoute: typeof ApiPublicStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthenticatedMoviesRouteChildren {
+  AuthenticatedMoviesIdRoute: typeof AuthenticatedMoviesIdRoute
+}
+
+const AuthenticatedMoviesRouteChildren: AuthenticatedMoviesRouteChildren = {
+  AuthenticatedMoviesIdRoute: AuthenticatedMoviesIdRoute,
+}
+
+const AuthenticatedMoviesRouteWithChildren =
+  AuthenticatedMoviesRoute._addFileChildren(AuthenticatedMoviesRouteChildren)
+
+interface AuthenticatedSeriesRouteChildren {
+  AuthenticatedSeriesIdRoute: typeof AuthenticatedSeriesIdRoute
+}
+
+const AuthenticatedSeriesRouteChildren: AuthenticatedSeriesRouteChildren = {
+  AuthenticatedSeriesIdRoute: AuthenticatedSeriesIdRoute,
+}
+
+const AuthenticatedSeriesRouteWithChildren =
+  AuthenticatedSeriesRoute._addFileChildren(AuthenticatedSeriesRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFavoritesRoute: typeof AuthenticatedFavoritesRoute
+  AuthenticatedGuideRoute: typeof AuthenticatedGuideRoute
+  AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
+  AuthenticatedMoviesRoute: typeof AuthenticatedMoviesRouteWithChildren
+  AuthenticatedPlaylistsRoute: typeof AuthenticatedPlaylistsRoute
+  AuthenticatedSeriesRoute: typeof AuthenticatedSeriesRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFavoritesRoute: AuthenticatedFavoritesRoute,
+  AuthenticatedGuideRoute: AuthenticatedGuideRoute,
+  AuthenticatedLiveRoute: AuthenticatedLiveRoute,
+  AuthenticatedMoviesRoute: AuthenticatedMoviesRouteWithChildren,
+  AuthenticatedPlaylistsRoute: AuthenticatedPlaylistsRoute,
+  AuthenticatedSeriesRoute: AuthenticatedSeriesRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ApiPublicStreamRoute: ApiPublicStreamRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
