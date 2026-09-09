@@ -4,6 +4,10 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+// Poster tiles link to several typed routes; a loose wrapper keeps the props generic.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AnyLink = Link as any;
+
 export function PosterTile({
   to,
   params,
@@ -62,7 +66,7 @@ export function PosterTile({
           <p className="truncate text-xs font-medium">{title}</p>
           {subtitle && <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>}
         </div>
-      </Link>
+      </AnyLink>
       {onToggleFavorite && (
         <button
           type="button"
