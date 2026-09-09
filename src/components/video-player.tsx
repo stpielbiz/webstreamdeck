@@ -4,6 +4,8 @@ import {
   Minimize,
   Pause,
   Play,
+  RotateCcw,
+  RotateCw,
   Volume2,
   VolumeX,
   Loader2,
@@ -134,6 +136,16 @@ export function VideoPlayer({
     }
   }, [live]);
 
+  const skipBy = useCallback(
+    (seconds: number) => {
+      const video = videoRef.current;
+      if (!video || live) return;
+      const max = Number.isFinite(video.duration) ? video.duration : Infinity;
+      video.currentTime = Math.min(Math.max(video.currentTime + seconds, 0), max);
+    },
+    [live],
+  );
+
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void shellRef.current?.requestFullscreen();
@@ -253,6 +265,26 @@ export function VideoPlayer({
             >
               {playing ? <Pause className="size-5" /> : <Play className="size-5" />}
             </button>
+            {!live && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => skipBy(-10)}
+                  className="rounded-md p-1.5 text-white transition hover:bg-white/15"
+                  aria-label="Rewind 10 seconds"
+                >
+                  <RotateCcw className="size-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => skipBy(10)}
+                  className="rounded-md p-1.5 text-white transition hover:bg-white/15"
+                  aria-label="Fast forward 10 seconds"
+                >
+                  <RotateCw className="size-5" />
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={() => {
