@@ -44,11 +44,15 @@ export function VideoPlayer({
   title,
   poster,
   live = false,
+  hls: hlsHint,
+  loading = false,
+  failureMessage = null,
   startPosition = 0,
   className,
   onProgress,
   onEnded,
 }: VideoPlayerProps) {
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(onProgress);
