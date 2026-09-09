@@ -79,7 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                 Source
               </p>
-              <Select value={activeId ?? undefined} onValueChange={setActiveId}>
+              <Select {...(activeId ? { value: activeId } : {})} onValueChange={setActiveId}>
                 <SelectTrigger className="w-full text-xs">
                   <SelectValue placeholder="Pick a playlist" />
                 </SelectTrigger>

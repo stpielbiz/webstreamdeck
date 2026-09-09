@@ -15,20 +15,20 @@ export function PosterTile({
   onToggleFavorite,
 }: {
   to: string;
-  params?: Record<string, string>;
+  params?: Record<string, string> | undefined;
   title: string;
-  image: string | null;
-  subtitle?: string | null;
-  progress?: number | null;
-  favorite?: boolean;
-  onToggleFavorite?: () => void;
+  image: string | null | undefined;
+  subtitle?: string | null | undefined;
+  progress?: number | null | undefined;
+  favorite?: boolean | undefined;
+  onToggleFavorite?: (() => void) | undefined;
 }) {
   return (
     <div className="group relative">
       <Link
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         to={to as any}
-        params={params}
+        {...(params ? { params } : {})}
         className="block overflow-hidden rounded-lg border border-border bg-card transition focus-visible:tile-focus hover:border-primary/60"
       >
         <div className="relative aspect-[2/3] w-full bg-muted">

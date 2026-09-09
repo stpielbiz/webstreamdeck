@@ -266,7 +266,7 @@ function LivePage() {
       <section className="min-w-0 space-y-4 p-4">
         <VideoPlayer
           src={playback.data?.url ?? null}
-          title={selected?.name}
+          title={selected?.name ?? ""}
           poster={selected?.image ?? null}
           live
         />

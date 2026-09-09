@@ -57,7 +57,7 @@ export async function verifyStreamToken(token: string): Promise<StreamTokenPaylo
     ok = await crypto.subtle.verify(
       "HMAC",
       await hmacKey(),
-      fromBase64Url(signature),
+      fromBase64Url(signature) as unknown as ArrayBuffer,
       encoder.encode(body),
     );
   } catch {
