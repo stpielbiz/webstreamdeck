@@ -4,6 +4,10 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+// Poster tiles link to several typed routes; a loose wrapper keeps the props generic.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AnyLink = Link as any;
+
 export function PosterTile({
   to,
   params,
@@ -15,19 +19,18 @@ export function PosterTile({
   onToggleFavorite,
 }: {
   to: string;
-  params?: Record<string, string>;
+  params?: Record<string, string> | undefined;
   title: string;
-  image: string | null;
-  subtitle?: string | null;
-  progress?: number | null;
-  favorite?: boolean;
-  onToggleFavorite?: () => void;
+  image: string | null | undefined;
+  subtitle?: string | null | undefined;
+  progress?: number | null | undefined;
+  favorite?: boolean | undefined;
+  onToggleFavorite?: (() => void) | undefined;
 }) {
   return (
     <div className="group relative">
-      <Link
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        to={to as any}
+      <AnyLink
+        to={to}
         params={params}
         className="block overflow-hidden rounded-lg border border-border bg-card transition focus-visible:tile-focus hover:border-primary/60"
       >
@@ -63,7 +66,7 @@ export function PosterTile({
           <p className="truncate text-xs font-medium">{title}</p>
           {subtitle && <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>}
         </div>
-      </Link>
+      </AnyLink>
       {onToggleFavorite && (
         <button
           type="button"
