@@ -257,7 +257,14 @@ export function VideoPlayer({
       )}
 
       {src && (
-        <div className="absolute inset-x-0 bottom-0 translate-y-2 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-3 pt-10 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100 focus-within:translate-y-0 focus-within:opacity-100">
+        <div
+          className={cn(
+            "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-3 pt-10 transition-all",
+            controlsVisible || !playing
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-2 opacity-0",
+          )}
+        >
           {title && (
             <p className="mb-2 truncate font-display text-sm font-semibold text-white">{title}</p>
           )}
