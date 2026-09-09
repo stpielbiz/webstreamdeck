@@ -31,15 +31,35 @@ async function handle(request: Request): Promise<Response> {
   const range = request.headers.get("range");
   if (range) headers.set("range", range);
 
-  let upstream: Response;
-  try {
-    upstream = await providerFetch(payload.u, { method: request.method, headers });
-  } catch {
-    return new Response("The provider could not be reached", { status: 502 });
+  // Some providers only serve one of these shapes for a given line, and answer
+  // 4xx (often 407) on the others. Try the alternates before giving up.
+  const candidates = [payload.u, ...alternates(payload.u)];
+
+  let upstream: Response | null = null;
+  let lastStatus = 0;
+  for (const candidate of candidates) {
+    try {
+      const attempt = await providerFetch(candidate, { method: request.method, headers });
+      if (attempt.ok || attempt.status === 206) {
+        upstream = attempt;
+        payload.u = candidate;
+        break;
+      }
+      lastStatus = attempt.status;
+      await attempt.body?.cancel();
+    } catch {
+      lastStatus = 0;
+    }
   }
 
-  if (!upstream.ok && upstream.status !== 206) {
-    return new Response(`The provider returned ${upstream.status}`, { status: 502 });
+  if (!upstream) {
+    const message =
+      lastStatus === 407 || lastStatus === 401 || lastStatus === 403
+        ? "Your provider refused this stream. This usually means the line is already in use on another device, or it is not allowed from this network."
+        : lastStatus
+          ? `The provider returned ${lastStatus}`
+          : "The provider could not be reached";
+    return new Response(message, { status: 502 });
   }
 
   const contentType = (upstream.headers.get("content-type") ?? "").toLowerCase();
