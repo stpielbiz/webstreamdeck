@@ -58,6 +58,25 @@ export function VideoPlayer({
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimerRef = useRef<number | null>(null);
+
+  // Show controls on any pointer activity; auto-hide after 3s while playing.
+  const showControls = useCallback(() => {
+    setControlsVisible(true);
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = window.setTimeout(() => {
+      const video = videoRef.current;
+      if (video && !video.paused) setControlsVisible(false);
+    }, 3000);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    },
+    [],
+  );
 
   // Attach the source: hls.js for HLS, native playback for progressive files.
   useEffect(() => {
