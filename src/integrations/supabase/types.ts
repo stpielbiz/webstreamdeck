@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      device_codes: {
+        Row: {
+          approved_at: string | null
+          code: string
+          consumed_at: string | null
+          created_at: string
+          device_label: string | null
+          expires_at: string
+          id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          code: string
+          consumed_at?: string | null
+          created_at?: string
+          device_label?: string | null
+          expires_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          code?: string
+          consumed_at?: string | null
+          created_at?: string
+          device_label?: string | null
+          expires_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string

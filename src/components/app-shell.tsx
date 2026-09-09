@@ -1,8 +1,9 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock,
   Clapperboard,
+  Download,
   LayoutGrid,
   ListVideo,
   LogOut,
@@ -31,12 +32,17 @@ const NAV = [
   { to: "/series", label: "Series", icon: MonitorPlay },
   { to: "/favorites", label: "Favourites", icon: Star },
   { to: "/playlists", label: "Playlists", icon: ListVideo },
+  { to: "/get-app", label: "Watch on TV", icon: Download },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { playlists, activeId, setActiveId } = usePlaylists();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  // TV mode owns the whole screen — no sidebar, no mobile nav strip.
+  if (pathname === "/tv" || pathname.startsWith("/tv/")) return <>{children}</>;
 
   const signOut = async () => {
     await queryClient.cancelQueries();
