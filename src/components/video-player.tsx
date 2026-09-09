@@ -136,6 +136,16 @@ export function VideoPlayer({
     }
   }, [live]);
 
+  const skipBy = useCallback(
+    (seconds: number) => {
+      const video = videoRef.current;
+      if (!video || live) return;
+      const max = Number.isFinite(video.duration) ? video.duration : Infinity;
+      video.currentTime = Math.min(Math.max(video.currentTime + seconds, 0), max);
+    },
+    [live],
+  );
+
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void shellRef.current?.requestFullscreen();
