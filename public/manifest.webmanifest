@@ -1,0 +1,16 @@
+{
+  "name": "Stream Deck",
+  "short_name": "Stream Deck",
+  "description": "Watch your own IPTV playlists — live TV, movies and series.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
