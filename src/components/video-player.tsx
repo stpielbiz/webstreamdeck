@@ -20,9 +20,10 @@ export interface VideoPlayerProps {
   title?: string;
   poster?: string | null;
   live?: boolean;
-  hls?: boolean;
-  loading?: boolean;
-  failureMessage?: string | null;
+  hls?: boolean | undefined;
+  loading?: boolean | undefined;
+  failureMessage?: string | null | undefined;
+
   startPosition?: number;
   className?: string;
   onProgress?: (positionSeconds: number, durationSeconds: number | null) => void;
