@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedGuideRouteImport } from './routes/_authenticated/guide'
+import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedPlaylistsRouteImport } from './routes/_authenticated/playlists'
 import { Route as ApiPublicStreamRouteImport } from './routes/api/public/stream'
 
@@ -35,6 +37,16 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGuideRoute = AuthenticatedGuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLiveRoute = AuthenticatedLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPlaylistsRoute = AuthenticatedPlaylistsRouteImport.update({
   id: '/playlists',
   path: '/playlists',
@@ -50,6 +62,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/guide': typeof AuthenticatedGuideRoute
+  '/live': typeof AuthenticatedLiveRoute
   '/playlists': typeof AuthenticatedPlaylistsRoute
   '/api/public/stream': typeof ApiPublicStreamRoute
 }
@@ -57,6 +71,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/guide': typeof AuthenticatedGuideRoute
+  '/live': typeof AuthenticatedLiveRoute
   '/playlists': typeof AuthenticatedPlaylistsRoute
   '/api/public/stream': typeof ApiPublicStreamRoute
 }
@@ -66,20 +82,38 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/guide': typeof AuthenticatedGuideRoute
+  '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/_authenticated/playlists': typeof AuthenticatedPlaylistsRoute
   '/api/public/stream': typeof ApiPublicStreamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/playlists' | '/api/public/stream'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/guide'
+    | '/live'
+    | '/playlists'
+    | '/api/public/stream'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/playlists' | '/api/public/stream'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/guide'
+    | '/live'
+    | '/playlists'
+    | '/api/public/stream'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/guide'
+    | '/_authenticated/live'
     | '/_authenticated/playlists'
     | '/api/public/stream'
   fileRoutesById: FileRoutesById
@@ -121,6 +155,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/guide': {
+      id: '/_authenticated/guide'
+      path: '/guide'
+      fullPath: '/guide'
+      preLoaderRoute: typeof AuthenticatedGuideRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/live': {
+      id: '/_authenticated/live'
+      path: '/live'
+      fullPath: '/live'
+      preLoaderRoute: typeof AuthenticatedLiveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/playlists': {
       id: '/_authenticated/playlists'
       path: '/playlists'
@@ -140,11 +188,15 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedGuideRoute: typeof AuthenticatedGuideRoute
+  AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
   AuthenticatedPlaylistsRoute: typeof AuthenticatedPlaylistsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedGuideRoute: AuthenticatedGuideRoute,
+  AuthenticatedLiveRoute: AuthenticatedLiveRoute,
   AuthenticatedPlaylistsRoute: AuthenticatedPlaylistsRoute,
 }
 
