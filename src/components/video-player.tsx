@@ -219,22 +219,36 @@ export function VideoPlayer({
           }}
         />
       ) : (
-        <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-          Choose something to watch
+        <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted-foreground">
+          {failureMessage ? (
+            <>
+              <AlertTriangle className="size-8 text-primary" />
+              <p className="font-medium text-foreground">{failureMessage}</p>
+              <p className="text-xs">Try another title, or check that your provider is online.</p>
+            </>
+          ) : loading ? (
+            <>
+              <Loader2 className="size-8 animate-spin text-primary" />
+              <p>Finding the stream…</p>
+            </>
+          ) : (
+            <p>Choose something to watch</p>
+          )}
         </div>
       )}
 
-      {status === "loading" && (
+      {src && status === "loading" && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/40">
           <Loader2 className="size-8 animate-spin text-primary" />
         </div>
       )}
 
-      {status === "error" && (
+      {src && status === "error" && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 px-6 text-center">
           <div>
             <AlertTriangle className="mx-auto size-8 text-primary" />
             <p className="mt-3 text-sm font-medium">{errorMessage}</p>
+
             <p className="mt-1 text-xs text-muted-foreground">
               Try another channel or check that your provider is online.
             </p>
