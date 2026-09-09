@@ -20,16 +20,11 @@ export interface VideoPlayerProps {
   title?: string;
   poster?: string | null;
   live?: boolean;
-  hls?: boolean | undefined;
-  loading?: boolean | undefined;
-  failureMessage?: string | null | undefined;
-
   startPosition?: number;
   className?: string;
   onProgress?: (positionSeconds: number, durationSeconds: number | null) => void;
   onEnded?: () => void;
 }
-
 
 function formatTime(value: number): string {
   if (!Number.isFinite(value) || value < 0) return "0:00";
@@ -45,15 +40,11 @@ export function VideoPlayer({
   title,
   poster,
   live = false,
-  hls: hlsHint,
-  loading = false,
-  failureMessage = null,
   startPosition = 0,
   className,
   onProgress,
   onEnded,
 }: VideoPlayerProps) {
-
   const videoRef = useRef<HTMLVideoElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(onProgress);
@@ -78,7 +69,7 @@ export function VideoPlayer({
     setStatus("loading");
     setErrorMessage(null);
 
-    const isHls = hlsHint ?? (src.includes("m3u8") || live);
+    const isHls = src.includes("m3u8") || live;
 
     const attach = async () => {
       if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
@@ -116,7 +107,7 @@ export function VideoPlayer({
       video.removeAttribute("src");
       video.load();
     };
-  }, [src, live, hlsHint]);
+  }, [src, live]);
 
   // Report progress every 10 seconds for VOD.
   useEffect(() => {
@@ -220,36 +211,22 @@ export function VideoPlayer({
           }}
         />
       ) : (
-        <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted-foreground">
-          {failureMessage ? (
-            <>
-              <AlertTriangle className="size-8 text-primary" />
-              <p className="font-medium text-foreground">{failureMessage}</p>
-              <p className="text-xs">Try another title, or check that your provider is online.</p>
-            </>
-          ) : loading ? (
-            <>
-              <Loader2 className="size-8 animate-spin text-primary" />
-              <p>Finding the stream…</p>
-            </>
-          ) : (
-            <p>Choose something to watch</p>
-          )}
+        <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+          Choose something to watch
         </div>
       )}
 
-      {src && status === "loading" && (
+      {status === "loading" && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/40">
           <Loader2 className="size-8 animate-spin text-primary" />
         </div>
       )}
 
-      {src && status === "error" && (
+      {status === "error" && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 px-6 text-center">
           <div>
             <AlertTriangle className="mx-auto size-8 text-primary" />
             <p className="mt-3 text-sm font-medium">{errorMessage}</p>
-
             <p className="mt-1 text-xs text-muted-foreground">
               Try another channel or check that your provider is online.
             </p>

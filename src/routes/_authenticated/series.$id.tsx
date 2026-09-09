@@ -139,16 +139,8 @@ function SeriesDetail() {
         <div className="space-y-3">
           <VideoPlayer
             src={playback.data?.url ?? null}
-            hls={playback.data?.hls}
-            loading={playback.isPending}
-            failureMessage={
-              playback.isError
-                ? ((playback.error as Error)?.message ?? "This episode could not be started.")
-                : null
-            }
             title={`${show.name} — S${current.season} E${current.episode} ${current.title}`}
             poster={current.image ?? show.image}
-
             startPosition={
               (progress.data ?? []).find(
                 (row) => row.playlistId === activeId && row.itemId === current.id,

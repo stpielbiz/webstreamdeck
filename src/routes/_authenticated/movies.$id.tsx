@@ -102,17 +102,9 @@ function MovieDetail() {
       {playing ? (
         <VideoPlayer
           src={playback.data?.url ?? null}
-          hls={playback.data?.hls}
-          loading={playback.isPending}
-          failureMessage={
-            playback.isError
-              ? ((playback.error as Error)?.message ?? "This film could not be started.")
-              : null
-          }
           title={film.name}
           poster={film.image}
           startPosition={resumeAt}
-
           onProgress={(position, duration) =>
             activeId &&
             void saveProgress({

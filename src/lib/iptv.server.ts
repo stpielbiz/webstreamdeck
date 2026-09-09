@@ -516,112 +516,29 @@ export async function fetchNowNext(
   return results;
 }
 
-/** Check whether a candidate media URL actually plays, and how. */
-export async function probeStream(
-  url: string,
-): Promise<{ ok: boolean; status: number; finalUrl: string; contentType: string }> {
-  const attempt = async (method: "HEAD" | "GET") =>
-    providerFetch(url, {
-      method,
-      headers: method === "GET" ? { range: "bytes=0-1" } : {},
-    });
-  let response: Response;
-  try {
-    response = await attempt("HEAD");
-    if (response.status === 405 || response.status === 501 || response.status === 400) {
-      response = await attempt("GET");
-    }
-  } catch {
-    try {
-      response = await attempt("GET");
-    } catch {
-      return { ok: false, status: 0, finalUrl: url, contentType: "" };
-    }
-  }
-  try {
-    await response.body?.cancel();
-  } catch {
-    /* ignore */
-  }
-  return {
-    ok: response.ok || response.status === 206,
-    status: response.status,
-    finalUrl: response.url || url,
-    contentType: (response.headers.get("content-type") ?? "").toLowerCase(),
-  };
-}
-
-function looksLikeManifest(finalUrl: string, contentType: string): boolean {
-  return (
-    contentType.includes("mpegurl") ||
-    contentType.includes("m3u8") ||
-    /\.m3u8(\?|$)/i.test(finalUrl.split("?")[0]!)
-  );
-}
-
-/** Resolve the upstream media URL for an item, with a playback format hint. */
-export async function resolveStream(
-  playlist: PlaylistRow,
-  kind: "live" | "movie" | "episode",
-  itemId: string,
-  ext?: string | null,
-): Promise<{ url: string; hls: boolean; container: string | null }> {
-  if (playlist.kind === "m3u") {
-    const parsed = await loadM3u(playlist);
-    let url = parsed.urls.get(itemId) ?? null;
-    if (!url) {
-      try {
-        const decoded = decodeId(itemId);
-        if (/^https?:\/\//i.test(decoded)) url = decoded;
-      } catch {
-        /* fall through */
-      }
-    }
-    if (!url) throw new Error("That item is no longer in the playlist.");
-    const container = (/\.([a-z0-9]{2,4})(\?|$)/i.exec(url)?.[1] ?? null)?.toLowerCase() ?? null;
-    return { url, hls: kind === "live" || container === "m3u8", container };
-  }
-
-  const base = normalizeBase(playlist.server_url ?? "");
-  const auth = `${encodeURIComponent(playlist.username ?? "")}/${encodeURIComponent(playlist.password ?? "")}`;
-
-  if (kind === "live") {
-    return { url: `${base}/live/${auth}/${itemId}.m3u8`, hls: true, container: "m3u8" };
-  }
-
-  const segment = kind === "movie" ? "movie" : "series";
-  // Providers disagree on the container; try the reported one first, then common ones.
-  const candidates = [ext, "mp4", "mkv", "m3u8", "ts", "avi"]
-    .map((value) => (value ?? "").replace(/^\./, "").toLowerCase())
-    .filter((value, index, list) => value && list.indexOf(value) === index);
-
-  let lastStatus = 0;
-  for (const candidate of candidates) {
-    const url = `${base}/${segment}/${auth}/${itemId}.${candidate}`;
-    const probe = await probeStream(url);
-    if (probe.ok) {
-      return {
-        url,
-        hls: candidate === "m3u8" || looksLikeManifest(probe.finalUrl, probe.contentType),
-        container: candidate,
-      };
-    }
-    lastStatus = probe.status || lastStatus;
-  }
-
-  if (lastStatus === 401 || lastStatus === 403) {
-    throw new Error("Your provider refused this stream — the subscription may be expired.");
-  }
-  throw new Error("Your provider has no playable file for this title right now.");
-}
-
-/** Back-compat helper returning just the upstream URL. */
+/** Resolve the upstream media URL for an item. */
 export async function resolveStreamUrl(
   playlist: PlaylistRow,
   kind: "live" | "movie" | "episode",
   itemId: string,
   ext?: string | null,
 ): Promise<string> {
-  return (await resolveStream(playlist, kind, itemId, ext)).url;
-}
+  if (playlist.kind === "m3u") {
+    const parsed = await loadM3u(playlist);
+    const url = parsed.urls.get(itemId);
+    if (url) return url;
+    try {
+      const decoded = decodeId(itemId);
+      if (/^https?:\/\//i.test(decoded)) return decoded;
+    } catch {
+      /* fall through */
+    }
+    throw new Error("That item is no longer in the playlist.");
+  }
 
+  const base = normalizeBase(playlist.server_url ?? "");
+  const auth = `${encodeURIComponent(playlist.username ?? "")}/${encodeURIComponent(playlist.password ?? "")}`;
+  if (kind === "live") return `${base}/live/${auth}/${itemId}.m3u8`;
+  const segment = kind === "movie" ? "movie" : "series";
+  return `${base}/${segment}/${auth}/${itemId}.${ext || "mp4"}`;
+}

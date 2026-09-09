@@ -231,29 +231,18 @@ export const getPlayback = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(
-    async ({
-      data,
-      context,
-    }): Promise<{ url: string; live: boolean; hls: boolean; container: string | null }> => {
-      const provider = await import("./iptv.server");
-      const { proxyUrl } = await import("./stream-token.server");
-      const playlist = await loadPlaylist(context.supabase, data.playlistId);
-      const resolved = await provider.resolveStream(
-        playlist,
-        data.kind,
-        data.itemId,
-        data.ext ?? undefined,
-      );
-      return {
-        url: await proxyUrl(playlist.id, resolved.url),
-        live: data.kind === "live",
-        hls: resolved.hls,
-        container: resolved.container,
-      };
-    },
-  );
-
+  .handler(async ({ data, context }): Promise<{ url: string; live: boolean }> => {
+    const provider = await import("./iptv.server");
+    const { proxyUrl } = await import("./stream-token.server");
+    const playlist = await loadPlaylist(context.supabase, data.playlistId);
+    const upstream = await provider.resolveStreamUrl(
+      playlist,
+      data.kind,
+      data.itemId,
+      data.ext ?? undefined,
+    );
+    return { url: await proxyUrl(playlist.id, upstream), live: data.kind === "live" };
+  });
 
 /* ------------------------------------------------------ favourites & progress */
 
