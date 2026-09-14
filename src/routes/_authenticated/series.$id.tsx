@@ -21,6 +21,7 @@ import {
 } from "@/lib/library-hooks";
 
 export const Route = createFileRoute("/_authenticated/series/$id")({
+  validateSearch: z.object({ play: z.boolean().optional() }),
   head: () => ({
     meta: [
       { title: "Watch a series — Stream Deck" },
