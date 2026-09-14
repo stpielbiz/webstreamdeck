@@ -85,6 +85,23 @@ function SeriesDetail() {
     [progress.data, activeId, id],
   );
 
+  // Coming from a "continue watching" tile: start the right episode straight away.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (play !== true || autoStarted.current || current || seasons.length === 0) return;
+    const all = seasons.flatMap((entry, index) =>
+      entry.episodes.map((episode) => ({ episode, index })),
+    );
+    const target = lastWatched
+      ? all.find((entry) => entry.episode.id === lastWatched.itemId)
+      : undefined;
+    const chosen = target ?? all[0];
+    if (!chosen) return;
+    autoStarted.current = true;
+    setSeasonIndex(chosen.index);
+    setCurrent(chosen.episode);
+  }, [play, current, seasons, lastWatched]);
+
   const progressFor = (episodeId: string) => {
     const row = (progress.data ?? []).find(
       (entry) => entry.playlistId === activeId && entry.itemId === episodeId,
