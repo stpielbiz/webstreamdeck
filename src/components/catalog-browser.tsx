@@ -19,6 +19,7 @@ import {
   type SmartMetadata,
 } from "@/lib/organize";
 import { isFavorite, useFavorites, useProgress, useToggleFavorite } from "@/lib/library-hooks";
+import { useIsAdmin } from "@/lib/use-admin";
 
 const PAGE_SIZE = 60;
 const ROW_SIZE = 20;
@@ -96,7 +97,8 @@ export function CatalogBrowser({
     [allItems.data, items.data, categories.data],
   );
 
-  // Smart organiser: resolve real genres/years for what is on screen.
+  // Smart organiser: resolve real genres/years for what is on screen. Admin only.
+  const { isAdmin } = useIsAdmin();
   const enrich = useServerFn(enrichTitles);
   const [smartOn, setSmartOn] = useState(false);
   const [smart, setSmart] = useState<SmartMetadata>({});
@@ -104,7 +106,7 @@ export function CatalogBrowser({
   const smartRun = useRef(0);
 
   useEffect(() => {
-    if (!smartOn || !activeId || !items.data) return;
+    if (!smartOn || !isAdmin || !activeId || !items.data) return;
     const run = ++smartRun.current;
     const names = [...new Set(items.data.map((item) => item.name))]
       .filter((name) => !smart[name])
@@ -279,19 +281,21 @@ export function CatalogBrowser({
               {option.label}
             </button>
           ))}
-          <button
-            type="button"
-            onClick={() => setSmartOn((value) => !value)}
-            className={cn(
-              "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition",
-              smartOn
-                ? "bg-accent text-accent-foreground"
-                : "bg-secondary text-foreground hover:bg-muted",
-            )}
-          >
-            <Sparkles className={cn("size-3.5", smartBusy && "animate-pulse")} />
-            {smartBusy ? "Organising…" : "Organise smartly"}
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setSmartOn((value) => !value)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition",
+                smartOn
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-secondary text-foreground hover:bg-muted",
+              )}
+            >
+              <Sparkles className={cn("size-3.5", smartBusy && "animate-pulse")} />
+              {smartBusy ? "Organising…" : "Organise smartly"}
+            </button>
+          )}
           <div className="ml-auto flex items-center gap-1 rounded-lg bg-secondary p-1">
             <button
               type="button"

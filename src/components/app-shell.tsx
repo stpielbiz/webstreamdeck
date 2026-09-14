@@ -8,6 +8,7 @@ import {
   ListVideo,
   LogOut,
   MonitorPlay,
+  ShieldCheck,
   Star,
   Tv,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import type { ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { usePlaylists } from "@/components/playlist-context";
+import { useIsAdmin } from "@/lib/use-admin";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -37,6 +39,10 @@ const NAV = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { playlists, activeId, setActiveId } = usePlaylists();
+  const { isAdmin } = useIsAdmin();
+  const navItems = isAdmin
+    ? [...NAV, { to: "/admin" as const, label: "Admin", icon: ShieldCheck }]
+    : [...NAV];
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -62,7 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="flex flex-col gap-1">
-          {NAV.map(({ to, label, icon: Icon }) => (
+          {navItems.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
@@ -107,7 +113,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-2 overflow-x-auto border-b border-border bg-sidebar px-3 py-2 md:hidden">
-          {NAV.map(({ to, label, icon: Icon }) => (
+          {navItems.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}

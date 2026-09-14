@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as GetAppRouteImport } from './routes/get-app'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedConnectTvRouteImport } from './routes/_authenticated/connect-tv'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFavoritesRouteImport } from './routes/_authenticated/favorites'
@@ -51,6 +52,11 @@ const GetAppRoute = GetAppRouteImport.update({
   id: '/get-app',
   path: '/get-app',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedConnectTvRoute = AuthenticatedConnectTvRouteImport.update({
   id: '/connect-tv',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/get-app': typeof GetAppRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/connect-tv': typeof AuthenticatedConnectTvRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/favorites': typeof AuthenticatedFavoritesRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/get-app': typeof GetAppRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/connect-tv': typeof AuthenticatedConnectTvRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/favorites': typeof AuthenticatedFavoritesRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/get-app': typeof GetAppRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/connect-tv': typeof AuthenticatedConnectTvRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/favorites': typeof AuthenticatedFavoritesRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/get-app'
+    | '/admin'
     | '/connect-tv'
     | '/dashboard'
     | '/favorites'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/get-app'
+    | '/admin'
     | '/connect-tv'
     | '/dashboard'
     | '/favorites'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/get-app'
+    | '/_authenticated/admin'
     | '/_authenticated/connect-tv'
     | '/_authenticated/dashboard'
     | '/_authenticated/favorites'
@@ -341,6 +353,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/get-app'
       preLoaderRoute: typeof GetAppRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/connect-tv': {
       id: '/_authenticated/connect-tv'
@@ -479,6 +498,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedConnectTvRoute: typeof AuthenticatedConnectTvRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFavoritesRoute: typeof AuthenticatedFavoritesRoute
@@ -499,6 +519,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedConnectTvRoute: AuthenticatedConnectTvRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFavoritesRoute: AuthenticatedFavoritesRoute,
