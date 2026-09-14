@@ -214,7 +214,7 @@ export function groupItems(
       const crossGenre = generic ? genreIndex?.get(titleKey(item.name)) : undefined;
       label = crossGenre ?? (categoryName && !generic ? genreFromCategory(categoryName) : "Other");
     } else if (groupBy === "year") {
-      label = yearLabel(item.year ?? yearFromName(item.name));
+      label = yearLabel(item.year || yearFromName(item.name));
     } else {
       const first = item.name.trim().replace(/^(the|a|an|le|la|les)\s+/i, "").charAt(0).toUpperCase();
       label = /[A-Z]/.test(first) ? first : /[0-9]/.test(first) ? "0–9" : "Other";
