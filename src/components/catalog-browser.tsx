@@ -378,6 +378,7 @@ export function CatalogBrowser({
                         categories.data ?? [],
                         subGroupBy,
                         genreIndex,
+                        smartOn ? smart : undefined,
                       ).map((subGroup) => (
                         <div key={subGroup.key} className="space-y-2">
                           <p className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
