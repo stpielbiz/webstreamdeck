@@ -56,8 +56,8 @@ function TvHome() {
                 onSelect={() =>
                   void navigate(
                     row.itemKind === "episode" && row.seriesId
-                      ? { to: "/series/$id", params: { id: row.seriesId } }
-                      : { to: "/movies/$id", params: { id: row.itemId } },
+                      ? { to: "/tv/watch/series/$id", params: { id: row.seriesId } }
+                      : { to: "/tv/watch/movie/$id", params: { id: row.itemId } },
                   )
                 }
               />

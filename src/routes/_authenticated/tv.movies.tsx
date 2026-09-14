@@ -100,7 +100,9 @@ function TvMovies() {
               progress={
                 row?.durationSeconds ? row.positionSeconds / row.durationSeconds : null
               }
-              onSelect={() => void navigate({ to: "/movies/$id", params: { id: item.id } })}
+              onSelect={() =>
+                void navigate({ to: "/tv/watch/movie/$id", params: { id: item.id } })
+              }
             />
           );
         })}
