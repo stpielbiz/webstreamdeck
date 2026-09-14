@@ -161,6 +161,18 @@ export interface ItemGroup {
   items: CatalogItem[];
 }
 
+/** Pull a release year out of a title such as "NF - The Irishman (2019)". */
+export function yearFromName(name: string): string | null {
+  const matches = name.match(/(?:19|20)\d{2}/g);
+  if (!matches) return null;
+  const currentYear = new Date().getFullYear();
+  const years = matches
+    .map(Number)
+    .filter((value) => value >= 1900 && value <= currentYear + 2);
+  if (years.length === 0) return null;
+  return String(years[years.length - 1]);
+}
+
 function yearLabel(year: string | null | undefined): string {
   const value = Number(String(year ?? "").slice(0, 4));
   if (!Number.isFinite(value) || value < 1900 || value > 2100) return "Year unknown";
@@ -202,7 +214,7 @@ export function groupItems(
       const crossGenre = generic ? genreIndex?.get(titleKey(item.name)) : undefined;
       label = crossGenre ?? (categoryName && !generic ? genreFromCategory(categoryName) : "Other");
     } else if (groupBy === "year") {
-      label = yearLabel(item.year);
+      label = yearLabel(item.year || yearFromName(item.name));
     } else {
       const first = item.name.trim().replace(/^(the|a|an|le|la|les)\s+/i, "").charAt(0).toUpperCase();
       label = /[A-Z]/.test(first) ? first : /[0-9]/.test(first) ? "0–9" : "Other";
