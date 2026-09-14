@@ -91,7 +91,9 @@ function TvSeries() {
             title={item.name}
             image={item.image}
             subtitle={item.year ?? null}
-            onSelect={() => void navigate({ to: "/series/$id", params: { id: item.id } })}
+            onSelect={() =>
+              void navigate({ to: "/tv/watch/series/$id", params: { id: item.id } })
+            }
           />
         ))}
       </TvGrid>
