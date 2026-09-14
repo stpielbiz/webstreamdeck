@@ -62,7 +62,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="flex flex-col gap-1">
-          {NAV.map(({ to, label, icon: Icon }) => (
+          {navItems.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
