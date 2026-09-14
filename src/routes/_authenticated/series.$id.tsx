@@ -39,6 +39,7 @@ export const Route = createFileRoute("/_authenticated/series/$id")({
 
 function SeriesDetail() {
   const { id } = Route.useParams();
+  const { play } = Route.useSearch();
   const { activeId } = usePlaylists();
   const fetchSeries = useServerFn(getSeries);
   const fetchPlayback = useServerFn(getPlayback);
