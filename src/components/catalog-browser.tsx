@@ -286,7 +286,41 @@ export function CatalogBrowser({
                   }
                 >
                   {isOpen ? (
-                    <PosterGrid>{group.items.slice(0, 240).map(tileFor)}</PosterGrid>
+                    <div className="space-y-6">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                          Split by
+                        </span>
+                        {GROUPINGS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setSubGroupBy(option.value)}
+                            className={cn(
+                              "rounded-full px-3 py-1 text-xs font-medium transition",
+                              subGroupBy === option.value
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary text-foreground hover:bg-muted",
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      {groupItems(
+                        group.items,
+                        categories.data ?? [],
+                        subGroupBy,
+                        genreIndex,
+                      ).map((subGroup) => (
+                        <div key={subGroup.key} className="space-y-2">
+                          <p className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                            {subGroup.label} · {subGroup.items.length}
+                          </p>
+                          <PosterGrid>{subGroup.items.slice(0, 120).map(tileFor)}</PosterGrid>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="scrollbar-thin -mx-1 flex gap-3 overflow-x-auto px-1 pb-2">
                       {group.items.slice(0, ROW_SIZE).map((item) => (
