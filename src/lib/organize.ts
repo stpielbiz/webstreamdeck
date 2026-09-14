@@ -36,14 +36,121 @@ export function cleanCategoryName(name: string): string {
     .trim();
 }
 
-/** Best-effort genre label for a provider category name. */
-export function genreFromCategory(name: string): string {
-  const text = cleanCategoryName(name).toLowerCase();
+/** Category names that say nothing about content type. */
+const GENERIC_WORDS = [
+  "added",
+  "recent",
+  "recently",
+  "other",
+  "others",
+  "misc",
+  "all",
+  "top",
+  "imdb",
+  "collection",
+  "collections",
+  "box office",
+  "boxoffice",
+  "trending",
+  "popular",
+  "featured",
+  "netflix",
+  "disney",
+  "hbo",
+  "amazon",
+  "prime",
+  "apple",
+  "paramount",
+  "hulu",
+  "peacock",
+  "multisub",
+  "sub",
+  "subs",
+  "dub",
+  "dubbed",
+  "english",
+  "french",
+  "spanish",
+  "arabic",
+  "italian",
+  "german",
+  "turkish",
+  "hindi",
+  "portuguese",
+  "en",
+  "fr",
+  "es",
+  "ar",
+  "it",
+  "de",
+  "tr",
+  "pt",
+  "eng",
+  "quality",
+  "request",
+  "requests",
+  "az",
+  "a z",
+];
+
+function matchGenre(text: string): string | null {
   for (const genre of GENRES) {
     if (genre.words.some((word) => text.includes(word))) return genre.label;
   }
+  return null;
+}
+
+/**
+ * True when a category is a catch-all bucket ("VOD - NEW ADDED [EN]",
+ * "TOP 500 IMDB") rather than a real content type.
+ */
+export function isGenericCategory(name: string): boolean {
+  const cleaned = cleanCategoryName(name).toLowerCase();
+  if (matchGenre(cleaned)) return false;
+  const tokens = cleaned.split(/\s+/).filter((token) => token && !/^\d+$/.test(token));
+  if (tokens.length === 0) return true;
+  return tokens.every((token) => GENERIC_WORDS.includes(token));
+}
+
+/** Best-effort genre label for a provider category name. */
+export function genreFromCategory(name: string): string {
+  const text = cleanCategoryName(name).toLowerCase();
+  const matched = matchGenre(text);
+  if (matched) return matched;
   const label = cleanCategoryName(name).replace(/\d{4}/g, "").replace(/\s+/g, " ").trim();
   return label ? label.replace(/^./, (character) => character.toUpperCase()) : "Other";
+}
+
+/** Normalised title used to match the same film across provider categories. */
+function titleKey(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\b(19|20)\d{2}\b/g, " ")
+    .replace(/^[a-z]{2,3}\s*[-|:]\s*/i, " ")
+    .replace(/\((19|20)\d{2}\)/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * Providers list the same film in a catch-all row and again in a proper genre
+ * row. This maps each title to the genre it was filed under somewhere else, so
+ * catch-all rows can be split into real types.
+ */
+export function buildGenreIndex(
+  items: CatalogItem[],
+  categories: Category[],
+): Map<string, string> {
+  const categoryNames = new Map(categories.map((category) => [category.id, category.name]));
+  const index = new Map<string, string>();
+  for (const item of items) {
+    const categoryName = item.categoryId ? categoryNames.get(item.categoryId) : undefined;
+    if (!categoryName || isGenericCategory(categoryName)) continue;
+    const key = titleKey(item.name);
+    if (!key || index.has(key)) continue;
+    index.set(key, genreFromCategory(categoryName));
+  }
+  return index;
 }
 
 export type GroupBy = "genre" | "year" | "alphabet";
