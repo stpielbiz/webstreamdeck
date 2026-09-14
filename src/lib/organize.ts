@@ -196,25 +196,35 @@ const YEAR_ORDER = [
   "Year unknown",
 ];
 
+/** Smart metadata resolved online or by the AI, keyed by provider title. */
+export type SmartMetadata = Record<string, { genres: string[]; year: number | null }>;
+
 /** Group a catalogue into shelves by genre, release period or first letter. */
 export function groupItems(
   items: CatalogItem[],
   categories: Category[],
   groupBy: GroupBy,
   genreIndex?: Map<string, string>,
+  smart?: SmartMetadata,
 ): ItemGroup[] {
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]));
   const buckets = new Map<string, CatalogItem[]>();
 
   for (const item of items) {
+    const smartEntry = smart?.[item.name];
     let label: string;
     if (groupBy === "genre") {
+      const smartGenre = smartEntry?.genres?.[0];
       const categoryName = item.categoryId ? categoryNames.get(item.categoryId) : undefined;
       const generic = !categoryName || isGenericCategory(categoryName);
       const crossGenre = generic ? genreIndex?.get(titleKey(item.name)) : undefined;
-      label = crossGenre ?? (categoryName && !generic ? genreFromCategory(categoryName) : "Other");
+      label =
+        smartGenre ??
+        crossGenre ??
+        (categoryName && !generic ? genreFromCategory(categoryName) : "Other");
     } else if (groupBy === "year") {
-      label = yearLabel(item.year || yearFromName(item.name));
+      const smartYear = smartEntry?.year ? String(smartEntry.year) : null;
+      label = yearLabel(item.year || smartYear || yearFromName(item.name));
     } else {
       const first = item.name.trim().replace(/^(the|a|an|le|la|les)\s+/i, "").charAt(0).toUpperCase();
       label = /[A-Z]/.test(first) ? first : /[0-9]/.test(first) ? "0–9" : "Other";

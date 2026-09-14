@@ -133,6 +133,54 @@ export type Database = {
         }
         Relationships: []
       }
+      title_metadata: {
+        Row: {
+          backdrop_url: string | null
+          confidence: number | null
+          created_at: string
+          genres: string[]
+          id: string
+          item_kind: string
+          lookup_key: string
+          overview: string | null
+          poster_url: string | null
+          resolved_title: string | null
+          source: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          backdrop_url?: string | null
+          confidence?: number | null
+          created_at?: string
+          genres?: string[]
+          id?: string
+          item_kind: string
+          lookup_key: string
+          overview?: string | null
+          poster_url?: string | null
+          resolved_title?: string | null
+          source?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          backdrop_url?: string | null
+          confidence?: number | null
+          created_at?: string
+          genres?: string[]
+          id?: string
+          item_kind?: string
+          lookup_key?: string
+          overview?: string | null
+          poster_url?: string | null
+          resolved_title?: string | null
+          source?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       watch_progress: {
         Row: {
           completed: boolean
