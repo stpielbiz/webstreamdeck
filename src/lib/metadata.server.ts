@@ -327,7 +327,7 @@ export async function resolveTitles(
   admin: AdminClient,
   names: string[],
   kind: "movie" | "series",
-  keys: { tmdb?: string; lovable?: string },
+  keys: { tmdb?: string | undefined; lovable?: string | undefined },
 ): Promise<Record<string, TitleMetadata>> {
   const wanted = new Map<string, { title: string; year: number | null }>();
   const byName = new Map<string, string>();
