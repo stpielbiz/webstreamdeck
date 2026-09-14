@@ -106,7 +106,7 @@ export function CatalogBrowser({
   const smartRun = useRef(0);
 
   useEffect(() => {
-    if (!smartOn || !activeId || !items.data) return;
+    if (!smartOn || !isAdmin || !activeId || !items.data) return;
     const run = ++smartRun.current;
     const names = [...new Set(items.data.map((item) => item.name))]
       .filter((name) => !smart[name])
