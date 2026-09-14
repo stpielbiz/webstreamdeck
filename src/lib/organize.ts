@@ -189,6 +189,7 @@ export function groupItems(
   items: CatalogItem[],
   categories: Category[],
   groupBy: GroupBy,
+  genreIndex?: Map<string, string>,
 ): ItemGroup[] {
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]));
   const buckets = new Map<string, CatalogItem[]>();
@@ -197,7 +198,9 @@ export function groupItems(
     let label: string;
     if (groupBy === "genre") {
       const categoryName = item.categoryId ? categoryNames.get(item.categoryId) : undefined;
-      label = categoryName ? genreFromCategory(categoryName) : "Other";
+      const generic = !categoryName || isGenericCategory(categoryName);
+      const crossGenre = generic ? genreIndex?.get(titleKey(item.name)) : undefined;
+      label = crossGenre ?? (categoryName && !generic ? genreFromCategory(categoryName) : "Other");
     } else if (groupBy === "year") {
       label = yearLabel(item.year);
     } else {
