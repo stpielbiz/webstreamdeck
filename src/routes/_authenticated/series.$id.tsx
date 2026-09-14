@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Play, Star } from "lucide-react";
+import { z } from "zod";
 
 import { getPlayback, getSeries } from "@/lib/iptv.functions";
 import type { EpisodeItem } from "@/lib/iptv-types";
