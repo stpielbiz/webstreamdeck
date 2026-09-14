@@ -72,11 +72,24 @@ export function CatalogBrowser({
     staleTime: 5 * 60_000,
   });
 
+  // Full catalogue, used only to learn which real genre each title belongs to.
+  const allItems = useQuery({
+    queryKey: ["items", activeId, kind, "all", ""],
+    queryFn: () => fetchItems({ data: { playlistId: activeId!, kind } }),
+    enabled: !!activeId && groupBy === "genre",
+    staleTime: 5 * 60_000,
+  });
+
   const shown = useMemo(() => (items.data ?? []).slice(0, page * PAGE_SIZE), [items.data, page]);
 
+  const genreIndex = useMemo(
+    () => buildGenreIndex(allItems.data ?? items.data ?? [], categories.data ?? []),
+    [allItems.data, items.data, categories.data],
+  );
+
   const groups = useMemo(
-    () => groupItems(items.data ?? [], categories.data ?? [], groupBy),
-    [items.data, categories.data, groupBy],
+    () => groupItems(items.data ?? [], categories.data ?? [], groupBy, genreIndex),
+    [items.data, categories.data, groupBy, genreIndex],
   );
 
   const progressFor = (itemId: string) => {
