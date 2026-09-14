@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { usePlaylists } from "@/components/playlist-context";
+import { useIsAdmin } from "@/lib/use-admin";
 import { Button } from "@/components/ui/button";
 import {
   Select,
