@@ -30,6 +30,7 @@ import { Route as AuthenticatedTvLiveRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTvMoviesRouteImport } from './routes/_authenticated/tv.movies'
 import { Route as AuthenticatedTvSeriesRouteImport } from './routes/_authenticated/tv.series'
 import { Route as ApiPublicStreamRouteImport } from './routes/api/public/stream'
+import { Route as AuthenticatedTvWatchMovieIdRouteImport } from './routes/_authenticated/tv.watch.movie.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -138,6 +139,12 @@ const ApiPublicStreamRoute = ApiPublicStreamRouteImport.update({
   path: '/api/public/stream',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTvWatchMovieIdRoute =
+  AuthenticatedTvWatchMovieIdRouteImport.update({
+    id: '/tv/watch/movie/$id',
+    path: '/tv/watch/movie/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/movies/': typeof AuthenticatedMoviesIndexRoute
   '/series/': typeof AuthenticatedSeriesIndexRoute
   '/tv/': typeof AuthenticatedTvIndexRoute
+  '/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -182,6 +190,7 @@ export interface FileRoutesByTo {
   '/movies': typeof AuthenticatedMoviesIndexRoute
   '/series': typeof AuthenticatedSeriesIndexRoute
   '/tv': typeof AuthenticatedTvIndexRoute
+  '/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -206,6 +215,7 @@ export interface FileRoutesById {
   '/_authenticated/movies/': typeof AuthenticatedMoviesIndexRoute
   '/_authenticated/series/': typeof AuthenticatedSeriesIndexRoute
   '/_authenticated/tv/': typeof AuthenticatedTvIndexRoute
+  '/_authenticated/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/movies/'
     | '/series/'
     | '/tv/'
+    | '/tv/watch/movie/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/movies'
     | '/series'
     | '/tv'
+    | '/tv/watch/movie/$id'
   id:
     | '__root__'
     | '/'
@@ -275,6 +287,7 @@ export interface FileRouteTypes {
     | '/_authenticated/movies/'
     | '/_authenticated/series/'
     | '/_authenticated/tv/'
+    | '/_authenticated/tv/watch/movie/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -435,6 +448,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicStreamRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/tv/watch/movie/$id': {
+      id: '/_authenticated/tv/watch/movie/$id'
+      path: '/tv/watch/movie/$id'
+      fullPath: '/tv/watch/movie/$id'
+      preLoaderRoute: typeof AuthenticatedTvWatchMovieIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -454,6 +474,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMoviesIndexRoute: typeof AuthenticatedMoviesIndexRoute
   AuthenticatedSeriesIndexRoute: typeof AuthenticatedSeriesIndexRoute
   AuthenticatedTvIndexRoute: typeof AuthenticatedTvIndexRoute
+  AuthenticatedTvWatchMovieIdRoute: typeof AuthenticatedTvWatchMovieIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -472,6 +493,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMoviesIndexRoute: AuthenticatedMoviesIndexRoute,
   AuthenticatedSeriesIndexRoute: AuthenticatedSeriesIndexRoute,
   AuthenticatedTvIndexRoute: AuthenticatedTvIndexRoute,
+  AuthenticatedTvWatchMovieIdRoute: AuthenticatedTvWatchMovieIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
