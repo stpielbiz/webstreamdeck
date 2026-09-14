@@ -94,14 +94,23 @@ function LivePage() {
     [epg.data],
   );
 
-  // Pick the first channel, or the one linked from favourites.
+  // Pick the channel linked from favourites (searched across the whole list,
+  // not just the first page shown), otherwise the first channel.
   useEffect(() => {
-    if (selected || visible.length === 0) return;
-    const target = channelFromUrl
-      ? visible.find((item) => item.id === channelFromUrl)
-      : undefined;
-    setSelected(target ?? visible[0]!);
-  }, [visible, channelFromUrl, selected]);
+    const all = channels.data ?? [];
+    if (selected || all.length === 0) return;
+    if (channelFromUrl) {
+      const target = all.find((item) => item.id === channelFromUrl);
+      if (target) {
+        setSelected(target);
+        return;
+      }
+      // The list may still be loading a filtered view; wait instead of
+      // silently playing an unrelated channel.
+      if (channels.isFetching) return;
+    }
+    setSelected(all[0]!);
+  }, [channels.data, channels.isFetching, channelFromUrl, selected]);
 
   const playback = useQuery({
     queryKey: ["playback", activeId, "live", selected?.id],

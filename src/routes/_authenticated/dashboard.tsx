@@ -95,6 +95,7 @@ function Dashboard() {
                 params={{
                   id: row.itemKind === "episode" && row.seriesId ? row.seriesId : row.itemId,
                 }}
+                search={{ play: true }}
                 title={row.title}
                 image={row.posterUrl}
                 subtitle={
@@ -168,6 +169,7 @@ function Dashboard() {
                 key={row.id}
                 to={row.itemKind === "series" ? "/series/$id" : "/movies/$id"}
                 params={{ id: row.itemId }}
+                search={{ play: true }}
                 title={row.title}
                 image={row.logoUrl}
               />
