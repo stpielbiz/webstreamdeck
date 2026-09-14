@@ -37,6 +37,10 @@ const NAV = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { playlists, activeId, setActiveId } = usePlaylists();
+  const { isAdmin } = useIsAdmin();
+  const navItems = isAdmin
+    ? [...NAV, { to: "/admin" as const, label: "Admin", icon: ShieldCheck }]
+    : [...NAV];
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
