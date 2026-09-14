@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { groupItems, type GroupBy } from "@/lib/organize";
+import { buildGenreIndex, groupItems, type GroupBy } from "@/lib/organize";
 import { isFavorite, useFavorites, useProgress, useToggleFavorite } from "@/lib/library-hooks";
 
 const PAGE_SIZE = 60;
@@ -44,6 +44,7 @@ export function CatalogBrowser({
   const [view, setView] = useState<"rows" | "grid">("rows");
   const [groupBy, setGroupBy] = useState<GroupBy>("genre");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [subGroupBy, setSubGroupBy] = useState<GroupBy>("year");
 
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
@@ -71,11 +72,24 @@ export function CatalogBrowser({
     staleTime: 5 * 60_000,
   });
 
+  // Full catalogue, used only to learn which real genre each title belongs to.
+  const allItems = useQuery({
+    queryKey: ["items", activeId, kind, "all", ""],
+    queryFn: () => fetchItems({ data: { playlistId: activeId!, kind } }),
+    enabled: !!activeId && groupBy === "genre",
+    staleTime: 5 * 60_000,
+  });
+
   const shown = useMemo(() => (items.data ?? []).slice(0, page * PAGE_SIZE), [items.data, page]);
 
+  const genreIndex = useMemo(
+    () => buildGenreIndex(allItems.data ?? items.data ?? [], categories.data ?? []),
+    [allItems.data, items.data, categories.data],
+  );
+
   const groups = useMemo(
-    () => groupItems(items.data ?? [], categories.data ?? [], groupBy),
-    [items.data, categories.data, groupBy],
+    () => groupItems(items.data ?? [], categories.data ?? [], groupBy, genreIndex),
+    [items.data, categories.data, groupBy, genreIndex],
   );
 
   const progressFor = (itemId: string) => {
@@ -272,7 +286,41 @@ export function CatalogBrowser({
                   }
                 >
                   {isOpen ? (
-                    <PosterGrid>{group.items.slice(0, 240).map(tileFor)}</PosterGrid>
+                    <div className="space-y-6">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                          Split by
+                        </span>
+                        {GROUPINGS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setSubGroupBy(option.value)}
+                            className={cn(
+                              "rounded-full px-3 py-1 text-xs font-medium transition",
+                              subGroupBy === option.value
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary text-foreground hover:bg-muted",
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      {groupItems(
+                        group.items,
+                        categories.data ?? [],
+                        subGroupBy,
+                        genreIndex,
+                      ).map((subGroup) => (
+                        <div key={subGroup.key} className="space-y-2">
+                          <p className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                            {subGroup.label} · {subGroup.items.length}
+                          </p>
+                          <PosterGrid>{subGroup.items.slice(0, 120).map(tileFor)}</PosterGrid>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="scrollbar-thin -mx-1 flex gap-3 overflow-x-auto px-1 pb-2">
                       {group.items.slice(0, ROW_SIZE).map((item) => (
