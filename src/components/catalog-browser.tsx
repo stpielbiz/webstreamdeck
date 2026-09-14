@@ -279,6 +279,19 @@ export function CatalogBrowser({
               {option.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setSmartOn((value) => !value)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition",
+              smartOn
+                ? "bg-accent text-accent-foreground"
+                : "bg-secondary text-foreground hover:bg-muted",
+            )}
+          >
+            <Sparkles className={cn("size-3.5", smartBusy && "animate-pulse")} />
+            {smartBusy ? "Organising…" : "Organise smartly"}
+          </button>
           <div className="ml-auto flex items-center gap-1 rounded-lg bg-secondary p-1">
             <button
               type="button"
