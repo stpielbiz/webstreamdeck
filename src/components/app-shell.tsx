@@ -8,6 +8,7 @@ import {
   ListVideo,
   LogOut,
   MonitorPlay,
+  ShieldCheck,
   Star,
   Tv,
 } from "lucide-react";
