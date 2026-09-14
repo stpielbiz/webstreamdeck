@@ -96,9 +96,53 @@ export function CatalogBrowser({
     [allItems.data, items.data, categories.data],
   );
 
+  // Smart organiser: resolve real genres/years for what is on screen.
+  const enrich = useServerFn(enrichTitles);
+  const [smartOn, setSmartOn] = useState(false);
+  const [smart, setSmart] = useState<SmartMetadata>({});
+  const [smartBusy, setSmartBusy] = useState(false);
+  const smartRun = useRef(0);
+
+  useEffect(() => {
+    if (!smartOn || !activeId || !items.data) return;
+    const run = ++smartRun.current;
+    const names = [...new Set(items.data.map((item) => item.name))]
+      .filter((name) => !smart[name])
+      .slice(0, SMART_LIMIT);
+    if (names.length === 0) return;
+
+    setSmartBusy(true);
+    (async () => {
+      for (let index = 0; index < names.length; index += SMART_CHUNK) {
+        if (smartRun.current !== run) return;
+        const chunk = names.slice(index, index + SMART_CHUNK);
+        try {
+          const result = await enrich({ data: { playlistId: activeId, kind, names: chunk } });
+          if (smartRun.current !== run) return;
+          setSmart((previous) => ({ ...previous, ...result }));
+        } catch {
+          break;
+        }
+      }
+      if (smartRun.current === run) setSmartBusy(false);
+    })();
+    return () => {
+      smartRun.current += 1;
+    };
+    // `smart` is intentionally not a dependency: it grows as chunks land.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [smartOn, activeId, kind, items.data, enrich]);
+
   const groups = useMemo(
-    () => groupItems(items.data ?? [], categories.data ?? [], groupBy, genreIndex),
-    [items.data, categories.data, groupBy, genreIndex],
+    () =>
+      groupItems(
+        items.data ?? [],
+        categories.data ?? [],
+        groupBy,
+        genreIndex,
+        smartOn ? smart : undefined,
+      ),
+    [items.data, categories.data, groupBy, genreIndex, smartOn, smart],
   );
 
   const progressFor = (itemId: string) => {
