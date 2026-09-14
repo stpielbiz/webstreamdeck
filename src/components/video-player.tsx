@@ -91,31 +91,48 @@ export function VideoPlayer({
     const isHls = src.includes("m3u8") || live;
 
     const attach = async () => {
-      if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
+      let usedHls = false;
+      if (isHls) {
+        // Prefer hls.js wherever media source extensions exist. Android based
+        // browsers (Fire TV Silk, Chrome) claim native HLS support but often
+        // render a black screen, so native playback is the last resort.
         const { default: Hls } = await import("hls.js");
         if (destroyed) return;
-        if (!Hls.isSupported()) {
+        if (Hls.isSupported()) {
+          usedHls = true;
+          const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 30 });
+          hlsInstance = hls;
+          hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (!data.fatal) return;
+            setStatus("error");
+            setErrorMessage(
+              data.type === Hls.ErrorTypes.NETWORK_ERROR
+                ? "The provider stopped responding for this stream."
+                : "This stream can't be played in a browser.",
+            );
+          });
+          hls.loadSource(src);
+          hls.attachMedia(video);
+        } else if (!video.canPlayType("application/vnd.apple.mpegurl")) {
           setStatus("error");
-          setErrorMessage("This channel's format can't be played in a browser.");
+          setErrorMessage("This channel's format can't be played in this browser.");
           return;
         }
-        const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 30 });
-        hlsInstance = hls;
-        hls.on(Hls.Events.ERROR, (_event, data) => {
-          if (!data.fatal) return;
-          setStatus("error");
-          setErrorMessage(
-            data.type === Hls.ErrorTypes.NETWORK_ERROR
-              ? "The provider stopped responding for this stream."
-              : "This stream can't be played in a browser.",
-          );
-        });
-        hls.loadSource(src);
-        hls.attachMedia(video);
-      } else {
-        video.src = src;
       }
-      void video.play().catch(() => setPlaying(false));
+      if (!usedHls) video.src = src;
+
+      try {
+        await video.play();
+      } catch {
+        // Some devices (Fire TV Silk included) block sound-on autoplay.
+        // Start muted so a picture appears, then let the viewer unmute.
+        video.muted = true;
+        try {
+          await video.play();
+        } catch {
+          setPlaying(false);
+        }
+      }
     };
 
     void attach();
