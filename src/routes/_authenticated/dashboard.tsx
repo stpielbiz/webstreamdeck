@@ -169,6 +169,7 @@ function Dashboard() {
                 key={row.id}
                 to={row.itemKind === "series" ? "/series/$id" : "/movies/$id"}
                 params={{ id: row.itemId }}
+                search={{ play: true }}
                 title={row.title}
                 image={row.logoUrl}
               />
