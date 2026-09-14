@@ -276,6 +276,36 @@ export function VideoPlayer({
         </div>
       )}
 
+      {src && status !== "error" && !playing && (
+        <button
+          type="button"
+          data-tv-focus
+          onClick={togglePlay}
+          aria-label="Play"
+          className="absolute inset-0 grid place-items-center bg-black/30 outline-none"
+        >
+          <span className="grid size-20 place-items-center rounded-full bg-primary text-primary-foreground ring-4 ring-transparent transition group-focus-within:ring-primary/50">
+            <Play className="size-10" />
+          </span>
+        </button>
+      )}
+
+      {src && muted && playing && (
+        <button
+          type="button"
+          data-tv-focus
+          onClick={() => {
+            const video = videoRef.current;
+            if (video) video.muted = false;
+          }}
+          className="absolute right-3 top-3 rounded-lg bg-black/70 px-4 py-2 text-base font-semibold text-white outline-none focus:ring-4 focus:ring-primary/50"
+        >
+          Sound off — press OK
+        </button>
+      )}
+
+
+
       {src && (
         <div
           className={cn(
