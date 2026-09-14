@@ -97,7 +97,8 @@ export function CatalogBrowser({
     [allItems.data, items.data, categories.data],
   );
 
-  // Smart organiser: resolve real genres/years for what is on screen.
+  // Smart organiser: resolve real genres/years for what is on screen. Admin only.
+  const { isAdmin } = useIsAdmin();
   const enrich = useServerFn(enrichTitles);
   const [smartOn, setSmartOn] = useState(false);
   const [smart, setSmart] = useState<SmartMetadata>({});
