@@ -1,21 +1,30 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
-import { LayoutGrid, Rows3, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { LayoutGrid, Rows3, Search, Sparkles } from "lucide-react";
 
 import { getCategories, getItems } from "@/lib/iptv.functions";
+import { enrichTitles } from "@/lib/metadata.functions";
 import { usePlaylists } from "@/components/playlist-context";
 import { EmptyState, PosterGrid, PosterTile, Shelf } from "@/components/media";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { buildGenreIndex, groupItems, type GroupBy } from "@/lib/organize";
+import {
+  buildGenreIndex,
+  groupItems,
+  type GroupBy,
+  type SmartMetadata,
+} from "@/lib/organize";
 import { isFavorite, useFavorites, useProgress, useToggleFavorite } from "@/lib/library-hooks";
 
 const PAGE_SIZE = 60;
 const ROW_SIZE = 20;
+/** Titles sent per enrichment request, and the cap for one browse session. */
+const SMART_CHUNK = 60;
+const SMART_LIMIT = 600;
 
 const GROUPINGS: { value: GroupBy; label: string }[] = [
   { value: "genre", label: "Type" },
