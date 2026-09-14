@@ -43,7 +43,7 @@ function MovieDetail() {
   const { activeId } = usePlaylists();
   const fetchMovie = useServerFn(getMovie);
   const fetchPlayback = useServerFn(getPlayback);
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(play === true);
 
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
