@@ -39,6 +39,7 @@ export const Route = createFileRoute("/_authenticated/movies/$id")({
 
 function MovieDetail() {
   const { id } = Route.useParams();
+  const { play } = Route.useSearch();
   const { activeId } = usePlaylists();
   const fetchMovie = useServerFn(getMovie);
   const fetchPlayback = useServerFn(getPlayback);
