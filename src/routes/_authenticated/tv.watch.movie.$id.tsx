@@ -59,7 +59,7 @@ function TvWatchMovie() {
     <TvShell title={film?.name ?? "Loading…"}>
       <VideoPlayer
         src={playback.data?.url ?? null}
-        title={film?.name}
+        title={film?.name ?? ""}
         poster={film?.image ?? null}
         startPosition={resumeAt}
         className="aspect-video w-full overflow-hidden rounded-xl"

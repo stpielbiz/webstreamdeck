@@ -84,7 +84,7 @@ function TvWatchSeries() {
         <div>
           <VideoPlayer
             src={playback.data?.url ?? null}
-            title={current?.title}
+            title={current?.title ?? ""}
             poster={current?.image ?? show?.image ?? null}
             startPosition={resumeAt}
             className="aspect-video w-full overflow-hidden rounded-xl"
