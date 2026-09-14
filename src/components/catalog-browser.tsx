@@ -19,6 +19,7 @@ import {
   type SmartMetadata,
 } from "@/lib/organize";
 import { isFavorite, useFavorites, useProgress, useToggleFavorite } from "@/lib/library-hooks";
+import { useIsAdmin } from "@/lib/use-admin";
 
 const PAGE_SIZE = 60;
 const ROW_SIZE = 20;
