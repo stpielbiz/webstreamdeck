@@ -44,6 +44,7 @@ export function CatalogBrowser({
   const [view, setView] = useState<"rows" | "grid">("rows");
   const [groupBy, setGroupBy] = useState<GroupBy>("genre");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [subGroupBy, setSubGroupBy] = useState<GroupBy>("year");
 
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
