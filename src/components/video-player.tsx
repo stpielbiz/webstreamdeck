@@ -129,7 +129,7 @@ export function VideoPlayer({
           return;
         }
       }
-      if (!usedHls) video.src = src;
+      if (!usedHls) video.src = activeSrc;
 
       try {
         await video.play();
