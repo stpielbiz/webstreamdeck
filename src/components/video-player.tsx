@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 
 export interface VideoPlayerProps {
   src: string | null;
+  /** Played instead of `src` when the proxied source is refused (e.g. blocked server IP). */
+  fallbackSrc?: string | null;
   title?: string;
   poster?: string | null;
   live?: boolean;
