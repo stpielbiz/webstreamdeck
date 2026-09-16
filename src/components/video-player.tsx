@@ -84,14 +84,20 @@ export function VideoPlayer({
   // Attach the source: hls.js for HLS, native playback for progressive files.
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !src) return;
+    if (!video || !activeSrc) return;
 
     let destroyed = false;
     let hlsInstance: { destroy: () => void } | null = null;
     setStatus("loading");
     setErrorMessage(null);
 
-    const isHls = src.includes("m3u8") || live;
+    const useFallback = () => {
+      if (!fallbackSrc || activeSrc === fallbackSrc) return false;
+      setActiveSrc(fallbackSrc);
+      return true;
+    };
+
+    const isHls = activeSrc.includes("m3u8") || live;
 
     const attach = async () => {
       let usedHls = false;
