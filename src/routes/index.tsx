@@ -1,6 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CalendarClock, Clapperboard, History, Star, Tv, ListVideo } from "lucide-react";
+import { useEffect } from "react";
 
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -57,6 +59,25 @@ const FEATURES = [
 ];
 
 function Landing() {
+  const navigate = useNavigate();
+
+  // A signed-in visitor (e.g. returning from Google sign-in) belongs on the dashboard.
+  useEffect(() => {
+    let cancelled = false;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!cancelled && data.session) navigate({ to: "/dashboard", replace: true });
+    });
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        navigate({ to: "/dashboard", replace: true });
+      }
+    });
+    return () => {
+      cancelled = true;
+      data.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
