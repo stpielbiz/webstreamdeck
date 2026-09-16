@@ -84,6 +84,7 @@ function TvWatchSeries() {
         <div>
           <VideoPlayer
             src={playback.data?.url ?? null}
+            fallbackSrc={playback.data?.directUrl ?? null}
             title={current?.title ?? ""}
             poster={current?.image ?? show?.image ?? null}
             startPosition={resumeAt}

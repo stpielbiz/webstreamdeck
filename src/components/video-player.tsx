@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 
 export interface VideoPlayerProps {
   src: string | null;
+  /** Played instead of `src` when the proxied source is refused (e.g. blocked server IP). */
+  fallbackSrc?: string | null;
   title?: string;
   poster?: string | null;
   live?: boolean;
@@ -37,6 +39,7 @@ function formatTime(value: number): string {
 
 export function VideoPlayer({
   src,
+  fallbackSrc = null,
   title,
   poster,
   live = false,
@@ -50,6 +53,7 @@ export function VideoPlayer({
   const progressRef = useRef(onProgress);
   progressRef.current = onProgress;
 
+  const [activeSrc, setActiveSrc] = useState<string | null>(src);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -78,17 +82,27 @@ export function VideoPlayer({
     [],
   );
 
+  useEffect(() => {
+    setActiveSrc(src);
+  }, [src]);
+
   // Attach the source: hls.js for HLS, native playback for progressive files.
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !src) return;
+    if (!video || !activeSrc) return;
 
     let destroyed = false;
     let hlsInstance: { destroy: () => void } | null = null;
     setStatus("loading");
     setErrorMessage(null);
 
-    const isHls = src.includes("m3u8") || live;
+    const useFallback = () => {
+      if (!fallbackSrc || activeSrc === fallbackSrc) return false;
+      setActiveSrc(fallbackSrc);
+      return true;
+    };
+
+    const isHls = activeSrc.includes("m3u8") || live;
 
     const attach = async () => {
       let usedHls = false;
@@ -104,6 +118,7 @@ export function VideoPlayer({
           hlsInstance = hls;
           hls.on(Hls.Events.ERROR, (_event, data) => {
             if (!data.fatal) return;
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR && useFallback()) return;
             setStatus("error");
             setErrorMessage(
               data.type === Hls.ErrorTypes.NETWORK_ERROR
@@ -111,7 +126,7 @@ export function VideoPlayer({
                 : "This stream can't be played in a browser.",
             );
           });
-          hls.loadSource(src);
+          hls.loadSource(activeSrc);
           hls.attachMedia(video);
         } else if (!video.canPlayType("application/vnd.apple.mpegurl")) {
           setStatus("error");
@@ -119,7 +134,7 @@ export function VideoPlayer({
           return;
         }
       }
-      if (!usedHls) video.src = src;
+      if (!usedHls) video.src = activeSrc;
 
       try {
         await video.play();
@@ -143,7 +158,7 @@ export function VideoPlayer({
       video.removeAttribute("src");
       video.load();
     };
-  }, [src, live]);
+  }, [activeSrc, fallbackSrc, live]);
 
   // Report progress every 10 seconds for VOD.
   useEffect(() => {

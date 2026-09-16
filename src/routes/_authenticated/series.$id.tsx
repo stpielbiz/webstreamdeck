@@ -159,6 +159,7 @@ function SeriesDetail() {
         <div className="space-y-3">
           <VideoPlayer
             src={playback.data?.url ?? null}
+            fallbackSrc={playback.data?.directUrl ?? null}
             title={`${show.name} — S${current.season} E${current.episode} ${current.title}`}
             poster={current.image ?? show.image}
             startPosition={

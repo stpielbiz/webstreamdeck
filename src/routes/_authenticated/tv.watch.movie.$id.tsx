@@ -59,6 +59,7 @@ function TvWatchMovie() {
     <TvShell title={film?.name ?? "Loading…"}>
       <VideoPlayer
         src={playback.data?.url ?? null}
+            fallbackSrc={playback.data?.directUrl ?? null}
         title={film?.name ?? ""}
         poster={film?.image ?? null}
         startPosition={resumeAt}

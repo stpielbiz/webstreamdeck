@@ -37,6 +37,7 @@ function TvLive() {
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [selected, setSelected] = useState<CatalogItem | null>(null);
   const [url, setUrl] = useState<string | null>(null);
+  const [directUrl, setDirectUrl] = useState<string | null>(null);
 
   const categories = useQuery({
     queryKey: ["tv-live-categories", activeId],
@@ -67,9 +68,12 @@ function TvLive() {
     if (!activeId || !selected) return;
     let cancelled = false;
     setUrl(null);
+    setDirectUrl(null);
     void resolve({ data: { playlistId: activeId, kind: "live", itemId: selected.id } })
       .then((result) => {
-        if (!cancelled) setUrl(result.url);
+        if (cancelled) return;
+        setUrl(result.url);
+        setDirectUrl(result.directUrl);
       })
       .catch(() => {
         if (!cancelled) setUrl(null);
@@ -85,6 +89,7 @@ function TvLive() {
         <div>
           <VideoPlayer
             src={url}
+            fallbackSrc={directUrl}
             title={selected?.name ?? ""}
             poster={selected?.image ?? null}
             live
