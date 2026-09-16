@@ -113,6 +113,7 @@ export function VideoPlayer({
           hlsInstance = hls;
           hls.on(Hls.Events.ERROR, (_event, data) => {
             if (!data.fatal) return;
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR && useFallback()) return;
             setStatus("error");
             setErrorMessage(
               data.type === Hls.ErrorTypes.NETWORK_ERROR
@@ -120,7 +121,7 @@ export function VideoPlayer({
                 : "This stream can't be played in a browser.",
             );
           });
-          hls.loadSource(src);
+          hls.loadSource(activeSrc);
           hls.attachMedia(video);
         } else if (!video.canPlayType("application/vnd.apple.mpegurl")) {
           setStatus("error");
