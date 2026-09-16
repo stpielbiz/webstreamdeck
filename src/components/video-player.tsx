@@ -39,6 +39,7 @@ function formatTime(value: number): string {
 
 export function VideoPlayer({
   src,
+  fallbackSrc = null,
   title,
   poster,
   live = false,
