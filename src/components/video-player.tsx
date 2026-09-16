@@ -153,7 +153,7 @@ export function VideoPlayer({
       video.removeAttribute("src");
       video.load();
     };
-  }, [src, live]);
+  }, [activeSrc, fallbackSrc, live]);
 
   // Report progress every 10 seconds for VOD.
   useEffect(() => {
