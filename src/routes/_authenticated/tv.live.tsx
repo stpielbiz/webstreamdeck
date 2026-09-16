@@ -67,9 +67,12 @@ function TvLive() {
     if (!activeId || !selected) return;
     let cancelled = false;
     setUrl(null);
+    setDirectUrl(null);
     void resolve({ data: { playlistId: activeId, kind: "live", itemId: selected.id } })
       .then((result) => {
-        if (!cancelled) setUrl(result.url);
+        if (cancelled) return;
+        setUrl(result.url);
+        setDirectUrl(result.directUrl);
       })
       .catch(() => {
         if (!cancelled) setUrl(null);
