@@ -82,6 +82,10 @@ export function VideoPlayer({
     [],
   );
 
+  useEffect(() => {
+    setActiveSrc(src);
+  }, [src]);
+
   // Attach the source: hls.js for HLS, native playback for progressive files.
   useEffect(() => {
     const video = videoRef.current;
