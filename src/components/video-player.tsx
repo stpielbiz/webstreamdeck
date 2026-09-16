@@ -53,6 +53,7 @@ export function VideoPlayer({
   const progressRef = useRef(onProgress);
   progressRef.current = onProgress;
 
+  const [activeSrc, setActiveSrc] = useState<string | null>(src);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
