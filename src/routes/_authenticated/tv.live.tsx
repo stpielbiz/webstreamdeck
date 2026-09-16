@@ -37,6 +37,7 @@ function TvLive() {
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [selected, setSelected] = useState<CatalogItem | null>(null);
   const [url, setUrl] = useState<string | null>(null);
+  const [directUrl, setDirectUrl] = useState<string | null>(null);
 
   const categories = useQuery({
     queryKey: ["tv-live-categories", activeId],
@@ -88,6 +89,7 @@ function TvLive() {
         <div>
           <VideoPlayer
             src={url}
+            fallbackSrc={directUrl}
             title={selected?.name ?? ""}
             poster={selected?.image ?? null}
             live
