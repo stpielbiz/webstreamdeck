@@ -106,6 +106,7 @@ function MovieDetail() {
       {playing ? (
         <VideoPlayer
           src={playback.data?.url ?? null}
+            fallbackSrc={playback.data?.directUrl ?? null}
           title={film.name}
           poster={film.image}
           startPosition={resumeAt}
