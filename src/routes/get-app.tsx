@@ -61,9 +61,17 @@ function GetAppPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Type this address on your TV:
           </p>
-          <p className="mt-3 break-all font-display text-2xl font-bold text-primary">
-            {origin ? `${origin.replace(/^https?:\/\//, "")}/tv/pair` : "…"}
-          </p>
+          {origin ? (
+            <Link
+              to="/tv/pair"
+              aria-label="Open the TV sign-in screen"
+              className="mt-3 block break-all rounded-md font-display text-2xl font-bold text-primary outline-none underline decoration-primary/50 underline-offset-4 transition hover:decoration-primary focus-visible:ring-4 focus-visible:ring-primary/40"
+            >
+              {`${origin.replace(/^https?:\/\//, "")}/tv/pair`}
+            </Link>
+          ) : (
+            <p className="mt-3 font-display text-2xl font-bold text-primary">…</p>
+          )}
 
           <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start">
             <ol className="flex-1 space-y-3 text-sm leading-relaxed text-muted-foreground">
