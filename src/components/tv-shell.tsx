@@ -13,24 +13,38 @@ const TV_NAV = [
   { to: "/tv/favorites", label: "Favourites", icon: Star },
 ] as const;
 
-export function TvShell({ title, children }: { title: string; children: ReactNode }) {
+export function TvShell({
+  title,
+  children,
+  immersive = false,
+}: {
+  title: string;
+  children: ReactNode;
+  immersive?: boolean;
+}) {
   const { active } = usePlaylists();
   const navigate = useNavigate();
   useSpatialNav({ onBack: () => void navigate({ to: "/tv" }) });
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="flex flex-wrap items-center gap-3 border-b border-border px-8 py-5">
-        <span className="mr-4 grid size-10 place-items-center rounded bg-primary text-primary-foreground">
+    <div
+      className={
+        immersive
+          ? "flex h-dvh min-h-0 flex-col overflow-hidden bg-background text-foreground"
+          : "min-h-screen bg-background text-foreground"
+      }
+    >
+      <header className="grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-3 py-2 sm:gap-3 sm:px-6 sm:py-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded bg-primary text-primary-foreground sm:size-10">
           <Tv className="size-5" />
         </span>
-        <nav className="flex flex-wrap items-center gap-2">
+        <nav className="scrollbar-thin flex min-w-0 items-center gap-1 overflow-x-auto sm:gap-2">
           {TV_NAV.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
               data-tv-focus
-              className="flex items-center gap-2 rounded-lg px-5 py-3 text-xl font-semibold text-muted-foreground outline-none transition focus:bg-primary focus:text-primary-foreground focus:ring-4 focus:ring-primary/40"
+              className="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground outline-none transition focus:bg-primary focus:text-primary-foreground focus:ring-4 focus:ring-primary/40 sm:px-4 sm:text-lg"
               activeProps={{ className: "bg-secondary text-foreground" }}
               activeOptions={{ exact: to === "/tv" }}
             >
@@ -39,14 +53,14 @@ export function TvShell({ title, children }: { title: string; children: ReactNod
             </Link>
           ))}
         </nav>
-        <div className="ml-auto text-right">
+        <div className="hidden shrink-0 text-right md:block">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Source</p>
           <p className="text-lg font-semibold">{active?.name ?? "No playlist"}</p>
         </div>
       </header>
 
-      <main className="px-8 py-6">
-        <h1 className="mb-5 font-display text-4xl font-bold tracking-tight">{title}</h1>
+      <main className={immersive ? "min-h-0 flex-1 overflow-hidden px-3 py-2 sm:px-6 sm:py-3" : "px-8 py-6"}>
+        <h1 className={immersive ? "sr-only" : "mb-5 font-display text-4xl font-bold tracking-tight"}>{title}</h1>
         {children}
       </main>
     </div>
