@@ -223,12 +223,12 @@ function TvLive() {
                     setSelected(item);
                   }}
                   className={cn(
-                    "grid h-auto min-h-16 w-full grid-cols-[3rem_minmax(0,1fr)] items-center gap-x-2 rounded-none border-b border-border/60 px-3 py-2 text-left transition sm:grid-cols-[4rem_minmax(14rem,1.25fr)_minmax(16rem,2fr)_minmax(14rem,1.5fr)] sm:gap-x-3",
+                    "group grid h-auto min-h-16 w-full grid-cols-[3rem_minmax(0,1fr)] items-center gap-x-2 rounded-none border-b border-border/60 px-3 py-2 text-left transition sm:grid-cols-[4rem_minmax(14rem,1.25fr)_minmax(16rem,2fr)_minmax(14rem,1.5fr)] sm:gap-x-3",
                     "focus-visible:relative focus-visible:z-10 focus-visible:bg-primary focus-visible:text-primary-foreground focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-primary",
                     selected?.id === item.id && focusedId !== item.id && "bg-secondary",
                   )}
                 >
-                  <span className="text-center text-base tabular-nums text-muted-foreground group-focus:text-primary-foreground">
+                  <span className="text-center text-base tabular-nums text-muted-foreground group-focus-visible:text-primary-foreground">
                     {index + 1}
                   </span>
                   <span className="flex min-w-0 items-center gap-3">
@@ -241,7 +241,7 @@ function TvLive() {
                     )}
                     <span className="min-w-0">
                       <span className="block truncate text-base font-semibold sm:text-lg">{item.name}</span>
-                      <span className="block truncate text-sm font-normal text-muted-foreground sm:hidden">
+                      <span className="block truncate text-sm font-normal text-muted-foreground group-focus-visible:text-primary-foreground/80 sm:hidden">
                         {entry?.now?.title ?? "No programme information"}
                       </span>
                     </span>
@@ -251,12 +251,12 @@ function TvLive() {
                       {entry?.now?.title ?? "No programme information"}
                     </span>
                     {entry?.now?.start && (
-                      <span className="block text-sm font-normal text-muted-foreground">
+                      <span className="block text-sm font-normal text-muted-foreground group-focus-visible:text-primary-foreground/80">
                         {timeLabel(entry.now.start)} – {timeLabel(entry.now.end)}
                       </span>
                     )}
                   </span>
-                  <span className="hidden truncate text-base font-normal text-muted-foreground sm:block">
+                  <span className="hidden truncate text-base font-normal text-muted-foreground group-focus-visible:text-primary-foreground/80 sm:block">
                     {entry?.next?.title ?? "No programme information"}
                   </span>
                 </Button>
