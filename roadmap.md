@@ -1,0 +1,5 @@
+# Roadmap
+
+- [ ] Rework Fire TV live browsing into a wide, guide-style layout.
+- [ ] Make every channel reachable with the remote and keep the focused row visible.
+- [ ] Verify the guide at TV and compact screen sizes.
