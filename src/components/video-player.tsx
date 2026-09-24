@@ -64,6 +64,9 @@ export function VideoPlayer({
   const [fullscreen, setFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimerRef = useRef<number | null>(null);
+  const sourceAttemptRef = useRef(0);
+  const fallbackRef = useRef(fallbackSrc);
+  fallbackRef.current = fallbackSrc;
 
   // Show controls on any pointer activity; auto-hide after 3s while playing.
   const showControls = useCallback(() => {
@@ -84,6 +87,8 @@ export function VideoPlayer({
 
   useEffect(() => {
     setActiveSrc(src);
+    setStatus(src ? "loading" : "idle");
+    setErrorMessage(null);
   }, [src]);
 
   // Attach the source: hls.js for HLS, native playback for progressive files.
@@ -92,13 +97,15 @@ export function VideoPlayer({
     if (!video || !activeSrc) return;
 
     let destroyed = false;
+    const attempt = ++sourceAttemptRef.current;
     let hlsInstance: { destroy: () => void } | null = null;
     setStatus("loading");
     setErrorMessage(null);
 
     const useFallback = () => {
-      if (!fallbackSrc || activeSrc === fallbackSrc) return false;
-      setActiveSrc(fallbackSrc);
+      const fallback = fallbackRef.current;
+      if (!fallback || activeSrc === fallback) return false;
+      setActiveSrc(fallback);
       return true;
     };
 
@@ -117,7 +124,7 @@ export function VideoPlayer({
           const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 30 });
           hlsInstance = hls;
           hls.on(Hls.Events.ERROR, (_event, data) => {
-            if (!data.fatal) return;
+            if (!data.fatal || destroyed || attempt !== sourceAttemptRef.current) return;
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR && useFallback()) return;
             setStatus("error");
             setErrorMessage(
@@ -128,10 +135,6 @@ export function VideoPlayer({
           });
           hls.loadSource(activeSrc);
           hls.attachMedia(video);
-        } else if (!video.canPlayType("application/vnd.apple.mpegurl")) {
-          setStatus("error");
-          setErrorMessage("This channel's format can't be played in this browser.");
-          return;
         }
       }
       if (!usedHls) video.src = activeSrc;
@@ -154,11 +157,10 @@ export function VideoPlayer({
 
     return () => {
       destroyed = true;
+      sourceAttemptRef.current += 1;
       hlsInstance?.destroy();
-      video.removeAttribute("src");
-      video.load();
     };
-  }, [activeSrc, fallbackSrc, live]);
+  }, [activeSrc, live]);
 
   // Report progress every 10 seconds for VOD.
   useEffect(() => {
@@ -262,9 +264,20 @@ export function VideoPlayer({
             }
             onEnded?.();
           }}
-          onError={() => {
+          onError={(event) => {
+            const mediaError = event.currentTarget.error;
+            if (!mediaError || mediaError.code === MediaError.MEDIA_ERR_ABORTED) return;
+            const fallback = fallbackRef.current;
+            if (fallback && activeSrc !== fallback) {
+              setActiveSrc(fallback);
+              return;
+            }
             setStatus("error");
-            setErrorMessage("This stream can't be played in a browser.");
+            setErrorMessage(
+              mediaError.code === MediaError.MEDIA_ERR_NETWORK
+                ? "The provider stopped responding for this stream."
+                : "This stream's video format isn't supported on this device.",
+            );
           }}
         />
       ) : (
