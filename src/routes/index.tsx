@@ -109,7 +109,7 @@ function Landing() {
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button asChild size="lg">
-            <Link to="/auth">Create a free account</Link>
+            <Link to="/auth">Start your free 1-day trial</Link>
           </Button>
           <Button asChild variant="outline" size="lg">
             <Link to="/auth">I already have one</Link>
@@ -118,7 +118,10 @@ function Landing() {
             <Link to="/get-app">Watch on Firestick</Link>
           </Button>
         </div>
-        <p className="mt-4 text-xs text-muted-foreground">
+        <p className="mt-4 text-sm text-muted-foreground">
+          Your first day is free. A yearly subscription activates your account after the trial.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">
           Stream Deck hosts no channels of its own — you use your own subscription details.
         </p>
       </section>
