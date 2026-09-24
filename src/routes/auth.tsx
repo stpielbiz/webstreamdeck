@@ -148,6 +148,12 @@ function AuthPage() {
                     {busy && <Loader2 className="size-4 animate-spin" />}
                     {tab === "signin" ? "Sign in" : "Create account"}
                   </Button>
+                  {tab === "signup" && (
+                    <p className="text-center text-xs text-muted-foreground">
+                      Your first day is free. A yearly subscription activates your account after
+                      the trial.
+                    </p>
+                  )}
                 </TabsContent>
               ))}
             </Tabs>
