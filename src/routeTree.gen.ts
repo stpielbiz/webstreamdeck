@@ -12,16 +12,27 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as GetAppRouteImport } from './routes/get-app'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedConnectTvRouteImport } from './routes/_authenticated/connect-tv'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFavoritesRouteImport } from './routes/_authenticated/favorites'
 import { Route as AuthenticatedGuideRouteImport } from './routes/_authenticated/guide'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
-import { Route as AuthenticatedMoviesRouteImport } from './routes/_authenticated/movies'
 import { Route as AuthenticatedPlaylistsRouteImport } from './routes/_authenticated/playlists'
-import { Route as AuthenticatedSeriesRouteImport } from './routes/_authenticated/series'
+import { Route as TvPairRouteImport } from './routes/tv.pair'
+import { Route as AuthenticatedMoviesIndexRouteImport } from './routes/_authenticated/movies.index'
 import { Route as AuthenticatedMoviesIdRouteImport } from './routes/_authenticated/movies.$id'
+import { Route as AuthenticatedSeriesIndexRouteImport } from './routes/_authenticated/series.index'
 import { Route as AuthenticatedSeriesIdRouteImport } from './routes/_authenticated/series.$id'
+import { Route as AuthenticatedTvIndexRouteImport } from './routes/_authenticated/tv.index'
+import { Route as AuthenticatedTvFavoritesRouteImport } from './routes/_authenticated/tv.favorites'
+import { Route as AuthenticatedTvLiveRouteImport } from './routes/_authenticated/tv.live'
+import { Route as AuthenticatedTvMoviesRouteImport } from './routes/_authenticated/tv.movies'
+import { Route as AuthenticatedTvSeriesRouteImport } from './routes/_authenticated/tv.series'
 import { Route as ApiPublicStreamRouteImport } from './routes/api/public/stream'
+import { Route as AuthenticatedTvWatchMovieIdRouteImport } from './routes/_authenticated/tv.watch.movie.$id'
+import { Route as AuthenticatedTvWatchSeriesIdRouteImport } from './routes/_authenticated/tv.watch.series.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -36,6 +47,21 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const GetAppRoute = GetAppRouteImport.update({
+  id: '/get-app',
+  path: '/get-app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedConnectTvRoute = AuthenticatedConnectTvRouteImport.update({
+  id: '/connect-tv',
+  path: '/connect-tv',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
@@ -57,131 +83,244 @@ const AuthenticatedLiveRoute = AuthenticatedLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedMoviesRoute = AuthenticatedMoviesRouteImport.update({
-  id: '/movies',
-  path: '/movies',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedPlaylistsRoute = AuthenticatedPlaylistsRouteImport.update({
   id: '/playlists',
   path: '/playlists',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSeriesRoute = AuthenticatedSeriesRouteImport.update({
-  id: '/series',
-  path: '/series',
+const TvPairRoute = TvPairRouteImport.update({
+  id: '/tv/pair',
+  path: '/tv/pair',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedMoviesIndexRoute =
+  AuthenticatedMoviesIndexRouteImport.update({
+    id: '/movies/',
+    path: '/movies/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMoviesIdRoute = AuthenticatedMoviesIdRouteImport.update({
+  id: '/movies/$id',
+  path: '/movies/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedMoviesIdRoute = AuthenticatedMoviesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedMoviesRoute,
-} as any)
+const AuthenticatedSeriesIndexRoute =
+  AuthenticatedSeriesIndexRouteImport.update({
+    id: '/series/',
+    path: '/series/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSeriesIdRoute = AuthenticatedSeriesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedSeriesRoute,
+  id: '/series/$id',
+  path: '/series/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTvIndexRoute = AuthenticatedTvIndexRouteImport.update({
+  id: '/tv/',
+  path: '/tv/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTvFavoritesRoute =
+  AuthenticatedTvFavoritesRouteImport.update({
+    id: '/tv/favorites',
+    path: '/tv/favorites',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTvLiveRoute = AuthenticatedTvLiveRouteImport.update({
+  id: '/tv/live',
+  path: '/tv/live',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTvMoviesRoute = AuthenticatedTvMoviesRouteImport.update({
+  id: '/tv/movies',
+  path: '/tv/movies',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTvSeriesRoute = AuthenticatedTvSeriesRouteImport.update({
+  id: '/tv/series',
+  path: '/tv/series',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiPublicStreamRoute = ApiPublicStreamRouteImport.update({
   id: '/api/public/stream',
   path: '/api/public/stream',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTvWatchMovieIdRoute =
+  AuthenticatedTvWatchMovieIdRouteImport.update({
+    id: '/tv/watch/movie/$id',
+    path: '/tv/watch/movie/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTvWatchSeriesIdRoute =
+  AuthenticatedTvWatchSeriesIdRouteImport.update({
+    id: '/tv/watch/series/$id',
+    path: '/tv/watch/series/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/get-app': typeof GetAppRoute
+  '/admin': typeof AuthenticatedAdminRoute
+  '/connect-tv': typeof AuthenticatedConnectTvRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/favorites': typeof AuthenticatedFavoritesRoute
   '/guide': typeof AuthenticatedGuideRoute
   '/live': typeof AuthenticatedLiveRoute
-  '/movies': typeof AuthenticatedMoviesRouteWithChildren
   '/playlists': typeof AuthenticatedPlaylistsRoute
-  '/series': typeof AuthenticatedSeriesRouteWithChildren
+  '/tv/pair': typeof TvPairRoute
   '/movies/$id': typeof AuthenticatedMoviesIdRoute
   '/series/$id': typeof AuthenticatedSeriesIdRoute
+  '/tv/favorites': typeof AuthenticatedTvFavoritesRoute
+  '/tv/live': typeof AuthenticatedTvLiveRoute
+  '/tv/movies': typeof AuthenticatedTvMoviesRoute
+  '/tv/series': typeof AuthenticatedTvSeriesRoute
   '/api/public/stream': typeof ApiPublicStreamRoute
+  '/movies/': typeof AuthenticatedMoviesIndexRoute
+  '/series/': typeof AuthenticatedSeriesIndexRoute
+  '/tv/': typeof AuthenticatedTvIndexRoute
+  '/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
+  '/tv/watch/series/$id': typeof AuthenticatedTvWatchSeriesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/get-app': typeof GetAppRoute
+  '/admin': typeof AuthenticatedAdminRoute
+  '/connect-tv': typeof AuthenticatedConnectTvRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/favorites': typeof AuthenticatedFavoritesRoute
   '/guide': typeof AuthenticatedGuideRoute
   '/live': typeof AuthenticatedLiveRoute
-  '/movies': typeof AuthenticatedMoviesRouteWithChildren
   '/playlists': typeof AuthenticatedPlaylistsRoute
-  '/series': typeof AuthenticatedSeriesRouteWithChildren
+  '/tv/pair': typeof TvPairRoute
   '/movies/$id': typeof AuthenticatedMoviesIdRoute
   '/series/$id': typeof AuthenticatedSeriesIdRoute
+  '/tv/favorites': typeof AuthenticatedTvFavoritesRoute
+  '/tv/live': typeof AuthenticatedTvLiveRoute
+  '/tv/movies': typeof AuthenticatedTvMoviesRoute
+  '/tv/series': typeof AuthenticatedTvSeriesRoute
   '/api/public/stream': typeof ApiPublicStreamRoute
+  '/movies': typeof AuthenticatedMoviesIndexRoute
+  '/series': typeof AuthenticatedSeriesIndexRoute
+  '/tv': typeof AuthenticatedTvIndexRoute
+  '/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
+  '/tv/watch/series/$id': typeof AuthenticatedTvWatchSeriesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/get-app': typeof GetAppRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/connect-tv': typeof AuthenticatedConnectTvRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/favorites': typeof AuthenticatedFavoritesRoute
   '/_authenticated/guide': typeof AuthenticatedGuideRoute
   '/_authenticated/live': typeof AuthenticatedLiveRoute
-  '/_authenticated/movies': typeof AuthenticatedMoviesRouteWithChildren
   '/_authenticated/playlists': typeof AuthenticatedPlaylistsRoute
-  '/_authenticated/series': typeof AuthenticatedSeriesRouteWithChildren
+  '/tv/pair': typeof TvPairRoute
   '/_authenticated/movies/$id': typeof AuthenticatedMoviesIdRoute
   '/_authenticated/series/$id': typeof AuthenticatedSeriesIdRoute
+  '/_authenticated/tv/favorites': typeof AuthenticatedTvFavoritesRoute
+  '/_authenticated/tv/live': typeof AuthenticatedTvLiveRoute
+  '/_authenticated/tv/movies': typeof AuthenticatedTvMoviesRoute
+  '/_authenticated/tv/series': typeof AuthenticatedTvSeriesRoute
   '/api/public/stream': typeof ApiPublicStreamRoute
+  '/_authenticated/movies/': typeof AuthenticatedMoviesIndexRoute
+  '/_authenticated/series/': typeof AuthenticatedSeriesIndexRoute
+  '/_authenticated/tv/': typeof AuthenticatedTvIndexRoute
+  '/_authenticated/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
+  '/_authenticated/tv/watch/series/$id': typeof AuthenticatedTvWatchSeriesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
+    | '/get-app'
+    | '/admin'
+    | '/connect-tv'
     | '/dashboard'
     | '/favorites'
     | '/guide'
     | '/live'
-    | '/movies'
     | '/playlists'
-    | '/series'
+    | '/tv/pair'
     | '/movies/$id'
     | '/series/$id'
+    | '/tv/favorites'
+    | '/tv/live'
+    | '/tv/movies'
+    | '/tv/series'
     | '/api/public/stream'
+    | '/movies/'
+    | '/series/'
+    | '/tv/'
+    | '/tv/watch/movie/$id'
+    | '/tv/watch/series/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/get-app'
+    | '/admin'
+    | '/connect-tv'
     | '/dashboard'
     | '/favorites'
     | '/guide'
     | '/live'
-    | '/movies'
     | '/playlists'
-    | '/series'
+    | '/tv/pair'
     | '/movies/$id'
     | '/series/$id'
+    | '/tv/favorites'
+    | '/tv/live'
+    | '/tv/movies'
+    | '/tv/series'
     | '/api/public/stream'
+    | '/movies'
+    | '/series'
+    | '/tv'
+    | '/tv/watch/movie/$id'
+    | '/tv/watch/series/$id'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/get-app'
+    | '/_authenticated/admin'
+    | '/_authenticated/connect-tv'
     | '/_authenticated/dashboard'
     | '/_authenticated/favorites'
     | '/_authenticated/guide'
     | '/_authenticated/live'
-    | '/_authenticated/movies'
     | '/_authenticated/playlists'
-    | '/_authenticated/series'
+    | '/tv/pair'
     | '/_authenticated/movies/$id'
     | '/_authenticated/series/$id'
+    | '/_authenticated/tv/favorites'
+    | '/_authenticated/tv/live'
+    | '/_authenticated/tv/movies'
+    | '/_authenticated/tv/series'
     | '/api/public/stream'
+    | '/_authenticated/movies/'
+    | '/_authenticated/series/'
+    | '/_authenticated/tv/'
+    | '/_authenticated/tv/watch/movie/$id'
+    | '/_authenticated/tv/watch/series/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  GetAppRoute: typeof GetAppRoute
+  TvPairRoute: typeof TvPairRoute
   ApiPublicStreamRoute: typeof ApiPublicStreamRoute
 }
 
@@ -207,6 +346,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/get-app': {
+      id: '/get-app'
+      path: '/get-app'
+      fullPath: '/get-app'
+      preLoaderRoute: typeof GetAppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/connect-tv': {
+      id: '/_authenticated/connect-tv'
+      path: '/connect-tv'
+      fullPath: '/connect-tv'
+      preLoaderRoute: typeof AuthenticatedConnectTvRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
@@ -236,13 +396,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLiveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/movies': {
-      id: '/_authenticated/movies'
-      path: '/movies'
-      fullPath: '/movies'
-      preLoaderRoute: typeof AuthenticatedMoviesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/playlists': {
       id: '/_authenticated/playlists'
       path: '/playlists'
@@ -250,26 +403,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaylistsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/series': {
-      id: '/_authenticated/series'
-      path: '/series'
-      fullPath: '/series'
-      preLoaderRoute: typeof AuthenticatedSeriesRouteImport
+    '/tv/pair': {
+      id: '/tv/pair'
+      path: '/tv/pair'
+      fullPath: '/tv/pair'
+      preLoaderRoute: typeof TvPairRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/movies/': {
+      id: '/_authenticated/movies/'
+      path: '/movies'
+      fullPath: '/movies/'
+      preLoaderRoute: typeof AuthenticatedMoviesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/movies/$id': {
       id: '/_authenticated/movies/$id'
-      path: '/$id'
+      path: '/movies/$id'
       fullPath: '/movies/$id'
       preLoaderRoute: typeof AuthenticatedMoviesIdRouteImport
-      parentRoute: typeof AuthenticatedMoviesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/series/': {
+      id: '/_authenticated/series/'
+      path: '/series'
+      fullPath: '/series/'
+      preLoaderRoute: typeof AuthenticatedSeriesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/series/$id': {
       id: '/_authenticated/series/$id'
-      path: '/$id'
+      path: '/series/$id'
       fullPath: '/series/$id'
       preLoaderRoute: typeof AuthenticatedSeriesIdRouteImport
-      parentRoute: typeof AuthenticatedSeriesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tv/': {
+      id: '/_authenticated/tv/'
+      path: '/tv'
+      fullPath: '/tv/'
+      preLoaderRoute: typeof AuthenticatedTvIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tv/favorites': {
+      id: '/_authenticated/tv/favorites'
+      path: '/tv/favorites'
+      fullPath: '/tv/favorites'
+      preLoaderRoute: typeof AuthenticatedTvFavoritesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tv/live': {
+      id: '/_authenticated/tv/live'
+      path: '/tv/live'
+      fullPath: '/tv/live'
+      preLoaderRoute: typeof AuthenticatedTvLiveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tv/movies': {
+      id: '/_authenticated/tv/movies'
+      path: '/tv/movies'
+      fullPath: '/tv/movies'
+      preLoaderRoute: typeof AuthenticatedTvMoviesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tv/series': {
+      id: '/_authenticated/tv/series'
+      path: '/tv/series'
+      fullPath: '/tv/series'
+      preLoaderRoute: typeof AuthenticatedTvSeriesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/stream': {
       id: '/api/public/stream'
@@ -278,49 +480,63 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicStreamRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/tv/watch/movie/$id': {
+      id: '/_authenticated/tv/watch/movie/$id'
+      path: '/tv/watch/movie/$id'
+      fullPath: '/tv/watch/movie/$id'
+      preLoaderRoute: typeof AuthenticatedTvWatchMovieIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tv/watch/series/$id': {
+      id: '/_authenticated/tv/watch/series/$id'
+      path: '/tv/watch/series/$id'
+      fullPath: '/tv/watch/series/$id'
+      preLoaderRoute: typeof AuthenticatedTvWatchSeriesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
-interface AuthenticatedMoviesRouteChildren {
-  AuthenticatedMoviesIdRoute: typeof AuthenticatedMoviesIdRoute
-}
-
-const AuthenticatedMoviesRouteChildren: AuthenticatedMoviesRouteChildren = {
-  AuthenticatedMoviesIdRoute: AuthenticatedMoviesIdRoute,
-}
-
-const AuthenticatedMoviesRouteWithChildren =
-  AuthenticatedMoviesRoute._addFileChildren(AuthenticatedMoviesRouteChildren)
-
-interface AuthenticatedSeriesRouteChildren {
-  AuthenticatedSeriesIdRoute: typeof AuthenticatedSeriesIdRoute
-}
-
-const AuthenticatedSeriesRouteChildren: AuthenticatedSeriesRouteChildren = {
-  AuthenticatedSeriesIdRoute: AuthenticatedSeriesIdRoute,
-}
-
-const AuthenticatedSeriesRouteWithChildren =
-  AuthenticatedSeriesRoute._addFileChildren(AuthenticatedSeriesRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedConnectTvRoute: typeof AuthenticatedConnectTvRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFavoritesRoute: typeof AuthenticatedFavoritesRoute
   AuthenticatedGuideRoute: typeof AuthenticatedGuideRoute
   AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
-  AuthenticatedMoviesRoute: typeof AuthenticatedMoviesRouteWithChildren
   AuthenticatedPlaylistsRoute: typeof AuthenticatedPlaylistsRoute
-  AuthenticatedSeriesRoute: typeof AuthenticatedSeriesRouteWithChildren
+  AuthenticatedMoviesIdRoute: typeof AuthenticatedMoviesIdRoute
+  AuthenticatedSeriesIdRoute: typeof AuthenticatedSeriesIdRoute
+  AuthenticatedTvFavoritesRoute: typeof AuthenticatedTvFavoritesRoute
+  AuthenticatedTvLiveRoute: typeof AuthenticatedTvLiveRoute
+  AuthenticatedTvMoviesRoute: typeof AuthenticatedTvMoviesRoute
+  AuthenticatedTvSeriesRoute: typeof AuthenticatedTvSeriesRoute
+  AuthenticatedMoviesIndexRoute: typeof AuthenticatedMoviesIndexRoute
+  AuthenticatedSeriesIndexRoute: typeof AuthenticatedSeriesIndexRoute
+  AuthenticatedTvIndexRoute: typeof AuthenticatedTvIndexRoute
+  AuthenticatedTvWatchMovieIdRoute: typeof AuthenticatedTvWatchMovieIdRoute
+  AuthenticatedTvWatchSeriesIdRoute: typeof AuthenticatedTvWatchSeriesIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedConnectTvRoute: AuthenticatedConnectTvRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFavoritesRoute: AuthenticatedFavoritesRoute,
   AuthenticatedGuideRoute: AuthenticatedGuideRoute,
   AuthenticatedLiveRoute: AuthenticatedLiveRoute,
-  AuthenticatedMoviesRoute: AuthenticatedMoviesRouteWithChildren,
   AuthenticatedPlaylistsRoute: AuthenticatedPlaylistsRoute,
-  AuthenticatedSeriesRoute: AuthenticatedSeriesRouteWithChildren,
+  AuthenticatedMoviesIdRoute: AuthenticatedMoviesIdRoute,
+  AuthenticatedSeriesIdRoute: AuthenticatedSeriesIdRoute,
+  AuthenticatedTvFavoritesRoute: AuthenticatedTvFavoritesRoute,
+  AuthenticatedTvLiveRoute: AuthenticatedTvLiveRoute,
+  AuthenticatedTvMoviesRoute: AuthenticatedTvMoviesRoute,
+  AuthenticatedTvSeriesRoute: AuthenticatedTvSeriesRoute,
+  AuthenticatedMoviesIndexRoute: AuthenticatedMoviesIndexRoute,
+  AuthenticatedSeriesIndexRoute: AuthenticatedSeriesIndexRoute,
+  AuthenticatedTvIndexRoute: AuthenticatedTvIndexRoute,
+  AuthenticatedTvWatchMovieIdRoute: AuthenticatedTvWatchMovieIdRoute,
+  AuthenticatedTvWatchSeriesIdRoute: AuthenticatedTvWatchSeriesIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -330,6 +546,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  GetAppRoute: GetAppRoute,
+  TvPairRoute: TvPairRoute,
   ApiPublicStreamRoute: ApiPublicStreamRoute,
 }
 export const routeTree = rootRouteImport

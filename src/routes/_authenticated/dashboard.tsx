@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Play, Tv } from "lucide-react";
 
+import { SubscriptionBanner } from "@/components/subscription-banner";
 import { usePlaylists } from "@/components/playlist-context";
 import { EmptyState, PosterGrid, PosterTile, Shelf } from "@/components/media";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,8 @@ function Dashboard() {
 
   if (playlists.length === 0) {
     return (
-      <div className="p-6">
+      <div className="space-y-6 p-6">
+        <SubscriptionBanner />
         <EmptyState
           title="Add your first playlist"
           description="Stream Deck plays your own IPTV subscription. Add an Xtream Codes login or an M3U link and your channels, movies and series appear here."
@@ -64,6 +66,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-10 p-6">
+      <SubscriptionBanner />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Welcome back</h1>
@@ -95,6 +98,7 @@ function Dashboard() {
                 params={{
                   id: row.itemKind === "episode" && row.seriesId ? row.seriesId : row.itemId,
                 }}
+                search={{ play: true }}
                 title={row.title}
                 image={row.posterUrl}
                 subtitle={
@@ -168,6 +172,7 @@ function Dashboard() {
                 key={row.id}
                 to={row.itemKind === "series" ? "/series/$id" : "/movies/$id"}
                 params={{ id: row.itemId }}
+                search={{ play: true }}
                 title={row.title}
                 image={row.logoUrl}
               />

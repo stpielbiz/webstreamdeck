@@ -76,7 +76,7 @@ function AuthPage() {
   const signInWithGoogle = async () => {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth`,
     });
     if (result.error) {
       setBusy(false);
@@ -148,6 +148,12 @@ function AuthPage() {
                     {busy && <Loader2 className="size-4 animate-spin" />}
                     {tab === "signin" ? "Sign in" : "Create account"}
                   </Button>
+                  {tab === "signup" && (
+                    <p className="text-center text-xs text-muted-foreground">
+                      Your first day is free. A yearly subscription activates your account after
+                      the trial.
+                    </p>
+                  )}
                 </TabsContent>
               ))}
             </Tabs>

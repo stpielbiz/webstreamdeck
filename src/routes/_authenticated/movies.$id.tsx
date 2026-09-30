@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { ArrowLeft, Play, Star } from "lucide-react";
+import { z } from "zod";
+
 
 import { getMovie, getPlayback } from "@/lib/iptv.functions";
 import { usePlaylists } from "@/components/playlist-context";
@@ -19,6 +21,7 @@ import {
 } from "@/lib/library-hooks";
 
 export const Route = createFileRoute("/_authenticated/movies/$id")({
+  validateSearch: z.object({ play: z.boolean().optional() }),
   head: () => ({
     meta: [
       { title: "Watch a film — Stream Deck" },
@@ -36,10 +39,11 @@ export const Route = createFileRoute("/_authenticated/movies/$id")({
 
 function MovieDetail() {
   const { id } = Route.useParams();
+  const { play } = Route.useSearch();
   const { activeId } = usePlaylists();
   const fetchMovie = useServerFn(getMovie);
   const fetchPlayback = useServerFn(getPlayback);
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(play === true);
 
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
@@ -102,6 +106,7 @@ function MovieDetail() {
       {playing ? (
         <VideoPlayer
           src={playback.data?.url ?? null}
+            fallbackSrc={playback.data?.directUrl ?? null}
           title={film.name}
           poster={film.image}
           startPosition={resumeAt}
