@@ -392,10 +392,21 @@ export function VideoPlayer({
       {status === "error" && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 px-6 text-center">
           <div>
-            <AlertTriangle className="mx-auto size-8 text-primary" />
+            {autoLaunched ? (
+              <Loader2 className="mx-auto size-8 animate-spin text-primary" />
+            ) : (
+              <AlertTriangle className="mx-auto size-8 text-primary" />
+            )}
             <p className="mt-3 text-sm font-medium">{errorMessage}</p>
             {externalLinks.length > 0 ? (
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <>
+                {autoLaunched && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Opening in {externalLinks[0].label.replace("Play in ", "")}… come back here when you're done.
+                    Resume position isn't saved while watching there.
+                  </p>
+                )}
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {externalLinks.map((link) => (
                   <a
                     key={link.label}
