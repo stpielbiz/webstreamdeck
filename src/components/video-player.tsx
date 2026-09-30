@@ -106,6 +106,32 @@ export function VideoPlayer({
   }, [src, fallbackSrc, live]);
 
   const externalLinks = fallbackSrc ? externalPlayerLinks(fallbackSrc) : [];
+
+  // Launch the device's external player (VLC etc.) without a click.
+  const launchExternal = useCallback((href: string) => {
+    const frame = document.createElement("iframe");
+    frame.style.display = "none";
+    frame.src = href;
+    document.body.appendChild(frame);
+    window.setTimeout(() => frame.remove(), 4000);
+  }, []);
+
+  // When playback fails for good, hand the stream to the external player
+  // automatically — once per stream.
+  useEffect(() => {
+    const link = externalLinks[0];
+    if (status !== "error" || !link || autoLaunchRef.current === link.href) return;
+    autoLaunchRef.current = link.href;
+    setAutoLaunched(true);
+    launchExternal(link.href);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, fallbackSrc]);
+
+  useEffect(() => {
+    autoLaunchRef.current = null;
+    setAutoLaunched(false);
+  }, [src, fallbackSrc]);
+
   const copyLink = async () => {
     if (!fallbackSrc) return;
     try {
