@@ -428,6 +428,7 @@ export function VideoPlayer({
                   {copied ? "Copied" : "Copy stream link"}
                 </button>
               </div>
+              </>
             ) : (
               <p className="mt-1 text-xs text-muted-foreground">
                 Try another channel or check that your provider is online.
