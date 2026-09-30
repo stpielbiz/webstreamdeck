@@ -78,6 +78,8 @@ export function VideoPlayer({
   endedRef.current = onEnded;
   const [nativeActive, setNativeActive] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [autoLaunched, setAutoLaunched] = useState(false);
+  const autoLaunchRef = useRef<string | null>(null);
 
   // Inside the Stream Deck TV app, hand playback to its built-in player, which
   // fetches the stream over the device's own connection.
@@ -104,6 +106,32 @@ export function VideoPlayer({
   }, [src, fallbackSrc, live]);
 
   const externalLinks = fallbackSrc ? externalPlayerLinks(fallbackSrc) : [];
+
+  // Launch the device's external player (VLC etc.) without a click.
+  const launchExternal = useCallback((href: string) => {
+    const frame = document.createElement("iframe");
+    frame.style.display = "none";
+    frame.src = href;
+    document.body.appendChild(frame);
+    window.setTimeout(() => frame.remove(), 4000);
+  }, []);
+
+  // When playback fails for good, hand the stream to the external player
+  // automatically — once per stream.
+  useEffect(() => {
+    const link = externalLinks[0];
+    if (status !== "error" || !link || autoLaunchRef.current === link.href) return;
+    autoLaunchRef.current = link.href;
+    setAutoLaunched(true);
+    launchExternal(link.href);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, fallbackSrc]);
+
+  useEffect(() => {
+    autoLaunchRef.current = null;
+    setAutoLaunched(false);
+  }, [src, fallbackSrc]);
+
   const copyLink = async () => {
     if (!fallbackSrc) return;
     try {
@@ -364,10 +392,21 @@ export function VideoPlayer({
       {status === "error" && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 px-6 text-center">
           <div>
-            <AlertTriangle className="mx-auto size-8 text-primary" />
+            {autoLaunched ? (
+              <Loader2 className="mx-auto size-8 animate-spin text-primary" />
+            ) : (
+              <AlertTriangle className="mx-auto size-8 text-primary" />
+            )}
             <p className="mt-3 text-sm font-medium">{errorMessage}</p>
             {externalLinks.length > 0 ? (
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <>
+                {autoLaunched && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Opening in {(externalLinks[0]?.label ?? "VLC").replace("Play in ", "")}… come back here when you're done.
+                    Resume position isn't saved while watching there.
+                  </p>
+                )}
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {externalLinks.map((link) => (
                   <a
                     key={link.label}
@@ -389,6 +428,7 @@ export function VideoPlayer({
                   {copied ? "Copied" : "Copy stream link"}
                 </button>
               </div>
+              </>
             ) : (
               <p className="mt-1 text-xs text-muted-foreground">
                 Try another channel or check that your provider is online.
