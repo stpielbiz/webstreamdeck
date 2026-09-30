@@ -16,15 +16,6 @@ export const Route = createFileRoute("/api/public/stream")({
 
 const MANIFEST_HINTS = ["mpegurl", "m3u8", "x-mpegurl"];
 
-/** Equivalent forms of an Xtream stream URL, tried when the first one is refused. */
-function alternates(url: string): string[] {
-  const match = /^(.*?)(\.[a-z0-9]{2,5})?(\?.*)?$/i.exec(url);
-  if (!match) return [];
-  const [, stem, ext = "", query = ""] = match;
-  const exts = [".m3u8", ".ts", ".mp4", ".mkv", ""];
-  return exts.filter((value) => value !== ext.toLowerCase()).map((value) => `${stem}${value}${query}`);
-}
-
 async function handle(request: Request): Promise<Response> {
   const { verifyStreamToken, signStreamToken } = await import("@/lib/stream-token.server");
   const { providerFetch } = await import("@/lib/iptv.server");
@@ -40,35 +31,15 @@ async function handle(request: Request): Promise<Response> {
   const range = request.headers.get("range");
   if (range) headers.set("range", range);
 
-  // Some providers only serve one of these shapes for a given line, and answer
-  // 4xx (often 407) on the others. Try the alternates before giving up.
-  const candidates = [payload.u, ...alternates(payload.u)];
-
-  let upstream: Response | null = null;
-  let lastStatus = 0;
-  for (const candidate of candidates) {
-    try {
-      const attempt = await providerFetch(candidate, { method: request.method, headers });
-      if (attempt.ok || attempt.status === 206) {
-        upstream = attempt;
-        payload.u = candidate;
-        break;
-      }
-      lastStatus = attempt.status;
-      await attempt.body?.cancel();
-    } catch {
-      lastStatus = 0;
-    }
+  let upstream: Response;
+  try {
+    upstream = await providerFetch(payload.u, { method: request.method, headers });
+  } catch {
+    return new Response("The provider could not be reached", { status: 502 });
   }
 
-  if (!upstream) {
-    const message =
-      lastStatus === 407 || lastStatus === 401 || lastStatus === 403
-        ? "Your provider refused this stream. This usually means the line is already in use on another device, or it is not allowed from this network."
-        : lastStatus
-          ? `The provider returned ${lastStatus}`
-          : "The provider could not be reached";
-    return new Response(message, { status: 502 });
+  if (!upstream.ok && upstream.status !== 206) {
+    return new Response(`The provider returned ${upstream.status}`, { status: 502 });
   }
 
   const contentType = (upstream.headers.get("content-type") ?? "").toLowerCase();

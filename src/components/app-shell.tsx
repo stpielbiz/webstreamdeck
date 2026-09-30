@@ -1,14 +1,12 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock,
   Clapperboard,
-  Download,
   LayoutGrid,
   ListVideo,
   LogOut,
   MonitorPlay,
-  ShieldCheck,
   Star,
   Tv,
 } from "lucide-react";
@@ -16,7 +14,6 @@ import type { ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { usePlaylists } from "@/components/playlist-context";
-import { useIsAdmin } from "@/lib/use-admin";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -34,21 +31,12 @@ const NAV = [
   { to: "/series", label: "Series", icon: MonitorPlay },
   { to: "/favorites", label: "Favourites", icon: Star },
   { to: "/playlists", label: "Playlists", icon: ListVideo },
-  { to: "/get-app", label: "Watch on TV", icon: Download },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { playlists, activeId, setActiveId } = usePlaylists();
-  const { isAdmin } = useIsAdmin();
-  const navItems = isAdmin
-    ? [...NAV, { to: "/admin" as const, label: "Admin", icon: ShieldCheck }]
-    : [...NAV];
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-
-  // TV mode owns the whole screen — no sidebar, no mobile nav strip.
-  if (pathname === "/tv" || pathname.startsWith("/tv/")) return <>{children}</>;
 
   const signOut = async () => {
     await queryClient.cancelQueries();
@@ -68,7 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="flex flex-col gap-1">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {NAV.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
@@ -113,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-2 overflow-x-auto border-b border-border bg-sidebar px-3 py-2 md:hidden">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {NAV.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}

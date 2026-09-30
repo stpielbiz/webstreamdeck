@@ -4,8 +4,6 @@ import {
   Minimize,
   Pause,
   Play,
-  RotateCcw,
-  RotateCw,
   Volume2,
   VolumeX,
   Loader2,
@@ -17,8 +15,6 @@ import { cn } from "@/lib/utils";
 
 export interface VideoPlayerProps {
   src: string | null;
-  /** Played instead of `src` when the proxied source is refused (e.g. blocked server IP). */
-  fallbackSrc?: string | null;
   title?: string;
   poster?: string | null;
   live?: boolean;
@@ -39,7 +35,6 @@ function formatTime(value: number): string {
 
 export function VideoPlayer({
   src,
-  fallbackSrc = null,
   title,
   poster,
   live = false,
@@ -53,7 +48,6 @@ export function VideoPlayer({
   const progressRef = useRef(onProgress);
   progressRef.current = onProgress;
 
-  const [activeSrc, setActiveSrc] = useState<string | null>(src);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -62,105 +56,56 @@ export function VideoPlayer({
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const hideTimerRef = useRef<number | null>(null);
-  const sourceAttemptRef = useRef(0);
-  const fallbackRef = useRef(fallbackSrc);
-  fallbackRef.current = fallbackSrc;
-
-  // Show controls on any pointer activity; auto-hide after 3s while playing.
-  const showControls = useCallback(() => {
-    setControlsVisible(true);
-    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
-    hideTimerRef.current = window.setTimeout(() => {
-      const video = videoRef.current;
-      if (video && !video.paused) setControlsVisible(false);
-    }, 3000);
-  }, []);
-
-  useEffect(
-    () => () => {
-      if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
-    },
-    [],
-  );
-
-  useEffect(() => {
-    setActiveSrc(src);
-    setStatus(src ? "loading" : "idle");
-    setErrorMessage(null);
-  }, [src]);
 
   // Attach the source: hls.js for HLS, native playback for progressive files.
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !activeSrc) return;
+    if (!video || !src) return;
 
     let destroyed = false;
-    const attempt = ++sourceAttemptRef.current;
     let hlsInstance: { destroy: () => void } | null = null;
     setStatus("loading");
     setErrorMessage(null);
 
-    const useFallback = () => {
-      const fallback = fallbackRef.current;
-      if (!fallback || activeSrc === fallback) return false;
-      setActiveSrc(fallback);
-      return true;
-    };
-
-    const isHls = activeSrc.includes("m3u8") || live;
+    const isHls = src.includes("m3u8") || live;
 
     const attach = async () => {
-      let usedHls = false;
-      if (isHls) {
-        // Prefer hls.js wherever media source extensions exist. Android based
-        // browsers (Fire TV Silk, Chrome) claim native HLS support but often
-        // render a black screen, so native playback is the last resort.
+      if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
         const { default: Hls } = await import("hls.js");
         if (destroyed) return;
-        if (Hls.isSupported()) {
-          usedHls = true;
-          const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 30 });
-          hlsInstance = hls;
-          hls.on(Hls.Events.ERROR, (_event, data) => {
-            if (!data.fatal || destroyed || attempt !== sourceAttemptRef.current) return;
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR && useFallback()) return;
-            setStatus("error");
-            setErrorMessage(
-              data.type === Hls.ErrorTypes.NETWORK_ERROR
-                ? "The provider stopped responding for this stream."
-                : "This stream can't be played in a browser.",
-            );
-          });
-          hls.loadSource(activeSrc);
-          hls.attachMedia(video);
+        if (!Hls.isSupported()) {
+          setStatus("error");
+          setErrorMessage("This channel's format can't be played in a browser.");
+          return;
         }
+        const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 30 });
+        hlsInstance = hls;
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (!data.fatal) return;
+          setStatus("error");
+          setErrorMessage(
+            data.type === Hls.ErrorTypes.NETWORK_ERROR
+              ? "The provider stopped responding for this stream."
+              : "This stream can't be played in a browser.",
+          );
+        });
+        hls.loadSource(src);
+        hls.attachMedia(video);
+      } else {
+        video.src = src;
       }
-      if (!usedHls) video.src = activeSrc;
-
-      try {
-        await video.play();
-      } catch {
-        // Some devices (Fire TV Silk included) block sound-on autoplay.
-        // Start muted so a picture appears, then let the viewer unmute.
-        video.muted = true;
-        try {
-          await video.play();
-        } catch {
-          setPlaying(false);
-        }
-      }
+      void video.play().catch(() => setPlaying(false));
     };
 
     void attach();
 
     return () => {
       destroyed = true;
-      sourceAttemptRef.current += 1;
       hlsInstance?.destroy();
+      video.removeAttribute("src");
+      video.load();
     };
-  }, [activeSrc, live]);
+  }, [src, live]);
 
   // Report progress every 10 seconds for VOD.
   useEffect(() => {
@@ -189,16 +134,6 @@ export function VideoPlayer({
     }
   }, [live]);
 
-  const skipBy = useCallback(
-    (seconds: number) => {
-      const video = videoRef.current;
-      if (!video || live) return;
-      const max = Number.isFinite(video.duration) ? video.duration : Infinity;
-      video.currentTime = Math.min(Math.max(video.currentTime + seconds, 0), max);
-    },
-    [live],
-  );
-
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void shellRef.current?.requestFullscreen();
@@ -225,9 +160,6 @@ export function VideoPlayer({
   return (
     <div
       ref={shellRef}
-      onMouseMove={showControls}
-      onTouchStart={showControls}
-      onClick={showControls}
       className={cn(
         "group relative isolate aspect-video w-full overflow-hidden rounded-lg border border-border bg-black",
         className,
@@ -248,10 +180,7 @@ export function VideoPlayer({
             setStatus("ready");
           }}
           onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
-          onPlay={() => {
-            setPlaying(true);
-            showControls();
-          }}
+          onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
           onVolumeChange={(event) => {
             setMuted(event.currentTarget.muted);
@@ -264,20 +193,9 @@ export function VideoPlayer({
             }
             onEnded?.();
           }}
-          onError={(event) => {
-            const mediaError = event.currentTarget.error;
-            if (!mediaError || mediaError.code === MediaError.MEDIA_ERR_ABORTED) return;
-            const fallback = fallbackRef.current;
-            if (fallback && activeSrc !== fallback) {
-              setActiveSrc(fallback);
-              return;
-            }
+          onError={() => {
             setStatus("error");
-            setErrorMessage(
-              mediaError.code === MediaError.MEDIA_ERR_NETWORK
-                ? "The provider stopped responding for this stream."
-                : "This stream's video format isn't supported on this device.",
-            );
+            setErrorMessage("This stream can't be played in a browser.");
           }}
         />
       ) : (
@@ -304,45 +222,8 @@ export function VideoPlayer({
         </div>
       )}
 
-      {src && status !== "error" && !playing && (
-        <button
-          type="button"
-          data-tv-focus
-          onClick={togglePlay}
-          aria-label="Play"
-          className="absolute inset-0 grid place-items-center bg-black/30 outline-none"
-        >
-          <span className="grid size-20 place-items-center rounded-full bg-primary text-primary-foreground ring-4 ring-transparent transition group-focus-within:ring-primary/50">
-            <Play className="size-10" />
-          </span>
-        </button>
-      )}
-
-      {src && muted && playing && (
-        <button
-          type="button"
-          data-tv-focus
-          onClick={() => {
-            const video = videoRef.current;
-            if (video) video.muted = false;
-          }}
-          className="absolute right-3 top-3 rounded-lg bg-black/70 px-4 py-2 text-base font-semibold text-white outline-none focus:ring-4 focus:ring-primary/50"
-        >
-          Sound off — press OK
-        </button>
-      )}
-
-
-
       {src && (
-        <div
-          className={cn(
-            "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-3 pt-10 transition-all",
-            controlsVisible || !playing
-              ? "translate-y-0 opacity-100"
-              : "pointer-events-none translate-y-2 opacity-0",
-          )}
-        >
+        <div className="absolute inset-x-0 bottom-0 translate-y-2 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-3 pt-10 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100 focus-within:translate-y-0 focus-within:opacity-100">
           {title && (
             <p className="mb-2 truncate font-display text-sm font-semibold text-white">{title}</p>
           )}
@@ -372,26 +253,6 @@ export function VideoPlayer({
             >
               {playing ? <Pause className="size-5" /> : <Play className="size-5" />}
             </button>
-            {!live && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => skipBy(-10)}
-                  className="rounded-md p-1.5 text-white transition hover:bg-white/15"
-                  aria-label="Rewind 10 seconds"
-                >
-                  <RotateCcw className="size-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => skipBy(10)}
-                  className="rounded-md p-1.5 text-white transition hover:bg-white/15"
-                  aria-label="Fast forward 10 seconds"
-                >
-                  <RotateCw className="size-5" />
-                </button>
-              </>
-            )}
             <button
               type="button"
               onClick={() => {

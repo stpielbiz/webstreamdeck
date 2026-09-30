@@ -1,9 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Play, Star } from "lucide-react";
-import { z } from "zod";
 
 import { getPlayback, getSeries } from "@/lib/iptv.functions";
 import type { EpisodeItem } from "@/lib/iptv-types";
@@ -21,7 +20,6 @@ import {
 } from "@/lib/library-hooks";
 
 export const Route = createFileRoute("/_authenticated/series/$id")({
-  validateSearch: z.object({ play: z.boolean().optional() }),
   head: () => ({
     meta: [
       { title: "Watch a series — Stream Deck" },
@@ -39,7 +37,6 @@ export const Route = createFileRoute("/_authenticated/series/$id")({
 
 function SeriesDetail() {
   const { id } = Route.useParams();
-  const { play } = Route.useSearch();
   const { activeId } = usePlaylists();
   const fetchSeries = useServerFn(getSeries);
   const fetchPlayback = useServerFn(getPlayback);
@@ -85,23 +82,6 @@ function SeriesDetail() {
       ),
     [progress.data, activeId, id],
   );
-
-  // Coming from a "continue watching" tile: start the right episode straight away.
-  const autoStarted = useRef(false);
-  useEffect(() => {
-    if (play !== true || autoStarted.current || current || seasons.length === 0) return;
-    const all = seasons.flatMap((entry, index) =>
-      entry.episodes.map((episode) => ({ episode, index })),
-    );
-    const target = lastWatched
-      ? all.find((entry) => entry.episode.id === lastWatched.itemId)
-      : undefined;
-    const chosen = target ?? all[0];
-    if (!chosen) return;
-    autoStarted.current = true;
-    setSeasonIndex(chosen.index);
-    setCurrent(chosen.episode);
-  }, [play, current, seasons, lastWatched]);
 
   const progressFor = (episodeId: string) => {
     const row = (progress.data ?? []).find(
@@ -159,7 +139,6 @@ function SeriesDetail() {
         <div className="space-y-3">
           <VideoPlayer
             src={playback.data?.url ?? null}
-            fallbackSrc={playback.data?.directUrl ?? null}
             title={`${show.name} — S${current.season} E${current.episode} ${current.title}`}
             poster={current.image ?? show.image}
             startPosition={

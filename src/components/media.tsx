@@ -11,7 +11,6 @@ const AnyLink = Link as any;
 export function PosterTile({
   to,
   params,
-  search,
   title,
   image,
   subtitle,
@@ -21,7 +20,6 @@ export function PosterTile({
 }: {
   to: string;
   params?: Record<string, string> | undefined;
-  search?: Record<string, unknown> | undefined;
   title: string;
   image: string | null | undefined;
   subtitle?: string | null | undefined;
@@ -34,7 +32,6 @@ export function PosterTile({
       <AnyLink
         to={to}
         params={params}
-        search={search}
         className="block overflow-hidden rounded-lg border border-border bg-card transition focus-visible:tile-focus hover:border-primary/60"
       >
         <div className="relative aspect-[2/3] w-full bg-muted">
