@@ -19,8 +19,8 @@ interface StreamDeckNativeBridge {
 declare global {
   interface Window {
     StreamDeckNative?: StreamDeckNativeBridge;
-    __streamDeckProgress?: (position: number, duration: number) => void;
-    __streamDeckEnded?: () => void;
+    __streamDeckProgress?: ((position: number, duration: number) => void) | undefined;
+    __streamDeckEnded?: (() => void) | undefined;
   }
 }
 
