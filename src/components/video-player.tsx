@@ -402,7 +402,7 @@ export function VideoPlayer({
               <>
                 {autoLaunched && (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Opening in {externalLinks[0].label.replace("Play in ", "")}… come back here when you're done.
+                    Opening in {(externalLinks[0]?.label ?? "VLC").replace("Play in ", "")}… come back here when you're done.
                     Resume position isn't saved while watching there.
                   </p>
                 )}
