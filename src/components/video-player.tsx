@@ -10,10 +10,17 @@ import {
   VolumeX,
   Loader2,
   AlertTriangle,
+  Copy,
+  ExternalLink,
+  Tv,
 } from "lucide-react";
 
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { externalPlayerLinks, hasNativePlayer, playNative } from "@/lib/external-player";
+
+const DEVICE_ONLY_MESSAGE =
+  "Your provider only allows streams from your own device. Open it in VLC or use the Stream Deck TV app.";
 
 export interface VideoPlayerProps {
   src: string | null;
@@ -67,6 +74,46 @@ export function VideoPlayer({
   const sourceAttemptRef = useRef(0);
   const fallbackRef = useRef(fallbackSrc);
   fallbackRef.current = fallbackSrc;
+  const endedRef = useRef(onEnded);
+  endedRef.current = onEnded;
+  const [nativeActive, setNativeActive] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Inside the Stream Deck TV app, hand playback to its built-in player, which
+  // fetches the stream over the device's own connection.
+  const startNative = useCallback(() => {
+    if (!fallbackSrc) return false;
+    return playNative({ url: fallbackSrc, title: title ?? "", live, startPosition });
+  }, [fallbackSrc, title, live, startPosition]);
+
+  useEffect(() => {
+    if (!src || !fallbackSrc || !hasNativePlayer()) {
+      setNativeActive(false);
+      return;
+    }
+    window.__streamDeckProgress = (position, duration) => {
+      if (!live) progressRef.current?.(position, Number.isFinite(duration) && duration > 0 ? duration : null);
+    };
+    window.__streamDeckEnded = () => endedRef.current?.();
+    setNativeActive(startNative());
+    return () => {
+      window.__streamDeckProgress = undefined;
+      window.__streamDeckEnded = undefined;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, fallbackSrc, live]);
+
+  const externalLinks = fallbackSrc ? externalPlayerLinks(fallbackSrc) : [];
+  const copyLink = async () => {
+    if (!fallbackSrc) return;
+    try {
+      await navigator.clipboard.writeText(fallbackSrc);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Copy this stream link", fallbackSrc);
+    }
+  };
 
   // Show controls on any pointer activity; auto-hide after 3s while playing.
   const showControls = useCallback(() => {
@@ -95,6 +142,7 @@ export function VideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !activeSrc) return;
+    if (hasNativePlayer() && fallbackRef.current) return;
 
     let destroyed = false;
     const attempt = ++sourceAttemptRef.current;
@@ -128,9 +176,11 @@ export function VideoPlayer({
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR && useFallback()) return;
             setStatus("error");
             setErrorMessage(
-              data.type === Hls.ErrorTypes.NETWORK_ERROR
-                ? "The provider stopped responding for this stream."
-                : "This stream can't be played in a browser.",
+              fallbackRef.current && activeSrc === fallbackRef.current
+                ? DEVICE_ONLY_MESSAGE
+                : data.type === Hls.ErrorTypes.NETWORK_ERROR
+                  ? "The provider stopped responding for this stream."
+                  : "This stream can't be played in a browser.",
             );
           });
           hls.loadSource(activeSrc);
@@ -274,7 +324,9 @@ export function VideoPlayer({
             }
             setStatus("error");
             setErrorMessage(
-              mediaError.code === MediaError.MEDIA_ERR_NETWORK
+              fallback && activeSrc === fallback
+                ? DEVICE_ONLY_MESSAGE
+                : mediaError.code === MediaError.MEDIA_ERR_NETWORK
                 ? "The provider stopped responding for this stream."
                 : "This stream's video format isn't supported on this device.",
             );
@@ -286,7 +338,24 @@ export function VideoPlayer({
         </div>
       )}
 
-      {status === "loading" && (
+      {nativeActive && (
+        <div className="absolute inset-0 z-10 grid place-items-center bg-black/90 px-6 text-center">
+          <div>
+            <Tv className="mx-auto size-8 text-primary" />
+            <p className="mt-3 text-sm font-medium text-white">Playing in the Stream Deck player</p>
+            <button
+              type="button"
+              data-tv-focus
+              onClick={() => startNative()}
+              className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground outline-none focus:ring-4 focus:ring-primary/50"
+            >
+              Play again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!nativeActive && status === "loading" && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/40">
           <Loader2 className="size-8 animate-spin text-primary" />
         </div>
@@ -297,14 +366,39 @@ export function VideoPlayer({
           <div>
             <AlertTriangle className="mx-auto size-8 text-primary" />
             <p className="mt-3 text-sm font-medium">{errorMessage}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Try another channel or check that your provider is online.
-            </p>
+            {externalLinks.length > 0 ? (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {externalLinks.map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    data-tv-focus
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground outline-none focus:ring-4 focus:ring-primary/50"
+                  >
+                    <ExternalLink className="size-4" />
+                    {link.label}
+                  </a>
+                ))}
+                <button
+                  type="button"
+                  data-tv-focus
+                  onClick={copyLink}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold outline-none focus:ring-4 focus:ring-primary/50"
+                >
+                  <Copy className="size-4" />
+                  {copied ? "Copied" : "Copy stream link"}
+                </button>
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Try another channel or check that your provider is online.
+              </p>
+            )}
           </div>
         </div>
       )}
 
-      {src && status !== "error" && !playing && (
+      {src && !nativeActive && status !== "error" && !playing && (
         <button
           type="button"
           data-tv-focus
@@ -422,10 +516,24 @@ export function VideoPlayer({
                 Live
               </span>
             )}
+            {externalLinks[0] && (
+              <a
+                href={externalLinks[0].href}
+                className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-white/15"
+                aria-label={externalLinks[0].label}
+                title={externalLinks[0].label}
+              >
+                <ExternalLink className="size-4" />
+                VLC
+              </a>
+            )}
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="ml-auto rounded-md p-1.5 text-white transition hover:bg-white/15"
+              className={cn(
+                "rounded-md p-1.5 text-white transition hover:bg-white/15",
+                !externalLinks[0] && "ml-auto",
+              )}
               aria-label={fullscreen ? "Exit full screen" : "Full screen"}
             >
               {fullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
