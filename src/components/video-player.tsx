@@ -78,6 +78,8 @@ export function VideoPlayer({
   endedRef.current = onEnded;
   const [nativeActive, setNativeActive] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [autoLaunched, setAutoLaunched] = useState(false);
+  const autoLaunchRef = useRef<string | null>(null);
 
   // Inside the Stream Deck TV app, hand playback to its built-in player, which
   // fetches the stream over the device's own connection.
