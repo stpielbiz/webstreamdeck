@@ -11,3 +11,4 @@
 - [x] Replace category chips with a three-level TiviMate-style browsing flow on every screen.
 - [x] Keep playback at the upper-right and reduce movie/show tile sizes.
 - [x] Replace Firestick-specific setup links with a general code-based device login flow.
+- [x] Use saved system genres and keep the player visible while browsing Movies and Shows.
