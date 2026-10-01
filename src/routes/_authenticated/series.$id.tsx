@@ -173,6 +173,21 @@ function SeriesDetail() {
                 (row) => row.playlistId === activeId && row.itemId === current.id,
               )?.positionSeconds ?? 0
             }
+            onExternalLaunch={() =>
+              activeId &&
+              void saveProgress({
+                playlistId: activeId,
+                itemKind: "episode",
+                itemId: current.id,
+                seriesId: id,
+                season: current.season,
+                episode: current.episode,
+                title: `${show.name} — S${current.season} E${current.episode}`,
+                posterUrl: show.image,
+                positionSeconds: 0,
+                external: true,
+              })
+            }
             onProgress={(position, duration) =>
               activeId &&
               void saveProgress({

@@ -260,7 +260,7 @@ function LivePage() {
         </div>
       </section>
 
-      <section className="min-w-0 space-y-4 p-4 lg:order-2">
+      <section className="order-first min-w-0 space-y-4 p-4 lg:order-2">
         <VideoPlayer
           src={playback.data?.url ?? null}
             fallbackSrc={playback.data?.directUrl ?? null}

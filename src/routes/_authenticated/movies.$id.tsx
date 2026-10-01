@@ -116,6 +116,18 @@ function MovieDetail() {
           title={film.name}
           poster={film.image}
           startPosition={resumeAt}
+          onExternalLaunch={() =>
+            activeId &&
+            void saveProgress({
+              playlistId: activeId,
+              itemKind: "movie",
+              itemId: id,
+              title: film.name,
+              posterUrl: film.image,
+              positionSeconds: 0,
+              external: true,
+            })
+          }
           onProgress={(position, duration) =>
             activeId &&
             void saveProgress({

@@ -130,9 +130,7 @@ function TvLive() {
       title="Live TV"
       immersive
       onBack={
-        selected
-          ? () => setSelected(null)
-          : categoryId !== null
+        categoryId !== null
             ? () => setCategoryId(null)
             : undefined
       }
@@ -169,7 +167,7 @@ function TvLive() {
             {focusedGuide?.now?.description && <p className="mt-1 line-clamp-2 max-w-4xl text-sm text-muted-foreground sm:text-base">{focusedGuide.now.description}</p>}
             {focused && selected?.id !== focused.id && <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-primary"><Play className="size-4 fill-current" /> Press OK to watch</p>}
           </div>
-          <div className="max-h-[32vh] min-h-0 md:order-2 md:max-h-none">
+          <div className="order-first max-h-[32vh] min-h-0 md:order-2 md:max-h-none">
           <VideoPlayer
             src={url}
             fallbackSrc={directUrl}
