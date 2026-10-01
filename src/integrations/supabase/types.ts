@@ -276,6 +276,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      popular_titles: {
+        Args: {
+          _days?: number
+          _kind: Database["public"]["Enums"]["item_kind"]
+          _lim?: number
+        }
+        Returns: {
+          poster_url: string
+          title: string
+          viewers: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
