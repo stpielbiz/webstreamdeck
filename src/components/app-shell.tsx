@@ -3,10 +3,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock,
   Clapperboard,
-  Download,
   LayoutGrid,
   ListVideo,
   LogOut,
+  LogIn,
   MonitorPlay,
   ShieldCheck,
   Star,
@@ -34,7 +34,7 @@ const NAV = [
   { to: "/series", label: "Series", icon: MonitorPlay },
   { to: "/favorites", label: "Favourites", icon: Star },
   { to: "/playlists", label: "Playlists", icon: ListVideo },
-  { to: "/get-app", label: "Watch on TV", icon: Download },
+  { to: "/device-login", label: "Log in another device", icon: LogIn },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

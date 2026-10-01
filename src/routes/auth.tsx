@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { z } from "zod";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: z.object({ returnTo: z.literal("/device-login").optional() }),
   head: () => ({
     meta: [
       { title: "Sign in — Stream Deck" },
@@ -32,6 +34,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { returnTo } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -39,9 +42,9 @@ function AuthPage() {
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
+      if (data.session) navigate({ to: returnTo ?? "/dashboard", replace: true });
     });
-  }, [navigate]);
+  }, [navigate, returnTo]);
 
   const signIn = async () => {
     setBusy(true);
@@ -51,7 +54,7 @@ function AuthPage() {
       toast.error(error.message);
       return;
     }
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: returnTo ?? "/dashboard", replace: true });
   };
 
   const signUp = async () => {
@@ -59,7 +62,11 @@ function AuthPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: {
+        emailRedirectTo: returnTo
+          ? `${window.location.origin}/auth?returnTo=${encodeURIComponent(returnTo)}`
+          : window.location.origin,
+      },
     });
     setBusy(false);
     if (error) {
@@ -67,7 +74,7 @@ function AuthPage() {
       return;
     }
     if (data.session) {
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: returnTo ?? "/dashboard", replace: true });
       return;
     }
     setCheckEmail(true);
@@ -76,7 +83,9 @@ function AuthPage() {
   const signInWithGoogle = async () => {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/auth`,
+      redirect_uri: returnTo
+        ? `${window.location.origin}/auth?returnTo=${encodeURIComponent(returnTo)}`
+        : `${window.location.origin}/auth`,
     });
     if (result.error) {
       setBusy(false);
@@ -84,7 +93,7 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: returnTo ?? "/dashboard", replace: true });
   };
 
   return (

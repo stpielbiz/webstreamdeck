@@ -11,3 +11,4 @@
 
 - Native Fire TV app lives in `native-app/android/` (Kotlin WebView + Media3 player, JS bridge `window.StreamDeckNative`) and is built by `.github/workflows/android.yml` — providers block server/browser playback, so device-side playback is required.
 - Browsing follows a shared main menu → category → content/player hierarchy across TV and web, with route-specific remote Back behavior — this keeps Firestick navigation predictable.
+- Device pairing uses the public `/device-login` entry screen and returns there after authentication; legacy Firestick and TV-specific links redirect to it.
