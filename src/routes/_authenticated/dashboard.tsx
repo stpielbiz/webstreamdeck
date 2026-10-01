@@ -55,7 +55,10 @@ function Dashboard() {
   }
 
   const resumable = (progress.data ?? []).filter(
-    (row) => !row.completed && row.positionSeconds > 30 && row.playlistId === activeId,
+    (row) =>
+      !row.completed &&
+      row.playlistId === activeId &&
+      (row.positionSeconds > 30 || row.external),
   );
   const favouriteChannels = (favorites.data ?? []).filter(
     (row) => row.playlistId === activeId && row.itemKind === "live",
@@ -102,14 +105,21 @@ function Dashboard() {
                 title={row.title}
                 image={row.posterUrl}
                 subtitle={
-                  row.season != null && row.episode != null
-                    ? `S${row.season} E${row.episode}`
-                    : row.durationSeconds
-                      ? `${Math.round((row.durationSeconds - row.positionSeconds) / 60)} min left`
-                      : null
+                  row.external
+                    ? "Watching in an external player"
+                    : row.season != null && row.episode != null
+                      ? `S${row.season} E${row.episode}`
+                      : row.durationSeconds
+                        ? `${Math.round((row.durationSeconds - row.positionSeconds) / 60)} min left`
+                        : null
                 }
+                external={row.external}
                 progress={
-                  row.durationSeconds ? row.positionSeconds / row.durationSeconds : 0.05
+                  row.external
+                    ? null
+                    : row.durationSeconds
+                      ? row.positionSeconds / row.durationSeconds
+                      : 0.05
                 }
               />
             ))}

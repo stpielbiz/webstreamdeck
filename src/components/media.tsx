@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Play, Star } from "lucide-react";
+import { ExternalLink, Play, Star } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ export function PosterTile({
   image,
   subtitle,
   progress,
+  external,
   favorite,
   onToggleFavorite,
 }: {
@@ -26,6 +27,8 @@ export function PosterTile({
   image: string | null | undefined;
   subtitle?: string | null | undefined;
   progress?: number | null | undefined;
+  /** Show a badge instead of a progress bar when watched in an external player. */
+  external?: boolean | undefined;
   favorite?: boolean | undefined;
   onToggleFavorite?: (() => void) | undefined;
 }) {
@@ -56,13 +59,21 @@ export function PosterTile({
           <div className="absolute inset-0 grid place-items-center bg-black/45 opacity-0 transition group-hover:opacity-100">
             <Play className="size-8 text-primary" />
           </div>
-          {typeof progress === "number" && progress > 0 && (
-            <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60">
-              <div
-                className="h-full bg-primary"
-                style={{ width: `${Math.min(100, progress * 100)}%` }}
-              />
-            </div>
+          {external ? (
+            <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-1 text-[10px] font-semibold text-white">
+              <ExternalLink className="size-3 text-primary" />
+              External player
+            </span>
+          ) : (
+            typeof progress === "number" &&
+            progress > 0 && (
+              <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60">
+                <div
+                  className="h-full bg-primary"
+                  style={{ width: `${Math.min(100, progress * 100)}%` }}
+                />
+              </div>
+            )
           )}
         </div>
         <div className="px-2 py-2">
