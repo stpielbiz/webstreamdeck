@@ -339,6 +339,8 @@ export interface ProgressRow {
   positionSeconds: number;
   durationSeconds: number | null;
   completed: boolean;
+  /** True when the stream was handed to an external player (position unknown). */
+  external: boolean;
   updatedAt: string;
 }
 
@@ -348,7 +350,7 @@ export const listProgress = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("watch_progress")
       .select(
-        "playlist_id, item_kind, item_id, series_id, season, episode, title, poster_url, position_seconds, duration_seconds, completed, updated_at",
+        "playlist_id, item_kind, item_id, series_id, season, episode, title, poster_url, position_seconds, duration_seconds, completed, external, updated_at",
       )
       .order("updated_at", { ascending: false })
       .limit(60);
@@ -365,6 +367,7 @@ export const listProgress = createServerFn({ method: "GET" })
       positionSeconds: row.position_seconds,
       durationSeconds: row.duration_seconds,
       completed: row.completed,
+      external: row.external,
       updatedAt: row.updated_at,
     }));
   });
@@ -384,6 +387,7 @@ export const saveProgress = createServerFn({ method: "POST" })
         posterUrl: z.string().nullish(),
         positionSeconds: z.number().min(0),
         durationSeconds: z.number().min(0).nullish(),
+        external: z.boolean().optional(),
       })
       .parse(input),
   )
@@ -392,6 +396,27 @@ export const saveProgress = createServerFn({ method: "POST" })
       !!data.durationSeconds && data.durationSeconds > 0
         ? data.positionSeconds / data.durationSeconds > 0.95
         : false;
+
+    // An external hand-off carries no position; keep any real resume point
+    // already saved instead of wiping it.
+    let positionSeconds = data.positionSeconds;
+    let durationSeconds = data.durationSeconds ?? null;
+    let completedFlag = completed;
+    if (data.external && data.positionSeconds === 0) {
+      const { data: existing } = await context.supabase
+        .from("watch_progress")
+        .select("position_seconds, duration_seconds, completed")
+        .eq("user_id", context.userId)
+        .eq("playlist_id", data.playlistId)
+        .eq("item_kind", data.itemKind)
+        .eq("item_id", data.itemId)
+        .maybeSingle();
+      if (existing) {
+        positionSeconds = existing.position_seconds;
+        durationSeconds = existing.duration_seconds;
+        completedFlag = existing.completed;
+      }
+    }
 
     const { error } = await context.supabase.from("watch_progress").upsert(
       {
@@ -404,15 +429,16 @@ export const saveProgress = createServerFn({ method: "POST" })
         episode: data.episode ?? null,
         title: data.title,
         poster_url: data.posterUrl ?? null,
-        position_seconds: data.positionSeconds,
-        duration_seconds: data.durationSeconds ?? null,
-        completed,
+        position_seconds: positionSeconds,
+        duration_seconds: durationSeconds,
+        completed: completedFlag,
+        external: data.external ?? false,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id,playlist_id,item_kind,item_id" },
     );
     if (error) throw new Error(error.message);
-    return { ok: true, completed };
+    return { ok: true, completed: completedFlag };
   });
 
 export const clearProgress = createServerFn({ method: "POST" })

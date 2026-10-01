@@ -90,6 +90,22 @@ function TvWatchSeries() {
             startPosition={resumeAt}
             className="aspect-video w-full overflow-hidden rounded-xl"
             onEnded={playNext}
+            onExternalLaunch={() =>
+              activeId &&
+              current &&
+              void saveProgress({
+                playlistId: activeId,
+                itemKind: "episode",
+                itemId: current.id,
+                seriesId: id,
+                season: current.season,
+                episode: current.episode,
+                title: current.title,
+                posterUrl: current.image ?? show?.image ?? null,
+                positionSeconds: 0,
+                external: true,
+              })
+            }
             onProgress={(position, duration) =>
               activeId &&
               current &&

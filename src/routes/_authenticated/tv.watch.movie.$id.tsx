@@ -64,6 +64,19 @@ function TvWatchMovie() {
         poster={film?.image ?? null}
         startPosition={resumeAt}
         className="aspect-video w-full overflow-hidden rounded-xl"
+        onExternalLaunch={() =>
+          activeId &&
+          film &&
+          void saveProgress({
+            playlistId: activeId,
+            itemKind: "movie",
+            itemId: id,
+            title: film.name,
+            posterUrl: film.image,
+            positionSeconds: 0,
+            external: true,
+          })
+        }
         onProgress={(position, duration) =>
           activeId &&
           film &&

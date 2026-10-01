@@ -33,6 +33,8 @@ export interface VideoPlayerProps {
   className?: string;
   onProgress?: (positionSeconds: number, durationSeconds: number | null) => void;
   onEnded?: () => void;
+  /** Fired once per stream when playback is handed to an external player. */
+  onExternalLaunch?: () => void;
 }
 
 function formatTime(value: number): string {
@@ -54,6 +56,7 @@ export function VideoPlayer({
   className,
   onProgress,
   onEnded,
+  onExternalLaunch,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
@@ -76,6 +79,8 @@ export function VideoPlayer({
   fallbackRef.current = fallbackSrc;
   const endedRef = useRef(onEnded);
   endedRef.current = onEnded;
+  const externalLaunchRef = useRef(onExternalLaunch);
+  externalLaunchRef.current = onExternalLaunch;
   const [nativeActive, setNativeActive] = useState(false);
   const [copied, setCopied] = useState(false);
   const [autoLaunched, setAutoLaunched] = useState(false);
@@ -116,6 +121,14 @@ export function VideoPlayer({
     window.setTimeout(() => frame.remove(), 4000);
   }, []);
 
+  // Tell the parent the stream left the browser — once per stream.
+  const externalNotifiedRef = useRef<string | null>(null);
+  const notifyExternalLaunch = useCallback((href: string) => {
+    if (externalNotifiedRef.current === href) return;
+    externalNotifiedRef.current = href;
+    externalLaunchRef.current?.();
+  }, []);
+
   // When playback fails for good, hand the stream to the external player
   // automatically — once per stream.
   useEffect(() => {
@@ -124,11 +137,13 @@ export function VideoPlayer({
     autoLaunchRef.current = link.href;
     setAutoLaunched(true);
     launchExternal(link.href);
+    notifyExternalLaunch(link.href);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, fallbackSrc]);
 
   useEffect(() => {
     autoLaunchRef.current = null;
+    externalNotifiedRef.current = null;
     setAutoLaunched(false);
   }, [src, fallbackSrc]);
 
@@ -411,6 +426,7 @@ export function VideoPlayer({
                   <a
                     key={link.label}
                     href={link.href}
+                    onClick={() => notifyExternalLaunch(link.href)}
                     data-tv-focus
                     className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground outline-none focus:ring-4 focus:ring-primary/50"
                   >
@@ -559,6 +575,7 @@ export function VideoPlayer({
             {externalLinks[0] && (
               <a
                 href={externalLinks[0].href}
+                onClick={() => notifyExternalLaunch(externalLinks[0]!.href)}
                 className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-white/15"
                 aria-label={externalLinks[0].label}
                 title={externalLinks[0].label}

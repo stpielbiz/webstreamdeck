@@ -59,6 +59,7 @@ export function useSaveProgress() {
       posterUrl?: string | null;
       positionSeconds: number;
       durationSeconds?: number | null;
+      external?: boolean;
     }) => {
       try {
         await save({ data: input });
