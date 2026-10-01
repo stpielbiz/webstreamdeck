@@ -137,7 +137,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       title,
       posterUrl: poster ?? null,
       positionSeconds,
-      durationSeconds,
+      durationSeconds: durationSeconds ?? null,
       external,
     });
   };
