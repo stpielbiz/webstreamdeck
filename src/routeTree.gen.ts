@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DeviceLoginRouteImport } from './routes/device-login'
 import { Route as GetAppRouteImport } from './routes/get-app'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedConnectTvRouteImport } from './routes/_authenticated/connect-tv'
@@ -46,6 +47,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeviceLoginRoute = DeviceLoginRouteImport.update({
+  id: '/device-login',
+  path: '/device-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GetAppRoute = GetAppRouteImport.update({
@@ -162,6 +168,7 @@ const AuthenticatedTvWatchSeriesIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/device-login': typeof DeviceLoginRoute
   '/get-app': typeof GetAppRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/connect-tv': typeof AuthenticatedConnectTvRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/device-login': typeof DeviceLoginRoute
   '/get-app': typeof GetAppRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/connect-tv': typeof AuthenticatedConnectTvRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/device-login': typeof DeviceLoginRoute
   '/get-app': typeof GetAppRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/connect-tv': typeof AuthenticatedConnectTvRoute
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/device-login'
     | '/get-app'
     | '/admin'
     | '/connect-tv'
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/device-login'
     | '/get-app'
     | '/admin'
     | '/connect-tv'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/device-login'
     | '/get-app'
     | '/_authenticated/admin'
     | '/_authenticated/connect-tv'
@@ -319,6 +331,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DeviceLoginRoute: typeof DeviceLoginRoute
   GetAppRoute: typeof GetAppRoute
   TvPairRoute: typeof TvPairRoute
   ApiPublicStreamRoute: typeof ApiPublicStreamRoute
@@ -345,6 +358,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/device-login': {
+      id: '/device-login'
+      path: '/device-login'
+      fullPath: '/device-login'
+      preLoaderRoute: typeof DeviceLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/get-app': {
@@ -546,6 +566,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  DeviceLoginRoute: DeviceLoginRoute,
   GetAppRoute: GetAppRoute,
   TvPairRoute: TvPairRoute,
   ApiPublicStreamRoute: ApiPublicStreamRoute,
