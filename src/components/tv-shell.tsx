@@ -17,14 +17,16 @@ export function TvShell({
   title,
   children,
   immersive = false,
+  onBack,
 }: {
   title: string;
   children: ReactNode;
   immersive?: boolean;
+  onBack?: () => void;
 }) {
   const { active } = usePlaylists();
   const navigate = useNavigate();
-  useSpatialNav({ onBack: () => void navigate({ to: "/tv" }) });
+  useSpatialNav({ onBack: onBack ?? (() => void navigate({ to: "/tv" })) });
 
   return (
     <div
@@ -85,7 +87,7 @@ export function TvTile({
       type="button"
       data-tv-focus
       onClick={onSelect}
-      className="group w-full overflow-hidden rounded-xl border border-border bg-card text-left outline-none transition focus:scale-[1.03] focus:border-primary focus:ring-4 focus:ring-primary/40"
+      className="group w-full overflow-hidden rounded-lg border border-border bg-card text-left outline-none transition focus:scale-[1.02] focus:border-primary focus:ring-4 focus:ring-primary/40"
     >
       <div className="relative aspect-[2/3] w-full bg-muted">
         {image ? (
@@ -112,9 +114,9 @@ export function TvTile({
           </span>
         )}
       </div>
-      <div className="p-3">
-        <p className="truncate text-base font-semibold">{title}</p>
-        {subtitle && <p className="truncate text-sm text-muted-foreground">{subtitle}</p>}
+      <div className="p-2">
+        <p className="truncate text-sm font-semibold">{title}</p>
+        {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
       </div>
     </button>
   );
@@ -122,6 +124,6 @@ export function TvTile({
 
 export function TvGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-3 gap-5 sm:grid-cols-4 lg:grid-cols-6">{children}</div>
+    <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8">{children}</div>
   );
 }

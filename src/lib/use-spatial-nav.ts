@@ -29,7 +29,7 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
         target &&
         (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
 
-      if (event.key === "Backspace" && !typing) {
+      if ((event.key === "Backspace" || event.key === "Escape") && !typing) {
         event.preventDefault();
         onBack?.();
         return;
