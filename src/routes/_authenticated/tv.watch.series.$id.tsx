@@ -79,9 +79,9 @@ function TvWatchSeries() {
   };
 
   return (
-    <TvShell title={show?.name ?? "Loading…"}>
-      <div className="grid gap-6 lg:grid-cols-[1fr_24rem]">
-        <div>
+    <TvShell title={show?.name ?? "Loading…"} onBack={() => window.history.back()}>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(20rem,1fr)_minmax(28rem,1.35fr)]">
+        <div className="lg:order-2">
           <VideoPlayer
             src={playback.data?.url ?? null}
             fallbackSrc={playback.data?.directUrl ?? null}
@@ -128,7 +128,7 @@ function TvWatchSeries() {
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 lg:order-1">
           {series.isLoading && <p className="text-xl text-muted-foreground">Loading episodes…</p>}
           <div className="flex flex-wrap gap-2">
             {seasons.map((entry, index) => (

@@ -56,7 +56,13 @@ function TvWatchMovie() {
     )?.positionSeconds ?? 0;
 
   return (
-    <TvShell title={film?.name ?? "Loading…"}>
+    <TvShell title={film?.name ?? "Loading…"} onBack={() => window.history.back()}>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(18rem,1fr)_minmax(28rem,1.35fr)]">
+      <div className="min-w-0 lg:order-1">
+        <h2 className="text-2xl font-semibold">{film?.name}</h2>
+        {film?.plot && <p className="mt-3 text-lg text-muted-foreground">{film.plot}</p>}
+      </div>
+      <div className="min-w-0 lg:order-2">
       <VideoPlayer
         src={playback.data?.url ?? null}
             fallbackSrc={playback.data?.directUrl ?? null}
@@ -96,7 +102,8 @@ function TvWatchMovie() {
           This film could not be started. Try another title or check your provider.
         </p>
       )}
-      {film?.plot && <p className="mt-4 max-w-3xl text-lg text-muted-foreground">{film.plot}</p>}
+      </div>
+      </div>
     </TvShell>
   );
 }

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Play, Tv } from "lucide-react";
+import { ArrowLeft, Play, Tv } from "lucide-react";
 import { z } from "zod";
 
 import { getCategories, getItems, getNowNext, getPlayback } from "@/lib/iptv.functions";
@@ -37,7 +37,7 @@ function TvLive() {
   const fetchNowNext = useServerFn(getNowNext);
   const resolve = useServerFn(getPlayback);
 
-  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [selected, setSelected] = useState<CatalogItem | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
@@ -46,7 +46,7 @@ function TvLive() {
   const categories = useQuery({
     queryKey: ["tv-live-categories", activeId],
     queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind: "live" } }),
-    enabled: !!activeId,
+    enabled: !!activeId && categoryId !== null,
     staleTime: 10 * 60_000,
   });
 
@@ -86,8 +86,9 @@ function TvLive() {
   );
 
   useEffect(() => {
-    if (selected || channels.length === 0) return;
-    const initial = (channel && channels.find((item) => item.id === channel)) || channels[0]!;
+    if (selected || !channel || channels.length === 0) return;
+    const initial = channels.find((item) => item.id === channel);
+    if (!initial) return;
     setSelected(initial);
     setFocusedId(initial.id);
   }, [channels, channel, selected]);
@@ -125,10 +126,48 @@ function TvLive() {
   const focusedGuide = focused ? guideMap.get(focused.id) : undefined;
 
   return (
-    <TvShell title="Live TV" immersive>
+    <TvShell
+      title="Live TV"
+      immersive
+      onBack={
+        categoryId !== null
+            ? () => setCategoryId(null)
+            : undefined
+      }
+    >
+      {categoryId === null ? (
+        <div className="scrollbar-thin mx-auto h-full max-w-5xl overflow-y-auto py-2">
+          <h2 className="mb-4 text-2xl font-semibold">Choose a channel category</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <Button data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => { setCategoryId(""); setSelected(null); }}>All channels</Button>
+            {(categories.data ?? []).map((category) => (
+              <Button key={category.id} data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => { setCategoryId(category.id); setSelected(null); }}>{category.name}</Button>
+            ))}
+          </div>
+        </div>
+      ) : (
       <div className="flex h-full min-h-0 flex-col gap-2 sm:gap-3">
-        <section className="grid shrink-0 gap-3 md:grid-cols-[minmax(18rem,36%)_minmax(0,1fr)]">
-          <div className="max-h-[32vh] min-h-0 md:max-h-none">
+        <section className="grid shrink-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(22rem,42%)]">
+          <div className="min-w-0 self-center py-1 md:order-1">
+            <Button data-tv-focus variant="ghost" className="mb-2" onClick={() => { setSelected(null); setCategoryId(null); }}>
+              <ArrowLeft className="size-4" /> Categories
+            </Button>
+            <div className="mb-1 flex min-w-0 items-center gap-3">
+              {focused?.image ? (
+                <img src={focused.image} alt="" className="size-12 shrink-0 object-contain sm:size-16" />
+              ) : (
+                <span className="grid size-12 shrink-0 place-items-center rounded bg-muted sm:size-16"><Tv className="size-6 text-muted-foreground" /></span>
+              )}
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase text-primary">Live now</p>
+                <h2 className="truncate font-display text-xl font-bold sm:text-3xl">{focusedGuide?.now?.title ?? focused?.name ?? "Choose a channel"}</h2>
+              </div>
+            </div>
+            <p className="truncate text-sm font-semibold text-muted-foreground sm:text-lg">{focused?.name}</p>
+            {focusedGuide?.now?.description && <p className="mt-1 line-clamp-2 max-w-4xl text-sm text-muted-foreground sm:text-base">{focusedGuide.now.description}</p>}
+            {focused && selected?.id !== focused.id && <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-primary"><Play className="size-4 fill-current" /> Press OK to watch</p>}
+          </div>
+          <div className="order-first max-h-[32vh] min-h-0 md:order-2 md:max-h-none">
           <VideoPlayer
             src={url}
             fallbackSrc={directUrl}
@@ -138,65 +177,7 @@ function TvLive() {
             className="aspect-video h-full max-h-[32vh] w-full overflow-hidden rounded-lg"
           />
           </div>
-          <div className="min-w-0 self-center py-1">
-            <div className="mb-1 flex min-w-0 items-center gap-3">
-              {focused?.image ? (
-                <img src={focused.image} alt="" className="size-12 shrink-0 object-contain sm:size-16" />
-              ) : (
-                <span className="grid size-12 shrink-0 place-items-center rounded bg-muted sm:size-16">
-                  <Tv className="size-6 text-muted-foreground" />
-                </span>
-              )}
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase text-primary">Live now</p>
-                <h2 className="truncate font-display text-xl font-bold sm:text-3xl">
-                  {focusedGuide?.now?.title ?? focused?.name ?? "Choose a channel"}
-                </h2>
-              </div>
-            </div>
-            <p className="truncate text-sm font-semibold text-muted-foreground sm:text-lg">
-              {focused?.name}
-            </p>
-            {focusedGuide?.now?.description && (
-              <p className="mt-1 line-clamp-2 max-w-4xl text-sm text-muted-foreground sm:text-base">
-                {focusedGuide.now.description}
-              </p>
-            )}
-            {focused && selected?.id !== focused.id && (
-              <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-primary">
-                <Play className="size-4 fill-current" /> Press OK to watch
-              </p>
-            )}
-          </div>
         </section>
-
-        <nav className="scrollbar-thin flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Channel categories">
-            <Button
-              variant={categoryId ? "secondary" : "default"}
-              data-tv-focus
-              onClick={() => {
-                setCategoryId(undefined);
-                setFocusedId(null);
-              }}
-              className="h-9 shrink-0 px-4 text-base focus-visible:ring-4 focus-visible:ring-primary/40"
-            >
-              All
-            </Button>
-            {(categories.data ?? []).map((category) => (
-              <Button
-                key={category.id}
-                variant={categoryId === category.id ? "default" : "secondary"}
-                data-tv-focus
-                onClick={() => {
-                  setCategoryId(category.id);
-                  setFocusedId(null);
-                }}
-                className="h-9 shrink-0 px-4 text-base focus-visible:ring-4 focus-visible:ring-primary/40"
-              >
-                {category.name}
-              </Button>
-            ))}
-        </nav>
 
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border" aria-label="Channel guide">
           <div className="hidden shrink-0 grid-cols-[4rem_minmax(14rem,1.25fr)_minmax(16rem,2fr)_minmax(14rem,1.5fr)] border-b border-border bg-muted/60 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground sm:grid">
@@ -265,6 +246,7 @@ function TvLive() {
           </div>
         </section>
       </div>
+      )}
     </TvShell>
   );
 }

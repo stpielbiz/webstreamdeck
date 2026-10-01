@@ -7,7 +7,7 @@ import { getCategories, getItems } from "@/lib/iptv.functions";
 import { usePlaylists } from "@/components/playlist-context";
 import { TvGrid, TvShell, TvTile } from "@/components/tv-shell";
 import { useProgress } from "@/lib/library-hooks";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/tv/movies")({
   head: () => ({
@@ -30,12 +30,12 @@ function TvMovies() {
   const fetchCategories = useServerFn(getCategories);
   const fetchItems = useServerFn(getItems);
   const { data: progress } = useProgress();
-  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
 
   const categories = useQuery({
     queryKey: ["tv-movie-categories", activeId],
     queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind: "movie" } }),
-    enabled: !!activeId,
+    enabled: !!activeId && categoryId !== null,
     staleTime: 10 * 60_000,
   });
 
@@ -50,36 +50,19 @@ function TvMovies() {
   });
 
   return (
-    <TvShell title="Movies">
-      <div className="mb-6 flex flex-wrap gap-2">
-        <button
-          type="button"
-          data-tv-focus
-          onClick={() => setCategoryId(undefined)}
-          className={cn(
-            "rounded-lg px-4 py-2 text-base font-medium outline-none focus:ring-4 focus:ring-primary/40",
-            categoryId ? "bg-secondary text-foreground" : "bg-primary text-primary-foreground",
-          )}
-        >
-          All
-        </button>
-        {(categories.data ?? []).slice(0, 24).map((category) => (
-          <button
-            key={category.id}
-            type="button"
-            data-tv-focus
-            onClick={() => setCategoryId(category.id)}
-            className={cn(
-              "rounded-lg px-4 py-2 text-base font-medium outline-none focus:ring-4 focus:ring-primary/40",
-              categoryId === category.id
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-foreground",
-            )}
-          >
-            {category.name}
-          </button>
-        ))}
-      </div>
+    <TvShell title="Movies" onBack={categoryId !== null ? () => setCategoryId(null) : undefined}>
+      {categoryId === null ? (
+        <div className="mx-auto max-w-4xl">
+          <h2 className="mb-4 text-2xl font-semibold">Choose a movie category</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <Button data-tv-focus variant="secondary" className="h-14 justify-start text-lg" onClick={() => setCategoryId("")}>All movies</Button>
+            {(categories.data ?? []).map((category) => (
+              <Button key={category.id} data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => setCategoryId(category.id)}>{category.name}</Button>
+            ))}
+          </div>
+        </div>
+      ) : <>
+      <Button data-tv-focus variant="ghost" className="mb-4" onClick={() => setCategoryId(null)}>Back to categories</Button>
 
       {items.isLoading && <p className="text-xl text-muted-foreground">Loading movies…</p>}
       {items.isError && (
@@ -107,6 +90,7 @@ function TvMovies() {
           );
         })}
       </TvGrid>
+      </>}
     </TvShell>
   );
 }

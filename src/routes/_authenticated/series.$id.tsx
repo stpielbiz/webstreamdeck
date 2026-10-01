@@ -156,7 +156,13 @@ function SeriesDetail() {
       </Button>
 
       {current && (
-        <div className="space-y-3">
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(18rem,1fr)_minmax(30rem,1.4fr)]">
+          <div className="min-w-0 lg:order-1">
+            <h2 className="text-xl font-semibold">S{current.season} E{current.episode} — {current.title}</h2>
+            {current.plot && <p className="mt-2 text-sm text-muted-foreground">{current.plot}</p>}
+            <Button className="mt-3" variant="outline" size="sm" onClick={playNext}>Next episode</Button>
+          </div>
+          <div className="min-w-0 lg:order-2">
           <VideoPlayer
             src={playback.data?.url ?? null}
             fallbackSrc={playback.data?.directUrl ?? null}
@@ -166,6 +172,21 @@ function SeriesDetail() {
               (progress.data ?? []).find(
                 (row) => row.playlistId === activeId && row.itemId === current.id,
               )?.positionSeconds ?? 0
+            }
+            onExternalLaunch={() =>
+              activeId &&
+              void saveProgress({
+                playlistId: activeId,
+                itemKind: "episode",
+                itemId: current.id,
+                seriesId: id,
+                season: current.season,
+                episode: current.episode,
+                title: `${show.name} — S${current.season} E${current.episode}`,
+                posterUrl: show.image,
+                positionSeconds: 0,
+                external: true,
+              })
             }
             onProgress={(position, duration) =>
               activeId &&
@@ -184,9 +205,7 @@ function SeriesDetail() {
             }
             onEnded={playNext}
           />
-          <Button variant="outline" size="sm" onClick={playNext}>
-            Next episode
-          </Button>
+          </div>
         </div>
       )}
 
