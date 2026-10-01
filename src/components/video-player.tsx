@@ -137,11 +137,13 @@ export function VideoPlayer({
     autoLaunchRef.current = link.href;
     setAutoLaunched(true);
     launchExternal(link.href);
+    notifyExternalLaunch(link.href);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, fallbackSrc]);
 
   useEffect(() => {
     autoLaunchRef.current = null;
+    externalNotifiedRef.current = null;
     setAutoLaunched(false);
   }, [src, fallbackSrc]);
 
@@ -424,6 +426,7 @@ export function VideoPlayer({
                   <a
                     key={link.label}
                     href={link.href}
+                    onClick={() => notifyExternalLaunch(link.href)}
                     data-tv-focus
                     className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground outline-none focus:ring-4 focus:ring-primary/50"
                   >
@@ -572,6 +575,7 @@ export function VideoPlayer({
             {externalLinks[0] && (
               <a
                 href={externalLinks[0].href}
+                onClick={() => notifyExternalLaunch(externalLinks[0]!.href)}
                 className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-white/15"
                 aria-label={externalLinks[0].label}
                 title={externalLinks[0].label}
