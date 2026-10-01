@@ -1,0 +1,1 @@
+ALTER TABLE public.watch_progress ADD COLUMN external boolean NOT NULL DEFAULT false;

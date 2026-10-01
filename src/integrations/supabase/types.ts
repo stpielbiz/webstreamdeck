@@ -207,6 +207,7 @@ export type Database = {
           completed: boolean
           duration_seconds: number | null
           episode: number | null
+          external: boolean
           id: string
           item_id: string
           item_kind: Database["public"]["Enums"]["item_kind"]
@@ -223,6 +224,7 @@ export type Database = {
           completed?: boolean
           duration_seconds?: number | null
           episode?: number | null
+          external?: boolean
           id?: string
           item_id: string
           item_kind: Database["public"]["Enums"]["item_kind"]
@@ -239,6 +241,7 @@ export type Database = {
           completed?: boolean
           duration_seconds?: number | null
           episode?: number | null
+          external?: boolean
           id?: string
           item_id?: string
           item_kind?: Database["public"]["Enums"]["item_kind"]
