@@ -19,8 +19,9 @@ export function PosterTile({
   external,
   favorite,
   onToggleFavorite,
+  onSelect,
 }: {
-  to: string;
+  to?: string;
   params?: Record<string, string> | undefined;
   search?: Record<string, unknown> | undefined;
   title: string;
@@ -31,56 +32,57 @@ export function PosterTile({
   external?: boolean | undefined;
   favorite?: boolean | undefined;
   onToggleFavorite?: (() => void) | undefined;
+  onSelect?: (() => void) | undefined;
 }) {
+  const artwork = (
+    <>
+      <div className="relative aspect-[2/3] w-full bg-muted">
+        {image ? (
+          <img
+            src={image}
+            alt={title}
+            loading="lazy"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+            onError={(event) => {
+              event.currentTarget.style.visibility = "hidden";
+            }}
+          />
+        ) : (
+          <div className="grid h-full place-items-center px-2 text-center text-xs text-muted-foreground">
+            {title}
+          </div>
+        )}
+        <div className="absolute inset-0 grid place-items-center bg-black/45 opacity-0 transition group-hover:opacity-100">
+          <Play className="size-8 text-primary" />
+        </div>
+        {external ? (
+          <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-1 text-[10px] font-semibold text-white">
+            <ExternalLink className="size-3 text-primary" /> External player
+          </span>
+        ) : typeof progress === "number" && progress > 0 ? (
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60">
+            <div className="h-full bg-primary" style={{ width: `${Math.min(100, progress * 100)}%` }} />
+          </div>
+        ) : null}
+      </div>
+      <div className="px-2 py-2">
+        <p className="truncate text-xs font-medium">{title}</p>
+        {subtitle && <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>}
+      </div>
+    </>
+  );
+
   return (
     <div className="group relative">
-      <AnyLink
-        to={to}
-        params={params}
-        search={search}
-        className="block overflow-hidden rounded-lg border border-border bg-card transition focus-visible:tile-focus hover:border-primary/60"
-      >
-        <div className="relative aspect-[2/3] w-full bg-muted">
-          {image ? (
-            <img
-              src={image}
-              alt={title}
-              loading="lazy"
-              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-              onError={(event) => {
-                event.currentTarget.style.visibility = "hidden";
-              }}
-            />
-          ) : (
-            <div className="grid h-full place-items-center px-2 text-center text-xs text-muted-foreground">
-              {title}
-            </div>
-          )}
-          <div className="absolute inset-0 grid place-items-center bg-black/45 opacity-0 transition group-hover:opacity-100">
-            <Play className="size-8 text-primary" />
-          </div>
-          {external ? (
-            <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-1 text-[10px] font-semibold text-white">
-              <ExternalLink className="size-3 text-primary" />
-              External player
-            </span>
-          ) : (
-            typeof progress === "number" &&
-            progress > 0 && (
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60">
-                <div
-                  className="h-full bg-primary"
-                  style={{ width: `${Math.min(100, progress * 100)}%` }}
-                />
-              </div>
-            )
-          )}
-        </div>
-        <div className="px-2 py-2">
-          <p className="truncate text-xs font-medium">{title}</p>
-          {subtitle && <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>}
-        </div>
-      </AnyLink>
+      {onSelect ? (
+        <button type="button" data-tv-focus onClick={onSelect} className="block w-full overflow-hidden rounded-lg border border-border bg-card text-left outline-none transition hover:border-primary/60 focus-visible:tile-focus">
+          {artwork}
+        </button>
+      ) : (
+        <AnyLink to={to} params={params} search={search} className="block overflow-hidden rounded-lg border border-border bg-card transition focus-visible:tile-focus hover:border-primary/60">
+          {artwork}
+        </AnyLink>
+      )}
       {onToggleFavorite && (
         <button
           type="button"
