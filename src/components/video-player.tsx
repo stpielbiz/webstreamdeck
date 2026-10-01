@@ -33,6 +33,8 @@ export interface VideoPlayerProps {
   className?: string;
   onProgress?: (positionSeconds: number, durationSeconds: number | null) => void;
   onEnded?: () => void;
+  /** Fired once per stream when playback is handed to an external player. */
+  onExternalLaunch?: () => void;
 }
 
 function formatTime(value: number): string {
@@ -54,6 +56,7 @@ export function VideoPlayer({
   className,
   onProgress,
   onEnded,
+  onExternalLaunch,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
@@ -76,6 +79,8 @@ export function VideoPlayer({
   fallbackRef.current = fallbackSrc;
   const endedRef = useRef(onEnded);
   endedRef.current = onEnded;
+  const externalLaunchRef = useRef(onExternalLaunch);
+  externalLaunchRef.current = onExternalLaunch;
   const [nativeActive, setNativeActive] = useState(false);
   const [copied, setCopied] = useState(false);
   const [autoLaunched, setAutoLaunched] = useState(false);
@@ -114,6 +119,14 @@ export function VideoPlayer({
     frame.src = href;
     document.body.appendChild(frame);
     window.setTimeout(() => frame.remove(), 4000);
+  }, []);
+
+  // Tell the parent the stream left the browser — once per stream.
+  const externalNotifiedRef = useRef<string | null>(null);
+  const notifyExternalLaunch = useCallback((href: string) => {
+    if (externalNotifiedRef.current === href) return;
+    externalNotifiedRef.current = href;
+    externalLaunchRef.current?.();
   }, []);
 
   // When playback fails for good, hand the stream to the external player
