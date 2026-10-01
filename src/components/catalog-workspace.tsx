@@ -135,7 +135,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       season: episode?.season ?? null,
       episode: episode?.episode ?? null,
       title,
-      posterUrl: poster,
+      posterUrl: poster ?? null,
       positionSeconds,
       durationSeconds,
       external,

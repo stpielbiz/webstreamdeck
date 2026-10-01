@@ -51,8 +51,14 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
         .in("lookup_key", keys.slice(index, index + 150));
       if (error) throw new Error(error.message);
       rows.push(...(chunk ?? []).map((row) => ({
-        ...row,
-        source: row.source === "tmdb" || row.source === "ai" ? row.source : "none" as const,
+        lookup_key: row.lookup_key,
+        resolved_title: row.resolved_title,
+        genres: row.genres,
+        year: row.year,
+        poster_url: row.poster_url,
+        backdrop_url: row.backdrop_url,
+        overview: row.overview,
+        source: (row.source === "tmdb" || row.source === "ai" ? row.source : "none") as "tmdb" | "ai" | "none",
       })));
     }
 
