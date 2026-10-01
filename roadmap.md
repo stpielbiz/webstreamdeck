@@ -10,3 +10,4 @@
 - [ ] Test on the owner's Firestick with VPN (blocked: needs the user's device).
 - [x] Replace category chips with a three-level TiviMate-style browsing flow on every screen.
 - [x] Keep playback at the upper-right and reduce movie/show tile sizes.
+- [x] Replace Firestick-specific setup links with a general code-based device login flow.
