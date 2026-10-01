@@ -8,6 +8,7 @@ import { usePlaylists } from "@/components/playlist-context";
 import { TvGrid, TvShell, TvTile } from "@/components/tv-shell";
 import { useProgress } from "@/lib/library-hooks";
 import { Button } from "@/components/ui/button";
+import { PopularRow } from "@/components/popular-row";
 
 export const Route = createFileRoute("/_authenticated/tv/movies")({
   head: () => ({
@@ -35,7 +36,7 @@ function TvMovies() {
   const categories = useQuery({
     queryKey: ["tv-movie-categories", activeId],
     queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind: "movie" } }),
-    enabled: !!activeId && categoryId !== null,
+    enabled: !!activeId,
     staleTime: 10 * 60_000,
   });
 
@@ -45,7 +46,7 @@ function TvMovies() {
       fetchItems({
         data: { playlistId: activeId!, kind: "movie", ...(categoryId ? { categoryId } : {}) },
       }),
-    enabled: !!activeId,
+    enabled: !!activeId && categoryId !== null,
     staleTime: 10 * 60_000,
   });
 
@@ -53,12 +54,13 @@ function TvMovies() {
     <TvShell title="Movies" onBack={categoryId !== null ? () => setCategoryId(null) : undefined}>
       {categoryId === null ? (
         <div className="mx-auto max-w-4xl">
+          <PopularRow tv kind="movie" onOpen={(id) => void navigate({ to: "/tv/watch/movie/$id", params: { id } })} />
           <h2 className="mb-4 text-2xl font-semibold">Choose a movie category</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            <Button data-tv-focus variant="secondary" className="h-14 justify-start text-lg" onClick={() => setCategoryId("")}>All movies</Button>
             {(categories.data ?? []).map((category) => (
               <Button key={category.id} data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => setCategoryId(category.id)}>{category.name}</Button>
             ))}
+            <Button data-tv-focus variant="outline" className="h-14 justify-start text-lg" onClick={() => setCategoryId("")}>All movies</Button>
           </div>
         </div>
       ) : <>

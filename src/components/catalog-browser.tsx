@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { PopularRow } from "@/components/popular-row";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -45,6 +46,7 @@ export function CatalogBrowser({
   detailRoute: "/movies/$id" | "/series/$id";
 }) {
   const { activeId, playlists } = usePlaylists();
+  const navigate = useNavigate();
   const fetchCategories = useServerFn(getCategories);
   const fetchItems = useServerFn(getItems);
 
@@ -63,7 +65,7 @@ export function CatalogBrowser({
   const categories = useQuery({
     queryKey: ["categories", activeId, kind],
     queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind } }),
-    enabled: !!activeId && categoryId !== null,
+    enabled: !!activeId,
     staleTime: 10 * 60_000,
   });
 
@@ -74,11 +76,11 @@ export function CatalogBrowser({
         data: {
           playlistId: activeId!,
           kind,
-          categoryId: search ? undefined : categoryId,
+          categoryId: search ? undefined : categoryId || undefined,
           search: search || undefined,
         },
       }),
-    enabled: !!activeId,
+    enabled: !!activeId && categoryId !== null,
     staleTime: 5 * 60_000,
   });
 
@@ -203,14 +205,15 @@ export function CatalogBrowser({
       <section className="min-h-full p-4 sm:p-6">
         <div className="mx-auto max-w-5xl">
           <h1 className="font-display text-2xl font-bold">{title}</h1>
+          <div className="mt-5"><PopularRow kind={kind} onOpen={(id) => void navigate({ to: detailRoute, params: { id }, search: kind === "movie" ? { play: true } : undefined } as never)} /></div>
           <p className="mt-1 text-sm text-muted-foreground">Choose a category</p>
           <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-            <Button variant="secondary" className="h-12 justify-start" onClick={() => setCategoryId("")}>Everything</Button>
             {categories.isLoading
               ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />)
               : (categories.data ?? []).map((category) => (
                   <Button key={category.id} variant="secondary" className="h-12 justify-start truncate" onClick={() => { setCategoryId(category.id); setPage(1); }}>{category.name}</Button>
                 ))}
+            <Button variant="outline" className="h-12 justify-start" onClick={() => { setCategoryId(""); setPage(1); }}>Everything</Button>
           </div>
         </div>
       </section>

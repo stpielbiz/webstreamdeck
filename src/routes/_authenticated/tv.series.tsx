@@ -7,6 +7,7 @@ import { getCategories, getItems } from "@/lib/iptv.functions";
 import { usePlaylists } from "@/components/playlist-context";
 import { TvGrid, TvShell, TvTile } from "@/components/tv-shell";
 import { Button } from "@/components/ui/button";
+import { PopularRow } from "@/components/popular-row";
 
 export const Route = createFileRoute("/_authenticated/tv/series")({
   head: () => ({
@@ -33,7 +34,7 @@ function TvSeries() {
   const categories = useQuery({
     queryKey: ["tv-series-categories", activeId],
     queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind: "series" } }),
-    enabled: !!activeId && categoryId !== null,
+    enabled: !!activeId,
     staleTime: 10 * 60_000,
   });
 
@@ -43,7 +44,7 @@ function TvSeries() {
       fetchItems({
         data: { playlistId: activeId!, kind: "series", ...(categoryId ? { categoryId } : {}) },
       }),
-    enabled: !!activeId,
+    enabled: !!activeId && categoryId !== null,
     staleTime: 10 * 60_000,
   });
 
@@ -51,12 +52,13 @@ function TvSeries() {
     <TvShell title="Series" onBack={categoryId !== null ? () => setCategoryId(null) : undefined}>
       {categoryId === null ? (
         <div className="mx-auto max-w-4xl">
+          <PopularRow tv kind="series" onOpen={(id) => void navigate({ to: "/tv/watch/series/$id", params: { id } })} />
           <h2 className="mb-4 text-2xl font-semibold">Choose a show category</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            <Button data-tv-focus variant="secondary" className="h-14 justify-start text-lg" onClick={() => setCategoryId("")}>All shows</Button>
             {(categories.data ?? []).map((category) => (
               <Button key={category.id} data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => setCategoryId(category.id)}>{category.name}</Button>
             ))}
+            <Button data-tv-focus variant="outline" className="h-14 justify-start text-lg" onClick={() => setCategoryId("")}>All shows</Button>
           </div>
         </div>
       ) : <>
