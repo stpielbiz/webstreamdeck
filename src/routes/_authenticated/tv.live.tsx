@@ -86,8 +86,9 @@ function TvLive() {
   );
 
   useEffect(() => {
-    if (selected || channels.length === 0) return;
-    const initial = (channel && channels.find((item) => item.id === channel)) || channels[0]!;
+    if (selected || !channel || channels.length === 0) return;
+    const initial = channels.find((item) => item.id === channel);
+    if (!initial) return;
     setSelected(initial);
     setFocusedId(initial.id);
   }, [channels, channel, selected]);
@@ -140,9 +141,9 @@ function TvLive() {
         <div className="scrollbar-thin mx-auto h-full max-w-5xl overflow-y-auto py-2">
           <h2 className="mb-4 text-2xl font-semibold">Choose a channel category</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            <Button data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => setCategoryId("")}>All channels</Button>
+            <Button data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => { setCategoryId(""); setSelected(null); }}>All channels</Button>
             {(categories.data ?? []).map((category) => (
-              <Button key={category.id} data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => setCategoryId(category.id)}>{category.name}</Button>
+              <Button key={category.id} data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => { setCategoryId(category.id); setSelected(null); }}>{category.name}</Button>
             ))}
           </div>
         </div>

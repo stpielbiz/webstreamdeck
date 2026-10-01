@@ -163,6 +163,7 @@ export function CatalogBrowser({
       key={item.id}
       to={detailRoute}
       params={{ id: item.id }}
+      search={kind === "movie" ? { play: true } : undefined}
       title={item.name}
       image={item.image}
       subtitle={item.year}

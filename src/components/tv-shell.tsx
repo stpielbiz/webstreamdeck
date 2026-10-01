@@ -22,7 +22,7 @@ export function TvShell({
   title: string;
   children: ReactNode;
   immersive?: boolean;
-  onBack?: () => void;
+  onBack?: (() => void) | undefined;
 }) {
   const { active } = usePlaylists();
   const navigate = useNavigate();
