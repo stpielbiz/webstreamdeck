@@ -20,7 +20,7 @@ export interface DeviceCodeInfo {
   expiresAt: string;
 }
 
-/** Called by the TV before anybody is signed in. */
+/** Called by a new device before anybody is signed in. */
 export const createDeviceCode = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z.object({ label: z.string().trim().max(60).optional() }).parse(input ?? {}),
@@ -46,7 +46,7 @@ export const createDeviceCode = createServerFn({ method: "POST" })
     throw new Error("Could not start pairing. Please try again.");
   });
 
-/** Called from a signed-in phone or computer to approve a TV. */
+/** Called from a signed-in device to approve another device. */
 export const approveDeviceCode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -56,7 +56,7 @@ export const approveDeviceCode = createServerFn({ method: "POST" })
           .string()
           .trim()
           .toUpperCase()
-          .regex(/^[A-Z0-9]{4,8}$/, "Enter the code shown on your TV."),
+          .regex(/^[A-Z0-9]{4,8}$/, "Enter the code shown on the other device."),
       })
       .parse(input),
   )
@@ -71,7 +71,7 @@ export const approveDeviceCode = createServerFn({ method: "POST" })
 
     if (error) throw new Error("Could not check that code. Please try again.");
     if (!row || row.consumed_at || new Date(row.expires_at).getTime() < Date.now()) {
-      throw new Error("That code is not valid any more. Get a fresh code on your TV.");
+      throw new Error("That code is not valid any more. Get a fresh code on the other device.");
     }
 
     const { error: updateError } = await supabaseAdmin
@@ -80,7 +80,7 @@ export const approveDeviceCode = createServerFn({ method: "POST" })
       .eq("id", row.id)
       .is("consumed_at", null);
 
-    if (updateError) throw new Error("Could not connect that TV. Please try again.");
+    if (updateError) throw new Error("Could not connect that device. Please try again.");
     return { ok: true };
   });
 
@@ -89,7 +89,7 @@ export type ClaimResult =
   | { status: "expired" }
   | { status: "approved"; email: string; token: string };
 
-/** Polled by the TV. Once approved it returns a one-time sign-in token. */
+/** Polled by the new device. Once approved it returns a one-time sign-in token. */
 export const claimDeviceCode = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z.object({ code: z.string().trim().toUpperCase().max(8) }).parse(input),

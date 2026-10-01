@@ -15,12 +15,12 @@ export const Route = createFileRoute("/tv/pair")({
       {
         name: "description",
         content:
-          "Enter the code shown here on your phone or computer to sign this TV into your Stream Deck account.",
+          "Enter the code shown here on a signed-in phone, tablet, or computer to sign in this device.",
       },
       { property: "og:title", content: "Sign in on your TV — Stream Deck" },
       {
         property: "og:description",
-        content: "Pair your Firestick with a short code — no password typing with the remote.",
+        content: "Sign in another device with a short code — no password typing required.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -43,7 +43,7 @@ function PairPage() {
     setStatus("loading");
     setMessage(null);
     try {
-      const result = await newCode({ data: { label: "TV" } });
+      const result = await newCode({ data: { label: "Device" } });
       setCode(result.code);
       setStatus("waiting");
     } catch {
@@ -109,12 +109,12 @@ function PairPage() {
           <Tv className="size-7" />
         </span>
         <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-          Sign in with a code
+          Log in this device
         </h1>
         <ol className="mx-auto mt-6 max-w-xl space-y-2 text-left text-lg text-muted-foreground">
           <li>1. On your phone or computer, open {host || "this site"} and sign in.</li>
           <li>
-            2. Go to <span className="font-semibold text-foreground">Connect a TV</span>.
+            2. Go to <span className="font-semibold text-foreground">Log in another device</span>.
           </li>
           <li>3. Type the code below.</li>
         </ol>

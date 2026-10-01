@@ -115,7 +115,7 @@ function Landing() {
             <Link to="/auth">I already have one</Link>
           </Button>
           <Button asChild variant="ghost" size="lg">
-            <Link to="/get-app">Watch on Firestick</Link>
+            <Link to="/device-login">Log in another device</Link>
           </Button>
         </div>
         <p className="mt-4 text-sm text-muted-foreground">
