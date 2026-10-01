@@ -104,6 +104,12 @@ function MovieDetail() {
       </Button>
 
       {playing ? (
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(18rem,1fr)_minmax(30rem,1.4fr)]">
+        <div className="min-w-0 lg:order-1">
+          <h1 className="font-display text-3xl font-bold">{film.name}</h1>
+          {film.plot && <p className="mt-4 text-sm leading-relaxed">{film.plot}</p>}
+        </div>
+        <div className="min-w-0 lg:order-2">
         <VideoPlayer
           src={playback.data?.url ?? null}
             fallbackSrc={playback.data?.directUrl ?? null}
@@ -123,6 +129,8 @@ function MovieDetail() {
             })
           }
         />
+        </div>
+        </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-[15rem_1fr]">
           <div className="overflow-hidden rounded-lg border border-border bg-muted">

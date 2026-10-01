@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LayoutGrid, Rows3, Search, Sparkles } from "lucide-react";
+import { ArrowLeft, LayoutGrid, Rows3, Search, Sparkles } from "lucide-react";
 
 import { getCategories, getItems } from "@/lib/iptv.functions";
 import { enrichTitles } from "@/lib/metadata.functions";
@@ -48,7 +48,7 @@ export function CatalogBrowser({
   const fetchCategories = useServerFn(getCategories);
   const fetchItems = useServerFn(getItems);
 
-  const [categoryId, setCategoryId] = useState<string | undefined>();
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [view, setView] = useState<"rows" | "grid">("rows");
@@ -63,7 +63,7 @@ export function CatalogBrowser({
   const categories = useQuery({
     queryKey: ["categories", activeId, kind],
     queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind } }),
-    enabled: !!activeId,
+    enabled: !!activeId && categoryId !== null,
     staleTime: 10 * 60_000,
   });
 
@@ -86,7 +86,7 @@ export function CatalogBrowser({
   const allItems = useQuery({
     queryKey: ["items", activeId, kind, "all", ""],
     queryFn: () => fetchItems({ data: { playlistId: activeId!, kind } }),
-    enabled: !!activeId && groupBy === "genre",
+    enabled: !!activeId && categoryId !== null && groupBy === "genre",
     staleTime: 5 * 60_000,
   });
 
@@ -197,48 +197,28 @@ export function CatalogBrowser({
     );
   }
 
-  return (
-    <div className="grid lg:grid-cols-[14rem_1fr]">
-      <aside className="scrollbar-thin hidden max-h-screen overflow-y-auto border-r border-border p-3 lg:block">
-        <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Categories
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            setCategoryId(undefined);
-            setPage(1);
-          }}
-          className={cn(
-            "w-full rounded-md px-2.5 py-2 text-left text-sm transition hover:bg-muted",
-            !categoryId && "bg-muted font-medium text-primary",
-          )}
-        >
-          Everything
-        </button>
-        {categories.isLoading
-          ? Array.from({ length: 8 }).map((_, index) => (
-              <Skeleton key={index} className="my-1.5 h-8 w-full" />
-            ))
-          : (categories.data ?? []).map((category) => (
-              <button
-                key={category.id}
-                type="button"
-                onClick={() => {
-                  setCategoryId(category.id);
-                  setPage(1);
-                }}
-                className={cn(
-                  "w-full truncate rounded-md px-2.5 py-2 text-left text-sm transition hover:bg-muted",
-                  categoryId === category.id && "bg-muted font-medium text-primary",
-                )}
-              >
-                {category.name}
-              </button>
-            ))}
-      </aside>
+  if (categoryId === null) {
+    return (
+      <section className="min-h-full p-4 sm:p-6">
+        <div className="mx-auto max-w-5xl">
+          <h1 className="font-display text-2xl font-bold">{title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Choose a category</p>
+          <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            <Button variant="secondary" className="h-12 justify-start" onClick={() => setCategoryId("")}>Everything</Button>
+            {categories.isLoading
+              ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />)
+              : (categories.data ?? []).map((category) => (
+                  <Button key={category.id} variant="secondary" className="h-12 justify-start truncate" onClick={() => { setCategoryId(category.id); setPage(1); }}>{category.name}</Button>
+                ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
-      <section className="min-w-0 space-y-5 p-6">
+  return (
+      <section className="min-w-0 space-y-5 p-4 sm:p-6">
+        <Button variant="ghost" size="sm" onClick={() => { setCategoryId(null); setSearch(""); }}><ArrowLeft className="size-4" /> Categories</Button>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
             <h1 className="font-display text-2xl font-bold">{title}</h1>
@@ -418,6 +398,5 @@ export function CatalogBrowser({
           </>
         )}
       </section>
-    </div>
   );
 }
