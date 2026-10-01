@@ -50,7 +50,10 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
         .eq("item_kind", data.kind)
         .in("lookup_key", keys.slice(index, index + 150));
       if (error) throw new Error(error.message);
-      rows.push(...(chunk ?? []));
+      rows.push(...(chunk ?? []).map((row) => ({
+        ...row,
+        source: row.source === "tmdb" || row.source === "ai" ? row.source : "none" as const,
+      })));
     }
 
     const byKey = new Map(rows.map((row) => [row.lookup_key, row]));

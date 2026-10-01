@@ -132,8 +132,8 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       itemKind: kind === "movie" ? "movie" : "episode",
       itemId: mediaId,
       seriesId: kind === "series" ? selectedId : null,
-      season: episode?.season,
-      episode: episode?.episode,
+      season: episode?.season ?? null,
+      episode: episode?.episode ?? null,
       title,
       posterUrl: poster,
       positionSeconds,
@@ -144,7 +144,10 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const organiseMissing = async () => {
     if (!activeId) return;
     const missing = names.filter((name) => !metadata.data?.[name]).slice(0, 600);
-    if (missing.length === 0) return toast.success("All visible titles are organised");
+    if (missing.length === 0) {
+      toast.success("All visible titles are organised");
+      return;
+    }
     setOrganising(true);
     try {
       for (let index = 0; index < missing.length; index += 60) {
@@ -182,7 +185,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
 
       <div className="order-1 min-w-0 lg:order-2">
         <div className="relative overflow-hidden rounded-lg bg-muted">
-          <VideoPlayer src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title} poster={poster} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} onEnded={kind === "series" ? playNext : undefined} />
+          <VideoPlayer src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
           {!mediaId && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-card/80 px-6 text-center"><div>{kind === "movie" ? <Clapperboard className="mx-auto size-9 text-primary" /> : <MonitorPlay className="mx-auto size-9 text-primary" />}<p className="mt-3 font-display text-lg font-semibold">Choose {kind === "movie" ? "a movie" : "a show"}</p><p className="mt-1 text-sm text-muted-foreground">Your selection will play here.</p></div></div>}
         </div>
         {title && <div className="mt-3"><h2 className="font-display text-lg font-semibold">{title}</h2>{kind === "series" && show?.plot && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{show.plot}</p>}</div>}
