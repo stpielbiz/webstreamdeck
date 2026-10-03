@@ -132,7 +132,7 @@ function TvLive() {
       onBack={
         categoryId !== null
             ? () => setCategoryId(null)
-            : undefined
+            : () => void window.history.back()
       }
     >
       {categoryId === null ? (

@@ -46,9 +46,9 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
 
       const allCandidates = rects();
       const active = document.activeElement as HTMLElement | null;
-      const activeZone = active?.closest<HTMLElement>("[data-tv-zone]")?.dataset.tvZone;
+      const activeZone = active?.closest<HTMLElement>("[data-tv-zone]")?.dataset['tvZone'];
       const candidates = activeZone
-        ? allCandidates.filter((item) => item.element.closest<HTMLElement>("[data-tv-zone]")?.dataset.tvZone === activeZone)
+        ? allCandidates.filter((item) => item.element.closest<HTMLElement>("[data-tv-zone]")?.dataset['tvZone'] === activeZone)
         : allCandidates;
       if (candidates.length === 0) return;
 

@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 
 import { getCategories, getItems, getNowNext, getSchedule } from "@/lib/iptv.functions";
 import { usePlaylists } from "@/components/playlist-context";
@@ -41,6 +42,7 @@ function timeLabel(iso: string | null) {
 }
 
 function GuidePage() {
+  const navigate = useNavigate();
   const { activeId, active, playlists } = usePlaylists();
   const fetchCategories = useServerFn(getCategories);
   const fetchItems = useServerFn(getItems);
@@ -104,7 +106,8 @@ function GuidePage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div data-tv-zone="content" className="space-y-6 p-3 sm:p-6">
+      <Button data-layer-back data-tv-focus variant="ghost" onClick={() => void navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /> Sections</Button>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold">TV guide</h1>
@@ -151,6 +154,7 @@ function GuidePage() {
               >
                 <button
                   type="button"
+                  data-tv-focus
                   onClick={() => setChannelId(channelId === item.id ? null : item.id)}
                   className="truncate text-left text-sm font-medium hover:text-primary"
                 >
