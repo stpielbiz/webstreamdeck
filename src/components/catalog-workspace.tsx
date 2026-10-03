@@ -45,6 +45,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const [seasonIndex, setSeasonIndex] = useState(0);
   const [episode, setEpisode] = useState<EpisodeItem | null>(null);
   const [organising, setOrganising] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const categoryFocus = useRef<HTMLButtonElement>(null);
   const previousGenre = useRef<string | null>(null);
 
@@ -109,7 +110,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const playback = useQuery({
     queryKey: ["playback", activeId, kind, mediaId, mediaExt],
     queryFn: () => fetchPlayback({ data: { playlistId: activeId ?? "", kind: kind === "movie" ? "movie" : "episode", itemId: mediaId ?? "", ext: mediaExt ?? null } }),
-    enabled: !!activeId && !!mediaId && (kind === "series" || !!movie.data),
+    enabled: playing && !!activeId && !!mediaId && (kind === "series" || !!movie.data),
     staleTime: 60_000,
   });
 
