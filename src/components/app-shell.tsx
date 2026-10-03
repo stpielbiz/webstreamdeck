@@ -51,6 +51,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   useSpatialNav({
     enabled: !tvMode,
     onBack: () => {
+      const dialogBack = document.querySelector<HTMLElement>("[data-dialog-back]");
+      if (dialogBack) {
+        dialogBack.click();
+        return;
+      }
       const layerBack = document.querySelector<HTMLElement>("[data-layer-back]");
       if (layerBack) layerBack.click();
     },

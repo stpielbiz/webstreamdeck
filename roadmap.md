@@ -15,3 +15,4 @@
 - [x] Replace free-form remote focus with deterministic section, category, and content layers.
 - [x] Use compact previews and vertical category lists across TV and regular screens.
 - [x] Keep Movies and Shows categories visible in a 20/80 split and correct Fire TV viewport scaling.
+- [x] Open selected Movies and Shows in a compact details and preview window.

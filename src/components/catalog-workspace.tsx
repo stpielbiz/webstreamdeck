@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Clapperboard, MonitorPlay, Play, Search, Sparkles } from "lucide-react";
+import { ArrowLeft, Clapperboard, MonitorPlay, Play, Search, Sparkles, Star } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { PopularRow } from "@/components/popular-row";
 import { VideoPlayer } from "@/components/video-player";
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getItems, getMovie, getPlayback, getSeries } from "@/lib/iptv.functions";
@@ -117,6 +118,13 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const season = seasons[seasonIndex];
   const title = kind === "movie" ? movie.data?.name ?? selectedItem?.name : episode ? `${show?.name ?? ""} — S${episode.season} E${episode.episode}` : show?.name ?? selectedItem?.name;
   const poster = kind === "movie" ? movie.data?.image ?? selectedItem?.image : episode?.image ?? show?.image ?? selectedItem?.image;
+  const selectedMetadata = selectedItem ? metadata.data?.[selectedItem.name] : undefined;
+  const details = kind === "movie" ? movie.data : show;
+  const overview = details?.plot || selectedMetadata?.overview;
+  const detailGenres = selectedMetadata?.genres?.length ? selectedMetadata.genres : details?.genre ? [details.genre] : [];
+  const detailYear = selectedMetadata?.year || selectedItem?.year;
+  const selectedProgress = (progress.data ?? []).find((row) => row.playlistId === activeId && (row.itemId === selectedId || row.seriesId === selectedId) && !row.completed);
+  const selectedFavorite = selectedId ? isFavorite(favorites.data, activeId, kind, selectedId) : false;
   const resumeAt = (progress.data ?? []).find((row) => row.playlistId === activeId && row.itemId === mediaId && !row.completed)?.positionSeconds ?? 0;
 
   const selectTitle = (id: string) => {
@@ -222,19 +230,12 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             {kind === "series" && show?.plot && <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{show.plot}</p>}
           </div>
           <div className="relative mx-auto aspect-video w-full max-w-xl overflow-hidden rounded-lg bg-muted lg:order-2">
-            <VideoPlayer src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
-            {!mediaId && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-card/80 px-4 text-center"><div>{kind === "movie" ? <Clapperboard className="mx-auto size-7 text-primary" /> : <MonitorPlay className="mx-auto size-7 text-primary" />}<p className="mt-2 font-display text-base font-semibold">Choose {kind === "movie" ? "a movie" : "a show"}</p><p className="mt-1 text-xs text-muted-foreground">Your selection will play here.</p></div></div>}
+            <div className="absolute inset-0 grid place-items-center bg-card/80 px-4 text-center"><div>{kind === "movie" ? <Clapperboard className="mx-auto size-7 text-primary" /> : <MonitorPlay className="mx-auto size-7 text-primary" />}<p className="mt-2 font-display text-base font-semibold">Choose {kind === "movie" ? "a movie" : "a show"}</p><p className="mt-1 text-xs text-muted-foreground">Details and a small preview will open.</p></div></div>
           </div>
         </div>
 
         <div className="mt-4 min-w-0">
           <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
-        {kind === "series" && show && (
-          <section className="mb-4 space-y-2">
-            <div className="flex gap-2 overflow-x-auto pb-1">{seasons.map((entry, index) => <Button key={entry.season} data-tv-focus size="sm" variant={index === seasonIndex ? "default" : "secondary"} onClick={() => { setSeasonIndex(index); setEpisode(null); }}>Season {entry.season}</Button>)}</div>
-            <div className="grid gap-2 sm:grid-cols-2">{(season?.episodes ?? []).map((item) => <Button key={item.id} data-tv-focus variant={episode?.id === item.id ? "default" : "outline"} className="h-auto min-h-12 justify-start whitespace-normal px-3 py-2 text-left" onClick={() => setEpisode(item)}><Play className="size-4 shrink-0" /><span className="truncate">E{item.episode} · {item.title}</span></Button>)}</div>
-          </section>
-        )}
         <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <h2 className="truncate font-display text-lg font-semibold">{genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
           <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
@@ -242,8 +243,49 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         {catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 && !catalogue.isLoading ? <EmptyState title="Nothing here" description="No titles match this system category." /> : <PosterGrid>{visibleItems.slice(0, 180).map((item, index) => <PosterTile key={item.id} zoneEntry={index === 0} title={metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(metadata.data?.[item.name]?.year || item.year || "")} progress={progressFor(progress.data, activeId, item.id)} favorite={isFavorite(favorites.data, activeId, kind, item.id)} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: item.id, title: item.name, logoUrl: item.image })} />)}</PosterGrid>}
         </div>
       </div>
+
+      <Dialog open={selectedId !== null} onOpenChange={(open) => { if (!open) { setSelectedId(null); setEpisode(null); } }}>
+        <DialogContent data-tv-zone="details" className="max-h-[86dvh] w-[min(92vw,56rem)] max-w-none gap-0 overflow-hidden p-0 sm:rounded-lg">
+          <div className="scrollbar-thin max-h-[86dvh] overflow-y-auto">
+            <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_minmax(18rem,46%)] md:p-5">
+              <div className="min-w-0">
+                <DialogHeader className="pr-8 text-left">
+                  <p className="text-xs font-semibold uppercase text-primary">{kind === "movie" ? "Movie" : "Show"}</p>
+                  <DialogTitle className="font-display text-2xl leading-tight">{selectedMetadata?.title || selectedItem?.name || "Loading details"}</DialogTitle>
+                  <DialogDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    {detailYear && <span>{detailYear}</span>}
+                    {detailGenres.map((item) => <span key={item}>{item}</span>)}
+                    {selectedProgress && <span className="font-medium text-primary">Resume at {formatResume(selectedProgress.positionSeconds)}</span>}
+                  </DialogDescription>
+                </DialogHeader>
+                {overview && <p className="mt-4 line-clamp-5 text-sm leading-relaxed text-muted-foreground">{overview}</p>}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {selectedId && <Button data-tv-focus variant="secondary" onClick={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: selectedId, title: selectedItem?.name ?? title ?? "", logoUrl: poster ?? null })}><Star className={cn("size-4", selectedFavorite && "fill-primary text-primary")} />{selectedFavorite ? "In favourites" : "Add to favourites"}</Button>}
+                  <DialogClose asChild><Button data-dialog-back data-tv-focus variant="outline">Close</Button></DialogClose>
+                </div>
+              </div>
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
+                <VideoPlayer src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
+                {!mediaId && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-card/80 px-4 text-center"><div><MonitorPlay className="mx-auto size-7 text-primary" /><p className="mt-2 font-display text-base font-semibold">Choose an episode</p></div></div>}
+              </div>
+            </div>
+            {kind === "series" && show && (
+              <section className="border-t border-border p-4 md:p-5">
+                <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{seasons.map((entry, index) => <Button key={entry.season} data-tv-focus size="sm" variant={index === seasonIndex ? "default" : "secondary"} onClick={() => { setSeasonIndex(index); setEpisode(null); }}>Season {entry.season}</Button>)}</div>
+                <div className="grid gap-2 sm:grid-cols-2">{(season?.episodes ?? []).map((item) => <Button key={item.id} data-tv-focus variant={episode?.id === item.id ? "default" : "outline"} className="h-auto min-h-12 justify-start whitespace-normal px-3 py-2 text-left" onClick={() => setEpisode(item)}><Play className="size-4 shrink-0" /><span className="truncate">E{item.episode} · {item.title}</span></Button>)}</div>
+              </section>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
+}
+
+function formatResume(seconds: number) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return hours > 0 ? `${hours}h ${minutes}m` : `${Math.max(1, minutes)}m`;
 }
 
 function progressFor(rows: ReturnType<typeof useProgress>["data"], playlistId: string | null, itemId: string) {
