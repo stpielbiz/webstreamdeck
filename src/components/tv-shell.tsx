@@ -22,6 +22,11 @@ export function TvShell({
     onBack:
       onBack ??
       (() => {
+         const dialogBack = document.querySelector<HTMLElement>("[data-dialog-back]");
+         if (dialogBack) {
+           dialogBack.click();
+           return;
+         }
         const layerBack = document.querySelector<HTMLElement>("[data-layer-back]");
         if (layerBack) layerBack.click();
         else void navigate({ to: "/tv" });
