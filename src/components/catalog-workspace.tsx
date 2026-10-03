@@ -132,6 +132,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     setSelectedId(id);
     setSeasonIndex(0);
     setEpisode(null);
+    setPlaying(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const returnToSections = () => void navigate({ to: tv ? "/tv" : "/dashboard" });
@@ -141,6 +142,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     setGenre(label);
     setSelectedId(null);
     setEpisode(null);
+    setPlaying(false);
     setSearch("");
   };
   const playNext = () => {
