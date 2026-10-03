@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -30,6 +30,7 @@ export const Route = createFileRoute("/_authenticated/tv/live")({
 });
 
 function TvLive() {
+  const navigate = useNavigate();
   const { channel } = Route.useSearch();
   const { activeId } = usePlaylists();
   const fetchCategories = useServerFn(getCategories);
@@ -132,7 +133,7 @@ function TvLive() {
       onBack={
         categoryId !== null
             ? () => setCategoryId(null)
-            : () => void window.history.back()
+            : () => void navigate({ to: "/tv" })
       }
     >
       {categoryId === null ? (

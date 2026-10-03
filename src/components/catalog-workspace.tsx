@@ -45,6 +45,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const [episode, setEpisode] = useState<EpisodeItem | null>(null);
   const [organising, setOrganising] = useState(false);
   const categoryFocus = useRef<HTMLButtonElement>(null);
+  const previousGenre = useRef<string | null>(null);
 
   const catalogue = useQuery({
     queryKey: ["system-catalogue", activeId, kind],
@@ -119,10 +120,17 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   };
   const returnToSections = () => void navigate({ to: tv ? "/tv" : "/dashboard" });
   const returnToCategories = () => {
+    previousGenre.current = genre;
     setSelectedId(null);
     setEpisode(null);
     setGenre(null);
-    window.requestAnimationFrame(() => categoryFocus.current?.focus());
+    window.requestAnimationFrame(() => {
+      const key = previousGenre.current;
+      const saved = key
+        ? document.querySelector<HTMLElement>(`[data-focus-key="category-${CSS.escape(key)}"]`)
+        : null;
+      (saved ?? categoryFocus.current)?.focus();
+    });
   };
   const playNext = () => {
     if (!episode || !season) return;
