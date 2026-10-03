@@ -215,7 +215,20 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
           {isAdmin && <Button data-tv-focus size="icon" variant="ghost" title="Organise missing titles" disabled={organising} onClick={() => void organiseMissing()}><Sparkles className={cn("size-4", organising && "animate-pulse")} /></Button>}
         </div>
         <div className="scrollbar-thin flex min-h-0 gap-1 overflow-x-auto md:flex-col md:overflow-x-hidden md:overflow-y-auto">
-          {catalogue.isLoading || metadata.isLoading ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-10 w-36 shrink-0 md:w-full" />) : groups.map((group, index) => (
+          {catalogue.isLoading || metadata.isLoading ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-10 w-36 shrink-0 md:w-full" />) : (<>
+            <Button
+              ref={categoryFocus}
+              data-tv-focus
+              data-zone-entry={genre === "All" ? "true" : undefined}
+              data-focus-key="category-All"
+              variant={genre === "All" ? "secondary" : "ghost"}
+              className="h-10 w-40 shrink-0 justify-between px-3 text-left text-sm md:w-full"
+              onFocus={() => chooseGenre("All")}
+              onClick={() => chooseGenre("All")}
+            >
+              <span className="truncate">All</span><span className="ml-2 text-xs text-muted-foreground">{(catalogue.data ?? []).length}</span>
+            </Button>
+            {groups.map((group) => (
             <Button
               key={group.label}
               ref={index === 0 ? categoryFocus : undefined}
