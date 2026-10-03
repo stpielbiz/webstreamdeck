@@ -486,6 +486,7 @@ export function VideoPlayer({
 
       {src && (
         <div
+          data-tv-zone="player"
           className={cn(
             "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-3 pt-10 transition-all",
             controlsVisible || !playing
@@ -516,6 +517,8 @@ export function VideoPlayer({
           <div className="flex items-center gap-2">
             <button
               type="button"
+              data-tv-focus
+              tabIndex={controlsVisible || !playing ? 0 : -1}
               onClick={togglePlay}
               className="rounded-md p-1.5 text-white transition hover:bg-white/15"
               aria-label={playing ? "Pause" : "Play"}
@@ -526,6 +529,8 @@ export function VideoPlayer({
               <>
                 <button
                   type="button"
+                  data-tv-focus
+                  tabIndex={controlsVisible || !playing ? 0 : -1}
                   onClick={() => skipBy(-10)}
                   className="rounded-md p-1.5 text-white transition hover:bg-white/15"
                   aria-label="Rewind 10 seconds"
@@ -534,6 +539,8 @@ export function VideoPlayer({
                 </button>
                 <button
                   type="button"
+                  data-tv-focus
+                  tabIndex={controlsVisible || !playing ? 0 : -1}
                   onClick={() => skipBy(10)}
                   className="rounded-md p-1.5 text-white transition hover:bg-white/15"
                   aria-label="Fast forward 10 seconds"
@@ -544,6 +551,8 @@ export function VideoPlayer({
             )}
             <button
               type="button"
+              data-tv-focus
+              tabIndex={controlsVisible || !playing ? 0 : -1}
               onClick={() => {
                 const video = videoRef.current;
                 if (video) video.muted = !video.muted;
@@ -576,6 +585,8 @@ export function VideoPlayer({
               <a
                 href={externalLinks[0].href}
                 onClick={() => notifyExternalLaunch(externalLinks[0]!.href)}
+                data-tv-focus
+                tabIndex={controlsVisible || !playing ? 0 : -1}
                 className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-white/15"
                 aria-label={externalLinks[0].label}
                 title={externalLinks[0].label}
@@ -586,6 +597,8 @@ export function VideoPlayer({
             )}
             <button
               type="button"
+              data-tv-focus
+              tabIndex={controlsVisible || !playing ? 0 : -1}
               onClick={toggleFullscreen}
               className={cn(
                 "rounded-md p-1.5 text-white transition hover:bg-white/15",
