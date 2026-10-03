@@ -99,6 +99,23 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         : titleOf(a).localeCompare(titleOf(b)),
     );
   }, [genre, chosenGroup, catalogue.data, search, sort, metadata.data]);
+  const sections = useMemo(() => {
+    const buckets = new Map<string, CatalogItem[]>();
+    for (const item of visibleItems) {
+      let label: string;
+      if (sort === "year") {
+        const year = Number(metadata.data?.[item.name]?.year || item.year || 0);
+        label = year > 0 ? String(year) : "Unknown year";
+      } else {
+        const letter = (metadata.data?.[item.name]?.title || item.name).trim().charAt(0).toUpperCase();
+        label = /[A-Z]/.test(letter) ? letter : "#";
+      }
+      const bucket = buckets.get(label);
+      if (bucket) bucket.push(item);
+      else buckets.set(label, [item]);
+    }
+    return [...buckets.entries()].map(([label, items]) => ({ label, items }));
+  }, [visibleItems, sort, metadata.data]);
   const selectedItem = (catalogue.data ?? []).find((item) => item.id === selectedId);
 
   const movie = useQuery({
@@ -263,7 +280,12 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
           </div>
         </div>
-        {catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 && !catalogue.isLoading ? <EmptyState title="Nothing here" description="No titles match this system category." /> : <PosterGrid>{visibleItems.slice(0, 180).map((item, index) => <PosterTile key={item.id} zoneEntry={index === 0} title={metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(metadata.data?.[item.name]?.year || item.year || "")} progress={progressFor(progress.data, activeId, item.id)} favorite={isFavorite(favorites.data, activeId, kind, item.id)} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: item.id, title: item.name, logoUrl: item.image })} />)}</PosterGrid>}
+        {catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 && !catalogue.isLoading ? <EmptyState title="Nothing here" description="No titles match this system category." /> : sections.map((section, sectionIndex) => (
+          <div key={section.label} className="mb-5">
+            <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3>
+            <PosterGrid>{section.items.slice(0, 180).map((item, index) => <PosterTile key={item.id} zoneEntry={sectionIndex === 0 && index === 0} title={metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(metadata.data?.[item.name]?.year || item.year || "")} progress={progressFor(progress.data, activeId, item.id)} favorite={isFavorite(favorites.data, activeId, kind, item.id)} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: item.id, title: item.name, logoUrl: item.image })} />)}</PosterGrid>
+          </div>
+        ))}
         </div>
       </div>
 
