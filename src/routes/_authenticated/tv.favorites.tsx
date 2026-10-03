@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { usePlaylists } from "@/components/playlist-context";
 import { TvGrid, TvShell, TvTile } from "@/components/tv-shell";
+import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/lib/library-hooks";
 
 export const Route = createFileRoute("/_authenticated/tv/favorites")({
