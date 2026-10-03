@@ -46,7 +46,7 @@ function TvLive() {
   const categories = useQuery({
     queryKey: ["tv-live-categories", activeId],
     queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind: "live" } }),
-    enabled: !!activeId && categoryId !== null,
+    enabled: !!activeId,
     staleTime: 10 * 60_000,
   });
 
@@ -136,20 +136,20 @@ function TvLive() {
       }
     >
       {categoryId === null ? (
-        <div className="scrollbar-thin mx-auto h-full max-w-5xl overflow-y-auto py-2">
+        <div data-tv-zone="categories" className="scrollbar-thin mx-auto h-full max-w-3xl animate-slide-in-right overflow-y-auto py-2 motion-reduce:animate-none">
           <h2 className="mb-4 text-2xl font-semibold">Choose a channel category</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            <Button data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => { setCategoryId(""); setSelected(null); }}>All channels</Button>
+          <div className="flex flex-col gap-1">
+            <Button data-tv-focus variant="ghost" className="h-14 justify-start truncate px-4 text-lg" onClick={() => { setCategoryId(""); setSelected(null); }}>All channels</Button>
             {(categories.data ?? []).map((category) => (
-              <Button key={category.id} data-tv-focus variant="secondary" className="h-14 justify-start truncate text-lg" onClick={() => { setCategoryId(category.id); setSelected(null); }}>{category.name}</Button>
+              <Button key={category.id} data-tv-focus variant="ghost" className="h-14 justify-start truncate px-4 text-lg" onClick={() => { setCategoryId(category.id); setSelected(null); }}>{category.name}</Button>
             ))}
           </div>
         </div>
       ) : (
-      <div className="flex h-full min-h-0 flex-col gap-2 sm:gap-3">
+      <div data-tv-zone="content" className="flex h-full min-h-0 animate-slide-in-right flex-col gap-2 motion-reduce:animate-none sm:gap-3">
         <section className="grid shrink-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(22rem,42%)]">
           <div className="min-w-0 self-center py-1 md:order-1">
-            <Button data-tv-focus variant="ghost" className="mb-2" onClick={() => { setSelected(null); setCategoryId(null); }}>
+            <Button data-layer-back data-tv-focus variant="ghost" className="mb-2" onClick={() => { setSelected(null); setCategoryId(null); }}>
               <ArrowLeft className="size-4" /> Categories
             </Button>
             <div className="mb-1 flex min-w-0 items-center gap-3">

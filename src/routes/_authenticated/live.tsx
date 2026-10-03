@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -41,6 +41,7 @@ function timeLabel(iso: string | null) {
 }
 
 function LivePage() {
+  const navigate = useNavigate();
   const { channel: channelFromUrl } = Route.useSearch();
   const { activeId, playlists } = usePlaylists();
   const fetchCategories = useServerFn(getCategories);
@@ -58,7 +59,7 @@ function LivePage() {
   const categories = useQuery({
     queryKey: ["categories", activeId, "live"],
     queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind: "live" } }),
-    enabled: !!activeId && categoryId !== null,
+    enabled: !!activeId,
     staleTime: 10 * 60_000,
   });
 
@@ -148,16 +149,17 @@ function LivePage() {
 
   if (categoryId === null) {
     return (
-      <section className="min-h-full p-4 sm:p-6">
-        <div className="mx-auto max-w-5xl">
+      <section data-tv-zone="categories" className="min-h-full animate-slide-in-right p-4 motion-reduce:animate-none sm:p-6">
+        <div className="mx-auto max-w-3xl">
+          <Button data-layer-back data-tv-focus variant="ghost" className="mb-3" onClick={() => void navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /> Sections</Button>
           <h1 className="font-display text-2xl font-bold">Live TV</h1>
           <p className="mt-1 text-sm text-muted-foreground">Choose a channel category</p>
-          <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-            <Button variant="secondary" className="h-12 justify-start" onClick={() => { setCategoryId(""); setSelected(null); }}>All channels</Button>
+          <div className="mt-5 flex flex-col gap-1">
+            <Button data-tv-focus variant="ghost" className="h-12 justify-between px-4 text-base" onClick={() => { setCategoryId(""); setSelected(null); }}>All channels</Button>
             {categories.isLoading
               ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />)
               : (categories.data ?? []).map((category) => (
-                  <Button key={category.id} variant="secondary" className="h-12 justify-start truncate" onClick={() => { setCategoryId(category.id); setSelected(null); }}>{category.name}</Button>
+                  <Button key={category.id} data-tv-focus variant="ghost" className="h-12 justify-start truncate px-4 text-base" onClick={() => { setCategoryId(category.id); setSelected(null); }}>{category.name}</Button>
                 ))}
           </div>
         </div>
@@ -166,10 +168,10 @@ function LivePage() {
   }
 
   return (
-    <div className="grid h-full gap-0 lg:grid-cols-[minmax(18rem,1fr)_minmax(28rem,1.35fr)]">
+    <div data-tv-zone="content" className="grid h-full animate-slide-in-right gap-0 motion-reduce:animate-none lg:grid-cols-[minmax(18rem,1fr)_minmax(28rem,1.35fr)]">
       <section className="flex max-h-screen min-w-0 flex-col border-r border-border lg:order-1">
         <div className="border-b border-border p-3">
-          <Button variant="ghost" size="sm" onClick={() => { setSelected(null); setCategoryId(null); }}><ArrowLeft className="size-4" /> Categories</Button>
+          <Button data-layer-back data-tv-focus variant="ghost" size="sm" onClick={() => { setSelected(null); setCategoryId(null); }}><ArrowLeft className="size-4" /> Categories</Button>
         </div>
         <div className="relative border-b border-border p-3">
           <Search className="pointer-events-none absolute left-5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -207,6 +209,7 @@ function LivePage() {
                 >
                   <button
                     type="button"
+                    data-tv-focus
                     onClick={() => setSelected(item)}
                     className="flex min-w-0 flex-1 items-center gap-3 text-left"
                   >
@@ -267,6 +270,7 @@ function LivePage() {
           title={selected?.name ?? ""}
           poster={selected?.image ?? null}
           live
+          className="mx-auto max-h-[30vh] max-w-xl"
         />
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">

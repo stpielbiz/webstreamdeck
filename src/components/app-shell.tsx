@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePlaylists } from "@/components/playlist-context";
 import { useIsAdmin } from "@/lib/use-admin";
 import { Button } from "@/components/ui/button";
+import { useSpatialNav } from "@/lib/use-spatial-nav";
 import {
   Select,
   SelectContent,
@@ -46,9 +47,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const tvMode = pathname === "/tv" || pathname.startsWith("/tv/");
+  useSpatialNav({
+    enabled: !tvMode,
+    onBack: () => {
+      const layerBack = document.querySelector<HTMLElement>("[data-layer-back]");
+      if (layerBack) layerBack.click();
+    },
+  });
 
   // TV mode owns the whole screen — no sidebar, no mobile nav strip.
-  if (pathname === "/tv" || pathname.startsWith("/tv/")) return <>{children}</>;
+  if (tvMode) return <>{children}</>;
 
   const signOut = async () => {
     await queryClient.cancelQueries();

@@ -12,3 +12,5 @@
 - [x] Keep playback at the upper-right and reduce movie/show tile sizes.
 - [x] Replace Firestick-specific setup links with a general code-based device login flow.
 - [x] Use saved system genres and keep the player visible while browsing Movies and Shows.
+- [x] Replace free-form remote focus with deterministic section, category, and content layers.
+- [x] Use compact previews and vertical category lists across TV and regular screens.
