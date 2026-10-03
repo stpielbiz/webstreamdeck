@@ -99,6 +99,23 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         : titleOf(a).localeCompare(titleOf(b)),
     );
   }, [genre, chosenGroup, catalogue.data, search, sort, metadata.data]);
+  const sections = useMemo(() => {
+    const buckets = new Map<string, CatalogItem[]>();
+    for (const item of visibleItems) {
+      let label: string;
+      if (sort === "year") {
+        const year = Number(metadata.data?.[item.name]?.year || item.year || 0);
+        label = year > 0 ? String(year) : "Unknown year";
+      } else {
+        const letter = (metadata.data?.[item.name]?.title || item.name).trim().charAt(0).toUpperCase();
+        label = /[A-Z]/.test(letter) ? letter : "#";
+      }
+      const bucket = buckets.get(label);
+      if (bucket) bucket.push(item);
+      else buckets.set(label, [item]);
+    }
+    return [...buckets.entries()].map(([label, items]) => ({ label, items }));
+  }, [visibleItems, sort, metadata.data]);
   const selectedItem = (catalogue.data ?? []).find((item) => item.id === selectedId);
 
   const movie = useQuery({
