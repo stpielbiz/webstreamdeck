@@ -68,7 +68,13 @@ async function handle(request: Request): Promise<Response> {
         : lastStatus
           ? `The provider returned ${lastStatus}`
           : "The provider could not be reached";
-    return new Response(message, { status: 502 });
+    // Provider refusal is expected (providers often block relays); report it as a
+    // failed dependency rather than a server crash so the player falls back to
+    // direct/VLC playback without tripping error monitoring.
+    return new Response(message, {
+      status: 424,
+      headers: { "cache-control": "no-store", "x-stream-refused": String(lastStatus) },
+    });
   }
 
   const contentType = (upstream.headers.get("content-type") ?? "").toLowerCase();
