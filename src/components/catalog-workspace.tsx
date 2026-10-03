@@ -80,6 +80,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     setGenre(null);
     setSelectedId(null);
     setEpisode(null);
+    setPlaying(false);
   }, [activeId, kind]);
 
   useEffect(() => {
@@ -226,15 +227,9 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       </aside>
 
       <div data-tv-zone="content" data-tv-zone-order="2" className="scrollbar-thin min-h-0 min-w-0 overflow-y-auto pr-1">
-        <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,38%)]">
-          <div className="min-w-0 self-center lg:order-1">
-            <p className="text-xs font-semibold uppercase text-primary">{genre ?? "Loading categories"}</p>
-            <h1 className="mt-1 truncate font-display text-xl font-bold">{title ?? `Choose ${kind === "movie" ? "a movie" : "a show"}`}</h1>
-            {kind === "series" && show?.plot && <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{show.plot}</p>}
-          </div>
-          <div className="relative mx-auto aspect-video w-full max-w-xl overflow-hidden rounded-lg bg-muted lg:order-2">
-            <div className="absolute inset-0 grid place-items-center bg-card/80 px-4 text-center"><div>{kind === "movie" ? <Clapperboard className="mx-auto size-7 text-primary" /> : <MonitorPlay className="mx-auto size-7 text-primary" />}<p className="mt-2 font-display text-base font-semibold">Choose {kind === "movie" ? "a movie" : "a show"}</p><p className="mt-1 text-xs text-muted-foreground">Details and a small preview will open.</p></div></div>
-          </div>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase text-primary">{genre ?? "Loading categories"}</p>
+          <h1 className="mt-1 truncate font-display text-xl font-bold">{`Choose ${kind === "movie" ? "a movie" : "a show"}`}</h1>
         </div>
 
         <div className="mt-4 min-w-0">
