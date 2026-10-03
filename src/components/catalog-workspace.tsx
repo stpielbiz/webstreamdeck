@@ -242,7 +242,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         </div>
       </div>
 
-      <Dialog open={selectedId !== null} onOpenChange={(open) => { if (!open) { setSelectedId(null); setEpisode(null); } }}>
+      <Dialog open={selectedId !== null} onOpenChange={(open) => { if (!open) { setSelectedId(null); setEpisode(null); setPlaying(false); } }}>
         <DialogContent data-tv-zone="details" className="max-h-[86dvh] w-[min(92vw,56rem)] max-w-none gap-0 overflow-hidden p-0 sm:rounded-lg">
           <div className="scrollbar-thin max-h-[86dvh] overflow-y-auto">
             <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_minmax(18rem,46%)] md:p-5">
@@ -258,19 +258,41 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
                 </DialogHeader>
                 {overview && <p className="mt-4 line-clamp-5 text-sm leading-relaxed text-muted-foreground">{overview}</p>}
                 <div className="mt-4 flex flex-wrap gap-2">
+                  {kind === "movie" && !playing && (
+                    <Button data-tv-focus data-zone-entry="true" onClick={() => setPlaying(true)}><Play className="size-4" />{resumeAt > 0 ? "Resume" : "Play"}</Button>
+                  )}
                   {selectedId && <Button data-tv-focus variant="secondary" onClick={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: selectedId, title: selectedItem?.name ?? title ?? "", logoUrl: poster ?? null })}><Star className={cn("size-4", selectedFavorite && "fill-primary text-primary")} />{selectedFavorite ? "In favourites" : "Add to favourites"}</Button>}
                   <DialogClose asChild><Button data-dialog-back data-tv-focus variant="outline">Close</Button></DialogClose>
                 </div>
               </div>
               <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
-                <VideoPlayer src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
-                {!mediaId && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-card/80 px-4 text-center"><div><MonitorPlay className="mx-auto size-7 text-primary" /><p className="mt-2 font-display text-base font-semibold">Choose an episode</p></div></div>}
+                {playing && mediaId ? (
+                  <VideoPlayer src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
+                ) : (
+                  <button
+                    type="button"
+                    data-tv-focus
+                    data-zone-entry="true"
+                    className="group relative grid h-full w-full place-items-center bg-card/80"
+                    onClick={() => {
+                      if (kind === "series" && !episode) {
+                        const first = seasons[0]?.episodes[0];
+                        if (first) { setSeasonIndex(0); setEpisode(first); }
+                      }
+                      setPlaying(true);
+                    }}
+                  >
+                    {poster && <img src={poster} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />}
+                    <span className="relative grid size-16 place-items-center rounded-full bg-primary text-primary-foreground transition group-focus-visible:ring-2 group-focus-visible:ring-ring"><Play className="size-7 fill-current" /></span>
+                    <span className="sr-only">{kind === "series" && !episode ? "Play first episode" : "Play"}</span>
+                  </button>
+                )}
               </div>
             </div>
             {kind === "series" && show && (
               <section className="border-t border-border p-4 md:p-5">
-                <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{seasons.map((entry, index) => <Button key={entry.season} data-tv-focus size="sm" variant={index === seasonIndex ? "default" : "secondary"} onClick={() => { setSeasonIndex(index); setEpisode(null); }}>Season {entry.season}</Button>)}</div>
-                <div className="grid gap-2 sm:grid-cols-2">{(season?.episodes ?? []).map((item) => <Button key={item.id} data-tv-focus variant={episode?.id === item.id ? "default" : "outline"} className="h-auto min-h-12 justify-start whitespace-normal px-3 py-2 text-left" onClick={() => setEpisode(item)}><Play className="size-4 shrink-0" /><span className="truncate">E{item.episode} · {item.title}</span></Button>)}</div>
+                <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{seasons.map((entry, index) => <Button key={entry.season} data-tv-focus size="sm" variant={index === seasonIndex ? "default" : "secondary"} onClick={() => { setSeasonIndex(index); setEpisode(null); setPlaying(false); }}>Season {entry.season}</Button>)}</div>
+                <div className="grid gap-2 sm:grid-cols-2">{(season?.episodes ?? []).map((item) => <Button key={item.id} data-tv-focus variant={episode?.id === item.id && playing ? "default" : "outline"} className="h-auto min-h-12 justify-start whitespace-normal px-3 py-2 text-left" onClick={() => { setEpisode(item); setPlaying(true); }}><Play className="size-4 shrink-0" /><span className="truncate">E{item.episode} · {item.title}</span></Button>)}</div>
               </section>
             )}
           </div>
