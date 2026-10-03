@@ -32,6 +32,9 @@ class MainActivity : Activity() {
             databaseEnabled = true
             mediaPlaybackRequiresUserGesture = false
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+            useWideViewPort = true
+            loadWithOverviewMode = true
+            textZoom = 100
             userAgentString = "$userAgentString StreamDeckTV/${BuildConfig.VERSION_NAME}"
         }
         webView.webViewClient = WebViewClient()
