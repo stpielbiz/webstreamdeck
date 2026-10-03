@@ -230,19 +230,12 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             {kind === "series" && show?.plot && <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{show.plot}</p>}
           </div>
           <div className="relative mx-auto aspect-video w-full max-w-xl overflow-hidden rounded-lg bg-muted lg:order-2">
-            <VideoPlayer src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
-            {!mediaId && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-card/80 px-4 text-center"><div>{kind === "movie" ? <Clapperboard className="mx-auto size-7 text-primary" /> : <MonitorPlay className="mx-auto size-7 text-primary" />}<p className="mt-2 font-display text-base font-semibold">Choose {kind === "movie" ? "a movie" : "a show"}</p><p className="mt-1 text-xs text-muted-foreground">Your selection will play here.</p></div></div>}
+            <div className="absolute inset-0 grid place-items-center bg-card/80 px-4 text-center"><div>{kind === "movie" ? <Clapperboard className="mx-auto size-7 text-primary" /> : <MonitorPlay className="mx-auto size-7 text-primary" />}<p className="mt-2 font-display text-base font-semibold">Choose {kind === "movie" ? "a movie" : "a show"}</p><p className="mt-1 text-xs text-muted-foreground">Details and a small preview will open.</p></div></div>
           </div>
         </div>
 
         <div className="mt-4 min-w-0">
           <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
-        {kind === "series" && show && (
-          <section className="mb-4 space-y-2">
-            <div className="flex gap-2 overflow-x-auto pb-1">{seasons.map((entry, index) => <Button key={entry.season} data-tv-focus size="sm" variant={index === seasonIndex ? "default" : "secondary"} onClick={() => { setSeasonIndex(index); setEpisode(null); }}>Season {entry.season}</Button>)}</div>
-            <div className="grid gap-2 sm:grid-cols-2">{(season?.episodes ?? []).map((item) => <Button key={item.id} data-tv-focus variant={episode?.id === item.id ? "default" : "outline"} className="h-auto min-h-12 justify-start whitespace-normal px-3 py-2 text-left" onClick={() => setEpisode(item)}><Play className="size-4 shrink-0" /><span className="truncate">E{item.episode} · {item.title}</span></Button>)}</div>
-          </section>
-        )}
         <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <h2 className="truncate font-display text-lg font-semibold">{genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
           <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
