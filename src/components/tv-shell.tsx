@@ -18,7 +18,15 @@ export function TvShell({
 }) {
   const { active } = usePlaylists();
   const navigate = useNavigate();
-  useSpatialNav({ onBack: onBack ?? (() => void navigate({ to: "/tv" })) });
+  useSpatialNav({
+    onBack:
+      onBack ??
+      (() => {
+        const layerBack = document.querySelector<HTMLElement>("[data-layer-back]");
+        if (layerBack) layerBack.click();
+        else void navigate({ to: "/tv" });
+      }),
+  });
 
   return (
     <div

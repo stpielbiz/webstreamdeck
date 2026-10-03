@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { TvGrid, TvShell, TvTile } from "@/components/tv-shell";
 import { usePlaylists } from "@/components/playlist-context";
 import { useFavorites, useProgress } from "@/lib/library-hooks";
+import { SectionMenu } from "@/components/layered-navigation";
 
 export const Route = createFileRoute("/_authenticated/tv/")({
   head: () => ({
@@ -34,6 +35,7 @@ function TvHome() {
 
   return (
     <TvShell title="Home">
+      <SectionMenu tv current="Home" />
       {!activeId && (
         <p className="text-xl text-muted-foreground">
           No playlist yet. Add one on your phone or computer, then come back here.

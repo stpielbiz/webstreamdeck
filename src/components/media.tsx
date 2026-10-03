@@ -121,7 +121,7 @@ export function Shelf({
 
 export function PosterGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-5 md:grid-cols-7 xl:grid-cols-9">
+    <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5 md:grid-cols-7 xl:grid-cols-10">
       {children}
     </div>
   );
