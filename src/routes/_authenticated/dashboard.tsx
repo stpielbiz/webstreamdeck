@@ -7,6 +7,7 @@ import { EmptyState, PosterGrid, PosterTile, Shelf } from "@/components/media";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFavorites, useProgress } from "@/lib/library-hooks";
+import { SectionMenu } from "@/components/layered-navigation";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -40,6 +41,7 @@ function Dashboard() {
   if (playlists.length === 0) {
     return (
       <div className="space-y-6 p-6">
+        <SectionMenu current="Home" />
         <SubscriptionBanner />
         <EmptyState
           title="Add your first playlist"
@@ -69,6 +71,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-10 p-6">
+      <SectionMenu current="Home" />
       <SubscriptionBanner />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

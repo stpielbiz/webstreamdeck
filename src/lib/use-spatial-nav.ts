@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const SELECTOR = "[data-tv-focus]:not([disabled])";
+const SELECTOR = "[data-tv-focus]:not([disabled]):not([tabindex='-1'])";
 
 function rects() {
   return Array.from(document.querySelectorAll<HTMLElement>(SELECTOR))
@@ -44,10 +44,14 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
       if (!direction) return;
       if (typing && (direction === "left" || direction === "right")) return;
 
-      const candidates = rects();
+      const allCandidates = rects();
+      const active = document.activeElement as HTMLElement | null;
+      const activeZone = active?.closest<HTMLElement>("[data-tv-zone]")?.dataset['tvZone'];
+      const candidates = activeZone
+        ? allCandidates.filter((item) => item.element.closest<HTMLElement>("[data-tv-zone]")?.dataset['tvZone'] === activeZone)
+        : allCandidates;
       if (candidates.length === 0) return;
 
-      const active = document.activeElement as HTMLElement | null;
       const current = candidates.find((item) => item.element === active);
 
       if (!current) {
@@ -84,6 +88,9 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
         event.preventDefault();
         best.element.focus();
         best.element.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+      } else {
+        // Never let a D-pad boundary escape into browser or injected page chrome.
+        event.preventDefault();
       }
     };
 

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, MonitorPlay, Play, Search, Sparkles } from "lucide-react";
+import { ArrowLeft, Clapperboard, MonitorPlay, Play, Search, Sparkles } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -18,11 +19,13 @@ import { enrichTitles, getCachedTitleMetadata } from "@/lib/metadata.functions";
 import type { TitleMetadata } from "@/lib/metadata.server";
 import { useIsAdmin } from "@/lib/use-admin";
 import { cn } from "@/lib/utils";
+import { LayerHeading } from "@/components/layered-navigation";
 
 type Kind = "movie" | "series";
 
 export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolean }) {
   const { activeId, playlists } = usePlaylists();
+  const navigate = useNavigate();
   const fetchItems = useServerFn(getItems);
   const fetchMovie = useServerFn(getMovie);
   const fetchSeries = useServerFn(getSeries);
@@ -42,6 +45,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const [episode, setEpisode] = useState<EpisodeItem | null>(null);
   const [organising, setOrganising] = useState(false);
   const categoryFocus = useRef<HTMLButtonElement>(null);
+  const previousGenre = useRef<string | null>(null);
 
   const catalogue = useQuery({
     queryKey: ["system-catalogue", activeId, kind],
@@ -70,9 +74,6 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       .sort((a, b) => a.label === "Other" ? 1 : b.label === "Other" ? -1 : a.label.localeCompare(b.label));
   }, [catalogue.data, metadata.data]);
 
-  useEffect(() => {
-    if (genre === null && groups.length > 0) setGenre(groups[0]?.label ?? "Other");
-  }, [genre, groups]);
   useEffect(() => {
     setGenre(null);
     setSelectedId(null);
@@ -116,6 +117,20 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     setSeasonIndex(0);
     setEpisode(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const returnToSections = () => void navigate({ to: tv ? "/tv" : "/dashboard" });
+  const returnToCategories = () => {
+    previousGenre.current = genre;
+    setSelectedId(null);
+    setEpisode(null);
+    setGenre(null);
+    window.requestAnimationFrame(() => {
+      const key = previousGenre.current;
+      const saved = key
+        ? document.querySelector<HTMLElement>(`[data-focus-key="category-${CSS.escape(key)}"]`)
+        : null;
+      (saved ?? categoryFocus.current)?.focus();
+    });
   };
   const playNext = () => {
     if (!episode || !season) return;
@@ -164,34 +179,41 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
 
   if (playlists.length === 0) return <div className="p-6"><EmptyState title="No playlist yet" description="Add an Xtream login or M3U link and your library appears here." /></div>;
 
-  return (
-    <section className={cn("grid min-w-0 gap-5 p-3 sm:p-5 lg:grid-cols-[13rem_minmax(0,1fr)]", tv && "p-0 lg:grid-cols-[15rem_minmax(0,1fr)]")}>
-      <aside className="order-2 min-w-0 lg:order-1 lg:row-span-2">
-        <div className="lg:sticky lg:top-4">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h1 className={cn("font-display font-bold", tv ? "text-2xl" : "text-xl")}>{kind === "movie" ? "Movies" : "Shows"}</h1>
-            {isAdmin && <Button data-tv-focus size="icon" variant="ghost" title="Organise missing titles" disabled={organising} onClick={() => void organiseMissing()}><Sparkles className={cn("size-4", organising && "animate-pulse")} /></Button>}
-          </div>
-          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">System categories</p>
-          <div className="scrollbar-thin flex gap-2 overflow-x-auto pb-2 lg:max-h-[calc(100vh-10rem)] lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:pr-1">
-            {catalogue.isLoading || metadata.isLoading ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-11 w-36 shrink-0 lg:w-full" />) : groups.map((group, index) => (
-              <Button key={group.label} ref={index === 0 ? categoryFocus : undefined} data-tv-focus variant={genre === group.label ? "default" : "secondary"} className="h-11 w-36 shrink-0 justify-between gap-2 px-3 lg:w-full" onClick={() => { setGenre(group.label); setSearch(""); }}>
-                <span className="truncate">{group.label}</span><span className="text-xs opacity-70">{group.items.length}</span>
-              </Button>
-            ))}
-          </div>
+  if (genre === null) {
+    return (
+      <section data-tv-zone="categories" className={cn("mx-auto h-full w-full max-w-4xl animate-slide-in-right overflow-y-auto p-3 motion-reduce:animate-none sm:p-5", tv && "p-0 sm:p-0")}>
+        <Button data-layer-back data-tv-focus variant="ghost" className="mb-3" onClick={returnToSections}><ArrowLeft className="size-4" /> Sections</Button>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+          <LayerHeading title={kind === "movie" ? "Movies" : "Shows"} subtitle="Choose a system category" />
+          {isAdmin && <Button data-tv-focus size="icon" variant="ghost" title="Organise missing titles" disabled={organising} onClick={() => void organiseMissing()}><Sparkles className={cn("size-4", organising && "animate-pulse")} /></Button>}
         </div>
-      </aside>
+        <div className="flex flex-col gap-1">
+          {catalogue.isLoading || metadata.isLoading ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />) : groups.map((group, index) => (
+            <Button key={group.label} ref={index === 0 ? categoryFocus : undefined} data-tv-focus data-focus-key={`category-${group.label}`} variant="ghost" className="h-12 w-full justify-between px-4 text-left text-base" onClick={() => { setGenre(group.label); setSearch(""); }}>
+              <span className="truncate">{group.label}</span><span className="text-sm text-muted-foreground">{group.items.length}</span>
+            </Button>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
-      <div className="order-1 min-w-0 lg:order-2">
-        <div className="relative overflow-hidden rounded-lg bg-muted">
+  return (
+    <section data-tv-zone="content" className={cn("min-w-0 animate-slide-in-right p-3 motion-reduce:animate-none sm:p-5", tv && "p-0")}>
+      <Button data-layer-back data-tv-focus variant="ghost" className="mb-3" onClick={returnToCategories}><ArrowLeft className="size-4" /> Categories</Button>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,38%)]">
+        <div className="min-w-0 self-center lg:order-1">
+          <p className="text-xs font-semibold uppercase text-primary">{genre}</p>
+          <h1 className="mt-1 truncate font-display text-2xl font-bold">{title ?? `Choose ${kind === "movie" ? "a movie" : "a show"}`}</h1>
+          {kind === "series" && show?.plot && <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{show.plot}</p>}
+        </div>
+        <div className="relative max-h-[30vh] overflow-hidden rounded-lg bg-muted lg:order-2">
           <VideoPlayer src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
           {!mediaId && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-card/80 px-6 text-center"><div>{kind === "movie" ? <Clapperboard className="mx-auto size-9 text-primary" /> : <MonitorPlay className="mx-auto size-9 text-primary" />}<p className="mt-3 font-display text-lg font-semibold">Choose {kind === "movie" ? "a movie" : "a show"}</p><p className="mt-1 text-sm text-muted-foreground">Your selection will play here.</p></div></div>}
         </div>
-        {title && <div className="mt-3"><h2 className="font-display text-lg font-semibold">{title}</h2>{kind === "series" && show?.plot && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{show.plot}</p>}</div>}
       </div>
 
-      <div className="order-3 min-w-0 lg:order-3 lg:col-start-2">
+      <div className="mt-5 min-w-0">
         <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
         {kind === "series" && show && (
           <section className="mb-6 space-y-3">

@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 
 import { usePlaylists } from "@/components/playlist-context";
 import { TvGrid, TvShell, TvTile } from "@/components/tv-shell";
+import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/lib/library-hooks";
 
 export const Route = createFileRoute("/_authenticated/tv/favorites")({
@@ -33,6 +35,7 @@ function TvFavorites() {
 
   return (
     <TvShell title="Favourites">
+      <Button data-layer-back data-tv-focus variant="ghost" className="mb-4" onClick={() => void navigate({ to: "/tv" })}><ArrowLeft className="size-4" /> Sections</Button>
       {isLoading && <p className="text-xl text-muted-foreground">Loading…</p>}
       {!isLoading && rows.length === 0 && (
         <p className="text-xl text-muted-foreground">
