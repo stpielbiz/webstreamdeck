@@ -40,6 +40,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const toggleFavorite = useToggleFavorite();
   const saveProgress = useSaveProgress();
   const [genre, setGenre] = useState<string | null>(null);
+  const [sort, setSort] = useState<"az" | "year">("az");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [seasonIndex, setSeasonIndex] = useState(0);
@@ -84,14 +85,20 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   }, [activeId, kind]);
 
   useEffect(() => {
-    const first = groups[0]?.label;
-    if (first && (genre === null || (genre === "Other" && first !== "Other" && previousGenre.current === null))) {
-      setGenre(first);
-    }
-  }, [genre, groups]);
+    if (genre === null && (catalogue.data ?? []).length > 0) setGenre("All");
+  }, [genre, catalogue.data]);
 
   const chosenGroup = groups.find((group) => group.label === genre);
-  const visibleItems = (chosenGroup?.items ?? []).filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
+  const visibleItems = useMemo(() => {
+    const source = genre === "All" ? (catalogue.data ?? []) : (chosenGroup?.items ?? []);
+    const filtered = source.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
+    const titleOf = (item: CatalogItem) => metadata.data?.[item.name]?.title || item.name;
+    return [...filtered].sort((a, b) =>
+      sort === "year"
+        ? (Number(metadata.data?.[b.name]?.year || b.year || 0) - Number(metadata.data?.[a.name]?.year || a.year || 0)) || titleOf(a).localeCompare(titleOf(b))
+        : titleOf(a).localeCompare(titleOf(b)),
+    );
+  }, [genre, chosenGroup, catalogue.data, search, sort, metadata.data]);
   const selectedItem = (catalogue.data ?? []).find((item) => item.id === selectedId);
 
   const movie = useQuery({
