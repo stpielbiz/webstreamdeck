@@ -241,7 +241,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             >
               <span className="truncate">{group.label}</span><span className="ml-2 text-xs text-muted-foreground">{group.items.length}</span>
             </Button>
-          ))}
+          ))}</>)}
         </div>
       </aside>
 
@@ -255,7 +255,13 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
           <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
         <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <h2 className="truncate font-display text-lg font-semibold">{genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
-          <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
+          <div className="flex items-center gap-2">
+            <div className="flex overflow-hidden rounded-md border border-border">
+              <Button data-tv-focus size="sm" variant={sort === "az" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("az")}><ArrowDownAZ className="size-4" /> A–Z</Button>
+              <Button data-tv-focus size="sm" variant={sort === "year" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("year")}><CalendarArrowDown className="size-4" /> Year</Button>
+            </div>
+            <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
+          </div>
         </div>
         {catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 && !catalogue.isLoading ? <EmptyState title="Nothing here" description="No titles match this system category." /> : <PosterGrid>{visibleItems.slice(0, 180).map((item, index) => <PosterTile key={item.id} zoneEntry={index === 0} title={metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(metadata.data?.[item.name]?.year || item.year || "")} progress={progressFor(progress.data, activeId, item.id)} favorite={isFavorite(favorites.data, activeId, kind, item.id)} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: item.id, title: item.name, logoUrl: item.image })} />)}</PosterGrid>}
         </div>
