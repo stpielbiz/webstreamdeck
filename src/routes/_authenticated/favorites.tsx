@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Play, Star, Tv } from "lucide-react";
+import { ArrowLeft, Play, Star, Tv } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 
 import { usePlaylists } from "@/components/playlist-context";
 import { EmptyState, PosterGrid, PosterTile, Shelf } from "@/components/media";
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/favorites")({
 });
 
 function FavoritesPage() {
+  const navigate = useNavigate();
   const { activeId, playlists } = usePlaylists();
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
@@ -74,7 +76,8 @@ function FavoritesPage() {
   }
 
   return (
-    <div className="space-y-10 p-6">
+    <div data-tv-zone="content" className="space-y-10 p-6">
+      <Button data-layer-back data-tv-focus variant="ghost" onClick={() => void navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /> Sections</Button>
       <h1 className="font-display text-2xl font-bold">Favourites</h1>
 
       {channels.length > 0 && (

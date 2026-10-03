@@ -59,6 +59,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   // TV mode owns the whole screen — no sidebar, no mobile nav strip.
   if (tvMode) return <>{children}</>;
 
+  const layeredPath = ["/dashboard", "/guide", "/live", "/movies", "/series", "/favorites"].some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+  if (layeredPath) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <header className="grid h-14 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center border-b border-border px-3 sm:px-6">
+          <Link to="/dashboard" className="flex min-w-0 items-center gap-2">
+            <span className="grid size-8 shrink-0 place-items-center rounded bg-primary text-primary-foreground"><Tv className="size-4" /></span>
+            <span className="truncate font-display text-lg font-bold">Stream Deck</span>
+          </Link>
+          <span className="hidden text-sm text-muted-foreground sm:block">{playlists.find((item) => item.id === activeId)?.name ?? "No playlist"}</span>
+        </header>
+        <main className="min-h-0 flex-1">{children}</main>
+      </div>
+    );
+  }
+
   const signOut = async () => {
     await queryClient.cancelQueries();
     queryClient.clear();
