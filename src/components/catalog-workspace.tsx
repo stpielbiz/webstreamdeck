@@ -81,7 +81,10 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   }, [activeId, kind]);
 
   useEffect(() => {
-    if (genre === null && groups.length > 0) setGenre(groups[0]?.label ?? null);
+    const first = groups[0]?.label;
+    if (first && (genre === null || (genre === "Other" && first !== "Other" && previousGenre.current === null))) {
+      setGenre(first);
+    }
   }, [genre, groups]);
 
   const chosenGroup = groups.find((group) => group.label === genre);
@@ -236,7 +239,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
           <h2 className="truncate font-display text-lg font-semibold">{genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
           <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
         </div>
-        {catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 && !catalogue.isLoading ? <EmptyState title="Nothing here" description="No titles match this system category." /> : <PosterGrid>{visibleItems.slice(0, 180).map((item) => <PosterTile key={item.id} title={metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(metadata.data?.[item.name]?.year || item.year || "")} progress={progressFor(progress.data, activeId, item.id)} favorite={isFavorite(favorites.data, activeId, kind, item.id)} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: item.id, title: item.name, logoUrl: item.image })} />)}</PosterGrid>}
+        {catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 && !catalogue.isLoading ? <EmptyState title="Nothing here" description="No titles match this system category." /> : <PosterGrid>{visibleItems.slice(0, 180).map((item, index) => <PosterTile key={item.id} zoneEntry={index === 0} title={metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(metadata.data?.[item.name]?.year || item.year || "")} progress={progressFor(progress.data, activeId, item.id)} favorite={isFavorite(favorites.data, activeId, kind, item.id)} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: item.id, title: item.name, logoUrl: item.image })} />)}</PosterGrid>}
         </div>
       </div>
     </section>

@@ -46,7 +46,22 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
 
       const allCandidates = rects();
       const active = document.activeElement as HTMLElement | null;
-      const activeZone = active?.closest<HTMLElement>("[data-tv-zone]")?.dataset['tvZone'];
+      const zone = active?.closest<HTMLElement>("[data-tv-zone]");
+      const group = zone?.closest<HTMLElement>("[data-tv-zone-group]");
+      const order = Number(zone?.dataset['tvZoneOrder']);
+      const crossingZones = group && Number.isFinite(order)
+        && ((direction === "right" && order === 1) || (direction === "left" && order > 1));
+      if (crossingZones) {
+        event.preventDefault();
+        const nextOrder = order + (direction === "right" ? 1 : -1);
+        const nextZone = group.querySelector<HTMLElement>(`[data-tv-zone-order="${nextOrder}"]`);
+        const destination = nextZone?.querySelector<HTMLElement>("[data-zone-entry='true']")
+          ?? nextZone?.querySelector<HTMLElement>(SELECTOR);
+        destination?.focus();
+        destination?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+        return;
+      }
+      const activeZone = zone?.dataset['tvZone'];
       const candidates = activeZone
         ? allCandidates.filter((item) => item.element.closest<HTMLElement>("[data-tv-zone]")?.dataset['tvZone'] === activeZone)
         : allCandidates;
@@ -90,9 +105,6 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
         best.element.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
       } else {
         event.preventDefault();
-        const zone = active?.closest<HTMLElement>("[data-tv-zone]");
-        const group = zone?.closest<HTMLElement>("[data-tv-zone-group]");
-        const order = Number(zone?.dataset['tvZoneOrder']);
         if (group && Number.isFinite(order) && (direction === "left" || direction === "right")) {
           const nextOrder = order + (direction === "right" ? 1 : -1);
           const nextZone = group.querySelector<HTMLElement>(`[data-tv-zone-order="${nextOrder}"]`);

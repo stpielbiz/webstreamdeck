@@ -20,6 +20,7 @@ export function PosterTile({
   favorite,
   onToggleFavorite,
   onSelect,
+  zoneEntry,
 }: {
   to?: string;
   params?: Record<string, string> | undefined;
@@ -33,6 +34,7 @@ export function PosterTile({
   favorite?: boolean | undefined;
   onToggleFavorite?: (() => void) | undefined;
   onSelect?: (() => void) | undefined;
+  zoneEntry?: boolean | undefined;
 }) {
   const artwork = (
     <>
@@ -75,7 +77,7 @@ export function PosterTile({
   return (
     <div className="group relative">
       {onSelect ? (
-        <button type="button" data-tv-focus onClick={onSelect} className="block w-full overflow-hidden rounded-lg border border-border bg-card text-left outline-none transition hover:border-primary/60 focus-visible:tile-focus">
+        <button type="button" data-tv-focus data-zone-entry={zoneEntry ? "true" : undefined} onClick={onSelect} className="block w-full overflow-hidden rounded-lg border border-border bg-card text-left outline-none transition hover:border-primary/60 focus-visible:tile-focus">
           {artwork}
         </button>
       ) : (
