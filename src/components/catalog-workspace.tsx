@@ -231,7 +231,6 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             {groups.map((group) => (
             <Button
               key={group.label}
-              ref={index === 0 ? categoryFocus : undefined}
               data-tv-focus
               data-zone-entry={group.label === genre ? "true" : undefined}
               data-focus-key={`category-${group.label}`}
