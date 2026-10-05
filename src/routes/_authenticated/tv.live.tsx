@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Play, Tv, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Play, Tv, X } from "lucide-react";
 import { z } from "zod";
 
 import { getCategories, getItems, getPlayback, getSchedules } from "@/lib/iptv.functions";
@@ -17,6 +17,7 @@ const GUIDE_HOURS = 12;
 const GUIDE_WIDTH = 2880;
 const CHANNEL_WIDTH = 220;
 const ROW_HEIGHT = 68;
+const PAGE_SIZE = 40;
 
 export const Route = createFileRoute("/_authenticated/tv/live")({
   validateSearch: z.object({ channel: z.string().optional() }),
@@ -49,6 +50,7 @@ function TvLive() {
   const [url, setUrl] = useState<string | null>(null);
   const [directUrl, setDirectUrl] = useState<string | null>(null);
   const [clock, setClock] = useState(() => Date.now());
+  const [page, setPage] = useState(0);
   const [windowStart] = useState(() => {
     const now = new Date();
     now.setMinutes(now.getMinutes() < 30 ? 0 : 30, 0, 0);
@@ -80,14 +82,12 @@ function TvLive() {
   });
 
   const channels = useMemo(() => items.data ?? [], [items.data]);
-  const focusedIndex = Math.max(
-    0,
-    channels.findIndex((item) => item.id === focusedId),
+  const pageCount = Math.max(1, Math.ceil(channels.length / PAGE_SIZE));
+  const visibleChannels = useMemo(
+    () => channels.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
+    [channels, page],
   );
-  const scheduleChannels = useMemo(() => {
-    const start = Math.floor(focusedIndex / 40) * 40;
-    return channels.slice(start, start + 40);
-  }, [channels, focusedIndex]);
+  const scheduleChannels = visibleChannels;
 
   const schedules = useQuery({
     queryKey: ["tv-live-schedules", activeId, scheduleChannels.map((item) => item.id).join(","), windowStart],
@@ -115,18 +115,19 @@ function TvLive() {
     if (!channel || channels.length === 0) return;
     const initial = channels.find((item) => item.id === channel);
     if (!initial) return;
+    setPage(Math.floor(channels.indexOf(initial) / PAGE_SIZE));
     setFocusedId(initial.id);
   }, [channels, channel]);
 
   useEffect(() => {
-    if (channels.length === 0) {
+    if (visibleChannels.length === 0) {
       setFocusedId(null);
       return;
     }
-    if (!focusedId || !channels.some((item) => item.id === focusedId)) {
-      setFocusedId(channels[0]?.id ?? null);
+    if (!focusedId || !visibleChannels.some((item) => item.id === focusedId)) {
+      setFocusedId(visibleChannels[0]?.id ?? null);
     }
-  }, [channels, focusedId]);
+  }, [visibleChannels, focusedId]);
 
   useEffect(() => {
     if (!activeId || !selected) {
@@ -173,6 +174,7 @@ function TvLive() {
 
   const chooseCategory = (id: string) => {
     setCategoryId(id);
+    setPage(0);
     setFocusedId(null);
     guideRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -269,11 +271,12 @@ function TvLive() {
           <div className="mb-2 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b border-border pb-2">
             <div className="min-w-0">
               <p className="truncate font-display text-lg font-bold">{focused?.name ?? "Live TV guide"}</p>
-              <p className="truncate text-sm text-muted-foreground">
-                {currentProgramme ? `On now · ${currentProgramme.title}` : `${channels.length} channels · ${formatWindow(windowStart, windowStart + 3 * 60 * 60_000)}`}
-              </p>
+              <p className="truncate text-sm text-muted-foreground">{currentProgramme ? `On now · ${currentProgramme.title}` : `${channels.length} channels · ${formatWindow(windowStart, windowStart + 3 * 60 * 60_000)}`}</p>
             </div>
-            {focused && <p className="flex shrink-0 items-center gap-2 text-sm font-semibold text-primary"><Play className="size-4 fill-current" /> OK to watch</p>}
+            <div className="flex shrink-0 items-center gap-3">
+              {pageCount > 1 && <span className="text-xs tabular-nums text-muted-foreground">Channels {page * PAGE_SIZE + 1}–{Math.min(channels.length, (page + 1) * PAGE_SIZE)}</span>}
+              {focused && <p className="flex items-center gap-2 text-sm font-semibold text-primary"><Play className="size-4 fill-current" /> OK to watch</p>}
+            </div>
           </div>
 
           <div
@@ -297,7 +300,15 @@ function TvLive() {
 
             {items.isLoading && <p className="sticky left-0 p-6 text-muted-foreground">Loading channels…</p>}
             {!items.isLoading && channels.length === 0 && <p className="sticky left-0 p-6 text-muted-foreground">No channels in this category.</p>}
-            {!items.isLoading && channels.map((item, index) => {
+            {!items.isLoading && page > 0 && (
+              <div className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
+                <Button variant="ghost" data-tv-focus data-zone-edge-left="true" onClick={() => setPage((value) => Math.max(0, value - 1))} className="sticky left-0 z-20 h-full w-[220px] shrink-0 justify-start rounded-none border-r border-border bg-card px-3">
+                  <ChevronLeft className="size-5" /> Previous channels
+                </Button>
+                <div className="flex h-full w-[2880px] shrink-0 items-center bg-muted/20 px-4 text-sm text-muted-foreground">Previous group of {PAGE_SIZE} channels</div>
+              </div>
+            )}
+            {!items.isLoading && visibleChannels.map((item, index) => {
               const programmes = scheduleMap.get(item.id) ?? [];
               return (
                 <div key={item.id} className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
@@ -314,7 +325,7 @@ function TvLive() {
                       focusedId === item.id && "bg-secondary",
                     )}
                   >
-                    <span className="w-7 shrink-0 text-center text-xs tabular-nums text-muted-foreground">{item.number ?? index + 1}</span>
+                    <span className="w-7 shrink-0 text-center text-xs tabular-nums text-muted-foreground">{item.number ?? page * PAGE_SIZE + index + 1}</span>
                     {item.image ? <img src={item.image} alt="" className="size-9 shrink-0 object-contain" /> : <Tv className="size-5 shrink-0 text-muted-foreground" />}
                     <span className="min-w-0 truncate text-sm font-semibold">{item.name}</span>
                   </Button>
@@ -351,6 +362,14 @@ function TvLive() {
                 </div>
               );
             })}
+            {!items.isLoading && page < pageCount - 1 && (
+              <div className="flex min-w-max" style={{ height: ROW_HEIGHT }}>
+                <Button variant="ghost" data-tv-focus data-zone-edge-left="true" onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))} className="sticky left-0 z-20 h-full w-[220px] shrink-0 justify-start rounded-none border-r border-border bg-card px-3">
+                  <ChevronRight className="size-5" /> Next channels
+                </Button>
+                <div className="flex h-full w-[2880px] shrink-0 items-center bg-muted/20 px-4 text-sm text-muted-foreground">Next group of {PAGE_SIZE} channels</div>
+              </div>
+            )}
           </div>
         </section>
       </div>
