@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VideoPlayer } from "@/components/video-player";
 import { cn } from "@/lib/utils";
+import { useVoiceSearch } from "@/lib/voice-search";
+import { VoiceButton } from "@/components/voice-button";
 
 const GUIDE_HOURS = 12;
 const GUIDE_WIDTH = 2880;
@@ -54,6 +56,11 @@ function TvLive() {
   const [clock, setClock] = useState(() => Date.now());
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
+  useVoiceSearch((spoken) => {
+    setSearch(spoken);
+    setPage(0);
+    document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus();
+  });
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   const searching = search.trim().length > 0;
   const effectiveCategory = searching ? "" : categoryId;
@@ -284,6 +291,7 @@ function TvLive() {
               <Input type="search" aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-focus-key="live-search" className="h-9 pl-8 text-sm" onChange={(event) => { setSearch(event.target.value); setPage(0); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
             </div>
             {search && <Button variant="ghost" size="icon" aria-label="Clear channel search" data-tv-focus onClick={() => { setSearch(""); setPage(0); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); }}><X className="size-4" /></Button>}
+            <VoiceButton />
           </div>
           <div className="mb-1 flex min-h-10 shrink-0 items-center justify-between gap-2 border-b border-border pb-1">
             <div className="min-w-0">
