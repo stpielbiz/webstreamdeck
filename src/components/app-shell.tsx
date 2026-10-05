@@ -1,7 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  CalendarClock,
   Clapperboard,
   LayoutGrid,
   ListVideo,
@@ -30,7 +29,6 @@ import {
 const NAV = [
   { to: "/dashboard", label: "Home", icon: LayoutGrid },
   { to: "/live", label: "Live TV", icon: Tv },
-  { to: "/guide", label: "Guide", icon: CalendarClock },
   { to: "/movies", label: "Movies", icon: Clapperboard },
   { to: "/series", label: "Series", icon: MonitorPlay },
   { to: "/favorites", label: "Favourites", icon: Star },
@@ -74,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate({ to: "/auth", replace: true });
   };
 
-  const layeredPath = ["/dashboard", "/guide", "/live", "/movies", "/series", "/favorites"].some(
+  const layeredPath = ["/dashboard", "/live", "/movies", "/series", "/favorites"].some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   if (layeredPath) {

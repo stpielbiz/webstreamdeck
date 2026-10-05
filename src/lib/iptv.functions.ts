@@ -6,6 +6,7 @@ import type {
   Category,
   CatalogItem,
   CatalogKind,
+  ChannelSchedule,
   MovieDetails,
   NowNext,
   Programme,
@@ -217,6 +218,53 @@ export const getSchedule = createServerFn({ method: "GET" })
     } catch {
       return [];
     }
+  });
+
+export const getSchedules = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        playlistId: z.string().uuid(),
+        channelIds: z.array(z.string()).max(40),
+        start: z.string(),
+        end: z.string(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<ChannelSchedule[]> => {
+    const provider = await import("./iptv.server");
+    const playlist = await loadPlaylist(context.supabase, data.playlistId);
+    if (playlist.kind !== "xtream") {
+      return data.channelIds.map((channelId) => ({ channelId, programmes: [] }));
+    }
+
+    const windowStart = Date.parse(data.start);
+    const windowEnd = Date.parse(data.end);
+    if (!Number.isFinite(windowStart) || !Number.isFinite(windowEnd) || windowEnd <= windowStart) {
+      return data.channelIds.map((channelId) => ({ channelId, programmes: [] }));
+    }
+
+    const results: ChannelSchedule[] = [];
+    const queue = [...data.channelIds];
+    const workers = Array.from({ length: Math.min(6, queue.length) }, async () => {
+      for (;;) {
+        const channelId = queue.shift();
+        if (!channelId) return;
+        try {
+          const programmes = (await provider.xtreamSchedule(playlist, channelId)).filter((programme) => {
+            const start = Date.parse(programme.start ?? "");
+            const end = Date.parse(programme.end ?? "");
+            return Number.isFinite(start) && Number.isFinite(end) && end > windowStart && start < windowEnd;
+          });
+          results.push({ channelId, programmes });
+        } catch {
+          results.push({ channelId, programmes: [] });
+        }
+      }
+    });
+    await Promise.all(workers);
+    return results;
   });
 
 export const getPlayback = createServerFn({ method: "POST" })

@@ -49,8 +49,10 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
       const zone = active?.closest<HTMLElement>("[data-tv-zone]");
       const group = zone?.closest<HTMLElement>("[data-tv-zone-group]");
       const order = Number(zone?.dataset['tvZoneOrder']);
+      const horizontalZone = zone?.dataset['horizontalNav'] === "true";
       const crossingZones = group && Number.isFinite(order)
-        && ((direction === "right" && order === 1) || (direction === "left" && order > 1));
+        && ((direction === "right" && order === 1)
+          || (direction === "left" && order > 1 && (!horizontalZone || active?.dataset['zoneEdgeLeft'] === "true")));
       if (crossingZones) {
         event.preventDefault();
         const nextOrder = order + (direction === "right" ? 1 : -1);

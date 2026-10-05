@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { CalendarClock, Clapperboard, Download, ListVideo, MonitorPlay, ShieldCheck, Star, Tv } from "lucide-react";
+import { Clapperboard, Download, ListVideo, MonitorPlay, ShieldCheck, Star, Tv } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { TvGrid, TvShell, TvTile } from "@/components/tv-shell";
@@ -115,8 +115,7 @@ function HomeShelf({ title, empty, children }: { title: string; empty: string; c
 }
 
 const PREVIEWS = {
-  Guide: { icon: CalendarClock, title: "TV guide", body: "See what is playing now and what comes next.", to: "/tv/guide", action: "Open guide" },
-  "Live TV": { icon: Tv, title: "Live TV", body: "Browse channels by category and start watching on this device.", to: "/tv/live", action: "Browse channels" },
+  "Live TV": { icon: Tv, title: "Live TV", body: "Browse categories and move across the programme guide to see what is coming up.", to: "/tv/live", action: "Open Live TV" },
   Movies: { icon: Clapperboard, title: "Movies", body: "Browse your movie library by system category, year, or title.", to: "/tv/movies", action: "Browse movies" },
   Shows: { icon: MonitorPlay, title: "Shows", body: "Find series, seasons, and episodes from your playlist.", to: "/tv/series", action: "Browse shows" },
   Favourites: { icon: Star, title: "Favourites", body: "Your saved channels, movies, and shows in one place.", to: "/tv/favorites", action: "Open favourites" },
