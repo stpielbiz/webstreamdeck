@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 
 const GUIDE_HOURS = 12;
 const GUIDE_WIDTH = 2880;
-const CHANNEL_WIDTH = 220;
 const ROW_HEIGHT = 68;
 const PAGE_SIZE = 40;
 
