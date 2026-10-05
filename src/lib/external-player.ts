@@ -15,6 +15,7 @@ export interface NativePlayRequest {
 interface StreamDeckNativeBridge {
   play: (json: string) => void;
   checkForUpdates?: () => void;
+  startVoiceSearch?: () => void;
 }
 
 declare global {

@@ -85,7 +85,36 @@ class MainActivity : Activity() {
         webView.saveState(outState)
     }
 
+    private fun startVoiceSearch() {
+        val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Search channels, movies and shows")
+        }
+        try {
+            startActivityForResult(intent, VOICE_REQUEST)
+        } catch (_: Exception) {
+            android.widget.Toast.makeText(this, "Voice search isn't available on this device", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    @Deprecated("Uses the platform activity result API for API 22 support")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != VOICE_REQUEST || resultCode != RESULT_OK) return
+        val text = data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.trim()
+        if (text.isNullOrEmpty()) return
+        val query = JSONObject.quote(text)
+        webView.evaluateJavascript(
+            "window.dispatchEvent(new CustomEvent('streamdeck-voice-search', {detail:{query:$query}}))",
+            null,
+        )
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.keyCode == KeyEvent.KEYCODE_SEARCH || event.keyCode == KeyEvent.KEYCODE_VOICE_ASSIST) {
+            if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) startVoiceSearch()
+            return true
+        }
         if (event.keyCode == KeyEvent.KEYCODE_BACK) {
             if (event.action == KeyEvent.ACTION_UP && !event.isCanceled &&
                 android.os.SystemClock.elapsedRealtime() - lastPlayerClosedAt > 600) {
@@ -132,5 +161,14 @@ class MainActivity : Activity() {
         fun checkForUpdates() {
             runOnUiThread { appUpdater.checkManually() }
         }
+
+        @JavascriptInterface
+        fun startVoiceSearch() {
+            runOnUiThread { this@MainActivity.startVoiceSearch() }
+        }
+    }
+
+    companion object {
+        private const val VOICE_REQUEST = 4201
     }
 }
