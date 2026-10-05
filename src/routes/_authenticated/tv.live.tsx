@@ -85,7 +85,7 @@ function TvLive() {
     channels.findIndex((item) => item.id === focusedId),
   );
   const scheduleChannels = useMemo(() => {
-    const start = Math.max(0, Math.min(focusedIndex - 14, Math.max(0, channels.length - 40)));
+    const start = Math.floor(focusedIndex / 40) * 40;
     return channels.slice(start, start + 40);
   }, [channels, focusedIndex]);
 
@@ -162,6 +162,14 @@ function TvLive() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
+
+  useEffect(() => {
+    if (!selected) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('[data-focus-key="live-player-close"]')?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selected]);
 
   const chooseCategory = (id: string) => {
     setCategoryId(id);
@@ -348,14 +356,14 @@ function TvLive() {
       </div>
 
       {selected && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-background/90 p-6" role="dialog" aria-label={`Playing ${selected.name}`}>
+        <div data-tv-zone="live-player" className="fixed inset-0 z-50 grid place-items-center bg-background/90 p-6" role="dialog" aria-label={`Playing ${selected.name}`}>
           <div className="w-full max-w-5xl overflow-hidden rounded-lg border border-border bg-card shadow-2xl">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate font-display text-xl font-bold">{selected.name}</p>
                 <p className="text-sm text-muted-foreground">Live TV</p>
               </div>
-              <Button data-dialog-back data-tv-focus variant="ghost" size="icon" aria-label="Close player" onClick={closePlayer}><X className="size-5" /></Button>
+              <Button data-dialog-back data-tv-focus data-focus-key="live-player-close" variant="ghost" size="icon" aria-label="Close player" onClick={closePlayer}><X className="size-5" /></Button>
             </div>
             <VideoPlayer src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
           </div>
