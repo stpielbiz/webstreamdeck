@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Clapperboard, Download, ListVideo, MonitorPlay, ShieldCheck, Star, Tv } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { TvGrid, TvShell, TvTile } from "@/components/tv-shell";
+import { TvShell } from "@/components/tv-shell";
 import { usePlaylists } from "@/components/playlist-context";
 import { useFavorites, useProgress } from "@/lib/library-hooks";
 import { SectionMenu } from "@/components/layered-navigation";
@@ -62,36 +62,38 @@ function TvHome() {
         <aside className="min-h-0 border-r border-border pr-3 lg:pr-5">
           <SectionMenu tv current="Home" focused={focusedSection} onFocusItem={setFocusedSection} compact zoneOrder={1} />
         </aside>
-        <main data-tv-zone="home-content" data-tv-zone-order="2" className="scrollbar-thin min-h-0 overflow-y-auto overscroll-contain pr-2">
+        <main data-tv-zone="home-content" data-tv-zone-order="2" data-horizontal-nav="true" className="scrollbar-thin min-h-0 overflow-y-auto overscroll-contain pr-2">
           {focusedSection === "Home" ? (
-            <div className="space-y-6 pb-6">
-              <div>
+            <div className="space-y-5 pb-6">
+              <div className="pb-1">
                 <p className="text-xs font-semibold uppercase text-primary">Your library</p>
-                <h2 className="font-display text-2xl font-bold sm:text-3xl">Welcome back</h2>
+                <h2 className="font-display text-2xl font-bold">Welcome back</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Pick up where you stopped or jump into a favourite.</p>
               </div>
               {!activeId && <HomeMessage title="No playlist yet" body="Add a playlist to see your channels, movies and shows here." to="/playlists" action="Add playlist" />}
               <HomeShelf title="Continue watching" empty="Nothing to resume yet.">
-                {resume.slice(0, 10).map((row, index) => (
-                  <TvTile
+                {resume.slice(0, 20).map((row, index) => (
+                  <HomeTile
                     key={`${row.itemKind}-${row.itemId}`}
+                    kind="continue"
                     title={row.title}
                     image={row.posterUrl}
                     subtitle={row.external ? "External player" : row.itemKind === "episode" ? `S${row.season} E${row.episode}` : row.durationSeconds ? `${Math.max(1, Math.round((row.durationSeconds - row.positionSeconds) / 60))} min left` : null}
                     progress={row.external ? null : row.durationSeconds ? row.positionSeconds / row.durationSeconds : null}
                     zoneEntry={index === 0}
+                    edgeLeft={index === 0}
                     onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })}
                   />
                 ))}
               </HomeShelf>
               <HomeShelf title="Favourite channels" empty="Star channels to keep them close.">
-                {favouriteChannels.slice(0, 10).map((row) => (
-                  <TvTile key={row.id} title={row.title} image={row.logoUrl} onSelect={() => void navigate({ to: "/tv/live", search: { channel: row.itemId } })} />
+                {favouriteChannels.slice(0, 20).map((row, index) => (
+                  <HomeTile key={row.id} kind="channel" title={row.title} image={row.logoUrl} zoneEntry={resume.length === 0 && index === 0} edgeLeft={index === 0} onSelect={() => void navigate({ to: "/tv/live", search: { channel: row.itemId } })} />
                 ))}
               </HomeShelf>
               <HomeShelf title="Favourite movies and shows" empty="Star a movie or show to find it here.">
-                {favouriteTitles.slice(0, 10).map((row) => (
-                  <TvTile key={row.id} title={row.title} image={row.logoUrl} onSelect={() => void navigate(row.itemKind === "series" ? { to: "/tv/watch/series/$id", params: { id: row.itemId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })} />
+                {favouriteTitles.slice(0, 20).map((row, index) => (
+                  <HomeTile key={row.id} kind="poster" title={row.title} image={row.logoUrl} zoneEntry={resume.length === 0 && favouriteChannels.length === 0 && index === 0} edgeLeft={index === 0} onSelect={() => void navigate(row.itemKind === "series" ? { to: "/tv/watch/series/$id", params: { id: row.itemId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })} />
                 ))}
               </HomeShelf>
             </div>
@@ -108,9 +110,66 @@ function HomeShelf({ title, empty, children }: { title: string; empty: string; c
   const hasItems = Array.isArray(children) ? children.length > 0 : Boolean(children);
   return (
     <section>
-      <h3 className="mb-3 font-display text-xl font-semibold">{title}</h3>
-      {hasItems ? <TvGrid>{children}</TvGrid> : <p className="rounded border border-dashed border-border p-5 text-sm text-muted-foreground">{empty}</p>}
+      <h3 className="mb-2 font-display text-lg font-semibold">{title}</h3>
+      {hasItems ? <div className="scrollbar-thin flex gap-3 overflow-x-auto overflow-y-hidden px-1 pb-3 pt-1">{children}</div> : <p className="rounded border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">{empty}</p>}
     </section>
+  );
+}
+
+function HomeTile({
+  kind,
+  title,
+  subtitle,
+  image,
+  progress,
+  onSelect,
+  zoneEntry,
+  edgeLeft,
+}: {
+  kind: "continue" | "channel" | "poster";
+  title: string;
+  subtitle?: string | null;
+  image?: string | null;
+  progress?: number | null;
+  onSelect: () => void;
+  zoneEntry?: boolean;
+  edgeLeft?: boolean;
+}) {
+  const shellClass = kind === "continue" ? "w-48" : kind === "channel" ? "w-28" : "w-28";
+  const imageClass = kind === "continue" ? "aspect-video" : kind === "channel" ? "aspect-square" : "aspect-[2/3]";
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      data-tv-focus
+      data-zone-entry={zoneEntry ? "true" : undefined}
+      data-zone-edge-left={edgeLeft ? "true" : undefined}
+      onClick={onSelect}
+      className={`group h-auto shrink-0 flex-col items-stretch justify-start overflow-hidden rounded p-0 text-left outline-none transition focus:scale-[1.025] focus:ring-2 focus:ring-primary motion-reduce:transform-none ${shellClass}`}
+    >
+      <span className={`relative block w-full overflow-hidden rounded border border-border bg-muted ${imageClass}`}>
+        {image ? (
+          <img
+            src={image}
+            alt={title}
+            loading="lazy"
+            className={`size-full ${kind === "channel" ? "object-contain p-3" : "object-cover"}`}
+            onError={(event) => { event.currentTarget.style.visibility = "hidden"; }}
+          />
+        ) : (
+          <span className="grid size-full place-items-center px-2 text-center text-xs text-muted-foreground">{title}</span>
+        )}
+        {typeof progress === "number" && progress > 0 && (
+          <span className="absolute inset-x-0 bottom-0 h-1 bg-foreground/20">
+            <span className="block h-full bg-primary" style={{ width: `${Math.min(100, progress * 100)}%` }} />
+          </span>
+        )}
+      </span>
+      <span className="block min-w-0 px-1 pb-1 pt-2">
+        <span className="block truncate text-xs font-semibold">{title}</span>
+        {subtitle && <span className="mt-0.5 block truncate text-[11px] font-normal text-muted-foreground">{subtitle}</span>}
+      </span>
+    </Button>
   );
 }
 
