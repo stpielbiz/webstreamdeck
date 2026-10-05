@@ -93,16 +93,20 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   }, [genre, catalogue.data]);
 
   const chosenGroup = groups.find((group) => group.label === genre);
+  const query = search.trim().toLowerCase();
+  const searching = query.length > 0;
   const visibleItems = useMemo(() => {
-    const source = genre === "All" ? (catalogue.data ?? []) : (chosenGroup?.items ?? []);
-    const filtered = source.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
+    const source = searching || genre === "All" ? (catalogue.data ?? []) : (chosenGroup?.items ?? []);
+    const filtered = searching
+      ? source.filter((item) => item.name.toLowerCase().includes(query) || (metadata.data?.[item.name]?.title ?? "").toLowerCase().includes(query))
+      : source;
     const titleOf = (item: CatalogItem) => metadata.data?.[item.name]?.title || item.name;
     return [...filtered].sort((a, b) =>
       sort === "year"
         ? (Number(metadata.data?.[b.name]?.year || b.year || 0) - Number(metadata.data?.[a.name]?.year || a.year || 0)) || titleOf(a).localeCompare(titleOf(b))
         : titleOf(a).localeCompare(titleOf(b)),
     );
-  }, [genre, chosenGroup, catalogue.data, search, sort, metadata.data]);
+  }, [genre, chosenGroup, catalogue.data, query, searching, sort, metadata.data]);
   const sections = useMemo(() => {
     const buckets = new Map<string, CatalogItem[]>();
     for (const item of visibleItems) {
@@ -280,17 +284,17 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
 
         <div className="mt-4 min-w-0">
         <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-          <h2 className="truncate font-display text-lg font-semibold">{genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
+          <h2 className="truncate font-display text-lg font-semibold">{searching ? `Results for “${search.trim()}”` : genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
           <div className="flex items-center gap-2">
             <div className="flex overflow-hidden rounded-md border border-border">
               <Button data-tv-focus size="sm" data-focus-key="sort-az" variant={sort === "az" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("az")}><ArrowDownAZ className="size-4" /> A–Z</Button>
               <Button data-tv-focus size="sm" data-focus-key="sort-year" variant={sort === "year" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("year")}><CalendarArrowDown className="size-4" /> Newest</Button>
             </div>
-            <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input data-tv-focus data-focus-key="catalog-search" onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-tv-zone="content"] [data-zone-entry="true"]')?.focus(); } }} value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
+            <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input data-tv-focus data-focus-key="catalog-search" type="search" onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-tv-zone="content"] [data-zone-entry="true"]')?.focus(); } }} value={search} onChange={(event) => { setSearch(event.target.value); setSelectedId(null); }} placeholder={`Search all ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
           </div>
         </div>
-          <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
-        {catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 && !catalogue.isLoading ? <EmptyState title="Nothing here" description="No titles match this system category." /> : sections.map((section, sectionIndex) => (
+          {!searching && <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />}
+        {catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 && !catalogue.isLoading ? <EmptyState title="Nothing here" description={searching ? `No titles match “${search.trim()}”.` : "No titles match this system category."} /> : sections.map((section, sectionIndex) => (
           <div key={section.label} className="mb-5">
             <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3>
             <PosterGrid>{section.items.slice(0, 180).map((item, index) => <PosterTile key={item.id} zoneEntry={sectionIndex === 0 && index === 0} title={metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(metadata.data?.[item.name]?.year || item.year || "")} progress={progressFor(progress.data, activeId, item.id)} favorite={isFavorite(favorites.data, activeId, kind, item.id)} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: item.id, title: item.name, logoUrl: item.image })} />)}</PosterGrid>
