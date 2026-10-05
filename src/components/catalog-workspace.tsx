@@ -50,6 +50,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const categoryFocus = useRef<HTMLButtonElement>(null);
   const previousGenre = useRef<string | null>(null);
   const titleTrigger = useRef<HTMLElement | null>(null);
+  const returnTitle = useRef<string | null>(null);
 
   const catalogue = useQuery({
     queryKey: ["system-catalogue", activeId, kind],
@@ -156,6 +157,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
 
   const selectTitle = (id: string) => {
     titleTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    returnTitle.current = (catalogue.data ?? []).find((item) => item.id === id)?.name ?? null;
     setSelectedId(id);
     setSeasonIndex(0);
     setEpisode(null);
@@ -296,7 +298,14 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       </div>
 
       <Dialog open={selectedId !== null} onOpenChange={(open) => { if (!open) closeDetails(); }}>
-        <DialogContent onCloseAutoFocus={(event) => { event.preventDefault(); titleTrigger.current?.focus({ preventScroll: true }); }} data-tv-zone="details" className="max-h-[86dvh] w-[min(92vw,56rem)] max-w-none gap-0 overflow-hidden p-0 sm:rounded-lg">
+        <DialogContent onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          window.requestAnimationFrame(() => {
+            const trigger = titleTrigger.current;
+            const replacement = Array.from(document.querySelectorAll<HTMLElement>('[data-tv-zone="content"] [data-tv-focus]')).find((element) => element.textContent?.includes(returnTitle.current ?? "") || element.querySelector('img')?.alt === returnTitle.current);
+            (trigger?.isConnected ? trigger : replacement)?.focus({ preventScroll: true });
+          });
+        }} data-tv-zone="details" className="max-h-[86dvh] w-[min(92vw,56rem)] max-w-none gap-0 overflow-hidden p-0 sm:rounded-lg">
           <div className="scrollbar-thin max-h-[86dvh] overflow-y-auto">
             <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_minmax(18rem,46%)] md:p-5">
               <div className="min-w-0">
