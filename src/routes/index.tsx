@@ -118,6 +118,9 @@ function Landing() {
             <Link to="/device-login">Log in another device</Link>
           </Button>
           <Button asChild variant="ghost" size="lg">
+            <Link to="/tv/pair">Open on your Firestick</Link>
+          </Button>
+          <Button asChild variant="ghost" size="lg">
             <Link to="/download">Get the Fire TV app</Link>
           </Button>
         </div>
