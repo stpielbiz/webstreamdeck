@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Tv } from "lucide-react";
+import { ArrowLeft, Loader2, Tv } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -99,6 +99,11 @@ function AuthPage() {
   return (
     <div className="grid min-h-screen place-items-center bg-background px-4 py-10">
       <div className="w-full max-w-sm">
+        <Button asChild variant="ghost" size="sm" className="mb-4">
+          <Link to="/" data-tv-focus>
+            <ArrowLeft className="size-4" /> Back to Home
+          </Link>
+        </Button>
         <Link to="/" className="mb-8 flex items-center justify-center gap-2">
           <span className="grid size-9 place-items-center rounded bg-primary text-primary-foreground">
             <Tv className="size-5" />
