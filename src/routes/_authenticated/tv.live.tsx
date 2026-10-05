@@ -286,12 +286,12 @@ function TvLive() {
 
         <section className="flex min-h-0 min-w-0 flex-col">
           <div data-tv-zone="live-guide" className="mb-2 flex shrink-0 items-center gap-2">
+            <VoiceButton focusKey="live-voice" />
             <div className="relative min-w-0 flex-1">
               <Search aria-hidden="true" className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
               <Input type="search" aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-focus-key="live-search" className="h-9 pl-8 text-sm" onChange={(event) => { setSearch(event.target.value); setPage(0); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
             </div>
             {search && <Button variant="ghost" size="icon" aria-label="Clear channel search" data-tv-focus onClick={() => { setSearch(""); setPage(0); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); }}><X className="size-4" /></Button>}
-            <VoiceButton />
           </div>
           <div className="mb-1 flex min-h-10 shrink-0 items-center justify-between gap-2 border-b border-border pb-1">
             <div className="min-w-0">
