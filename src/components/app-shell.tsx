@@ -83,9 +83,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="truncate font-display text-lg font-bold">Stream Deck</span>
           </Link>
           <span className="hidden text-sm text-muted-foreground sm:block">{playlists.find((item) => item.id === activeId)?.name ?? "No playlist"}</span>
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            <LogOut className="size-4" /> Sign out
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button asChild variant="ghost" size="sm"><Link to="/playlists"><ListVideo className="size-4" /><span className="hidden sm:inline">Playlists</span></Link></Button>
+            {isAdmin && <Button asChild variant="ghost" size="sm"><Link to="/admin"><ShieldCheck className="size-4" /><span className="hidden sm:inline">Admin</span></Link></Button>}
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="size-4" /> Sign out
+            </Button>
+          </div>
         </header>
         <main className="min-h-0 flex-1">{children}</main>
       </div>

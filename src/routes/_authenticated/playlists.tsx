@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/media";
+import { Switch } from "@/components/ui/switch";
+import { debugLog, redactUrl, setDebugEnabled, useDebugLog } from "@/lib/debug-log";
 
 export const Route = createFileRoute("/_authenticated/playlists")({
   head: () => ({
@@ -39,16 +41,20 @@ function PlaylistsPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [m3uUrl, setM3uUrl] = useState("");
+  const debug = useDebugLog();
 
   const addMutation = useMutation({
-    mutationFn: (kind: "xtream" | "m3u") =>
-      create({
+    mutationFn: (kind: "xtream" | "m3u") => {
+      debugLog("connect", `Adding ${kind} source`, { server: redactUrl(kind === "xtream" ? serverUrl : m3uUrl) });
+      return create({
         data:
           kind === "xtream"
             ? { name, kind, serverUrl, username, password }
             : { name, kind, m3uUrl },
-      }),
+      });
+    },
     onSuccess: (playlist) => {
+      debugLog("connect", "Source added", { id: playlist.id });
       toast.success(`${playlist.name} added`);
       setName("");
       setServerUrl("");
@@ -59,7 +65,10 @@ function PlaylistsPage() {
       setActiveId(playlist.id);
       void queryClient.invalidateQueries();
     },
-    onError: (error: Error) => toast.error(error.message || "That playlist could not be added."),
+    onError: (error: Error) => {
+      debugLog("connect", "Adding source failed", error.message);
+      toast.error(error.message || "That playlist could not be added.");
+    },
   });
 
   const removeMutation = useMutation({
@@ -80,6 +89,17 @@ function PlaylistsPage() {
           Add the details from your IPTV provider. Your login is stored on your account only and is
           never shown in the address bar while streaming.
         </p>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-5">
+        <div>
+          <h2 className="font-display text-base font-semibold">Connection & stream logs</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Records each step when connecting and playing, on this device only. A Logs button appears
+            at the bottom left so you can copy them. Logins and passwords are hidden.
+          </p>
+        </div>
+        <Switch data-tv-focus checked={debug.enabled} onCheckedChange={setDebugEnabled} aria-label="Connection and stream logs" />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5">
