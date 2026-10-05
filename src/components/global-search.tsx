@@ -1,32 +1,48 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Play, Search, Star, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { VoiceButton } from "@/components/voice-button";
 import { getItems } from "@/lib/iptv.functions";
 import type { CatalogItem } from "@/lib/iptv-types";
+import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
+import { cn } from "@/lib/utils";
 import { useVoiceSearch } from "@/lib/voice-search";
-import { VoiceButton } from "@/components/voice-button";
 
 const LIMIT = 30;
+const STORAGE_KEY = "streamdeck-home-search";
+type Kind = "live" | "movie" | "series";
 
-/** Home-page search across live channels, movies and shows of the active playlist. */
+/** Home-page search across shows, movies and channels of the active playlist, shown as a list. */
 export function GlobalSearch() {
   const navigate = useNavigate();
   const { activeId } = usePlaylists();
   const fetchItems = useServerFn(getItems);
-  const [search, setSearch] = useState("");
+  const favorites = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+  const [search, setSearchState] = useState("");
+  const setSearch = (value: string) => {
+    setSearchState(value);
+    try { sessionStorage.setItem(STORAGE_KEY, value); } catch { /* ignore */ }
+  };
+  useEffect(() => {
+    try { const saved = sessionStorage.getItem(STORAGE_KEY); if (saved) setSearchState(saved); } catch { /* ignore */ }
+  }, []);
   useVoiceSearch((spoken) => {
     setSearch(spoken);
-    document.querySelector<HTMLElement>('[data-focus-key="global-search"]')?.focus();
+    window.setTimeout(() => {
+      const first = document.querySelector<HTMLElement>('[data-focus-key="global-result-first"]');
+      (first ?? document.querySelector<HTMLElement>('[data-focus-key="global-search"]'))?.focus();
+    }, 600);
   });
   const query = search.trim().toLowerCase();
   const enabled = !!activeId && query.length > 0;
-  const opts = (kind: "live" | "movie" | "series", key: string) => ({
+  const opts = (kind: Kind, key: string) => ({
     queryKey: [key, activeId, kind],
     queryFn: () => fetchItems({ data: { playlistId: activeId ?? "", kind } }),
     enabled,
@@ -38,76 +54,95 @@ export function GlobalSearch() {
   const shows = useQuery(opts("series", "system-catalogue"));
   const match = (items?: CatalogItem[]) => (items ?? []).filter((item) => item.name.toLowerCase().includes(query)).slice(0, LIMIT);
   const groups = useMemo(() => [
-    { kind: "live" as const, title: "Channels", items: match(live.data), loading: live.isFetching },
-    { kind: "movie" as const, title: "Movies", items: match(movies.data), loading: movies.isFetching },
     { kind: "series" as const, title: "Shows", items: match(shows.data), loading: shows.isFetching },
+    { kind: "movie" as const, title: "Movies", items: match(movies.data), loading: movies.isFetching },
+    { kind: "live" as const, title: "Channels", items: match(live.data), loading: live.isFetching },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [query, live.data, movies.data, shows.data, live.isFetching, movies.isFetching, shows.isFetching]);
 
-  const open = (kind: "live" | "movie" | "series", id: string) => {
+  const open = (kind: Kind, id: string) => {
     if (kind === "live") void navigate({ to: "/tv/live", search: { channel: id } });
     else if (kind === "movie") void navigate({ to: "/tv/watch/movie/$id", params: { id }, search: { from: "home" } });
-    else void navigate({ to: "/tv/watch/series/$id", params: { id }, search: { from: "home" } });
+    else void navigate({ to: "/tv/show/$id", params: { id } });
   };
   const firstResult = groups.find((group) => group.items.length > 0);
+  const backToSearch = () => document.querySelector<HTMLElement>('[data-focus-key="global-search"]')?.focus();
 
   return (
     <section className="space-y-3">
-      <div className="relative max-w-xl">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          data-tv-focus
-          data-zone-entry="true"
-          data-zone-edge-left="true"
-          data-focus-key="global-search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === "ArrowDown") {
-              const first = document.querySelector<HTMLElement>('[data-focus-key="global-result-first"]');
-              if (first) { event.preventDefault(); event.stopPropagation(); first.focus(); }
-            }
-          }}
-          placeholder="Search channels, movies and shows"
-          className="pl-9 pr-9"
-        />
-        {search && (
-          <Button type="button" variant="ghost" size="icon" aria-label="Clear search" className="absolute right-0 top-0" onClick={() => setSearch("")}>
-            <X className="size-4" />
-          </Button>
-        )}
-        <VoiceButton className="absolute -right-11 top-0" />
-
+      <div className="flex max-w-2xl items-center gap-2">
+        <VoiceButton zoneEntry focusKey="global-voice" />
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            data-tv-focus
+            data-zone-entry="true"
+            data-focus-key="global-search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === "ArrowDown") {
+                const first = document.querySelector<HTMLElement>('[data-focus-key="global-result-first"]');
+                if (first) { event.preventDefault(); event.stopPropagation(); first.focus(); }
+              }
+            }}
+            placeholder="Search shows, movies and channels"
+            className="h-9 pl-9 pr-9"
+          />
+          {search && (
+            <Button type="button" variant="ghost" size="icon" aria-label="Clear search" className="absolute right-0 top-0 h-9" onClick={() => setSearch("")}>
+              <X className="size-4" />
+            </Button>
+          )}
+        </div>
       </div>
       {enabled && (
-        <div className="space-y-4">
+        <div className="max-w-3xl space-y-4" onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); backToSearch(); } }}>
           {groups.map((group) => (
             <div key={group.kind}>
-              <h3 className="mb-2 font-display text-base font-semibold">{group.title} <span className="text-xs font-normal text-muted-foreground">· {group.loading && group.items.length === 0 ? "searching…" : group.items.length}</span></h3>
+              <h3 className="mb-1 font-display text-sm font-semibold text-primary">{group.title} <span className="text-xs font-normal text-muted-foreground">· {group.loading && group.items.length === 0 ? "searching…" : group.items.length}</span></h3>
               {group.items.length > 0 ? (
-                <div className="scrollbar-thin flex gap-3 overflow-x-auto overflow-y-hidden px-1 pb-2 pt-1">
-                  {group.items.map((item, index) => (
-                    <Button
-                      key={item.id}
-                      type="button"
-                      variant="ghost"
-                      data-tv-focus
-                      data-zone-edge-left={index === 0 ? "true" : undefined}
-                      data-focus-key={group === firstResult && index === 0 ? "global-result-first" : undefined}
-                      onClick={() => open(group.kind, item.id)}
-                      className={`h-auto shrink-0 flex-col items-stretch justify-start overflow-hidden rounded p-0 text-left focus:scale-[1.025] focus:ring-2 focus:ring-primary motion-reduce:transform-none ${group.kind === "live" ? "w-28" : "w-24"}`}
-                    >
-                      <span className={`relative block w-full overflow-hidden rounded border border-border bg-muted ${group.kind === "live" ? "aspect-square" : "aspect-[2/3]"}`}>
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} loading="lazy" className={`size-full ${group.kind === "live" ? "object-contain p-2" : "object-cover"}`} onError={(event) => { event.currentTarget.style.display = "none"; }} />
-                        ) : null}
-                        <span className="absolute inset-0 -z-0 grid place-items-center px-1 text-center text-[10px] text-muted-foreground">{item.image ? "" : item.name}</span>
-                      </span>
-                      <span className="block truncate px-1 pb-1 pt-1.5 text-xs font-semibold">{item.name}</span>
-                    </Button>
-                  ))}
-                </div>
+                <ul className="divide-y divide-border rounded border border-border bg-card">
+                  {group.items.map((item, index) => {
+                    const fav = isFavorite(favorites.data, activeId, group.kind, item.id);
+                    const detail = group.kind === "live" ? (item.number ? `Ch ${item.number}` : "") : item.year ?? "";
+                    return (
+                      <li key={item.id} className="flex items-center gap-2 px-2 py-1">
+                        <button
+                          type="button"
+                          data-tv-focus
+                          data-zone-edge-left="true"
+                          data-focus-key={group === firstResult && index === 0 ? "global-result-first" : undefined}
+                          onClick={() => open(group.kind, item.id)}
+                          className="flex min-w-0 flex-1 items-center gap-3 rounded px-1 py-1 text-left outline-none focus:bg-secondary focus:ring-2 focus:ring-primary"
+                        >
+                          <span className={cn("grid shrink-0 place-items-center overflow-hidden rounded bg-muted", group.kind === "live" ? "size-9" : "h-12 w-8")}>
+                            {item.image && <img src={item.image} alt="" loading="lazy" className={cn("size-full", group.kind === "live" ? "object-contain p-1" : "object-cover")} onError={(event) => { event.currentTarget.style.display = "none"; }} />}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold">{item.name}</span>
+                            {detail && <span className="block text-xs text-muted-foreground">{detail}</span>}
+                          </span>
+                        </button>
+                        <Button type="button" size="sm" variant="secondary" data-tv-focus className="h-8 focus:ring-2 focus:ring-primary" onClick={() => open(group.kind, item.id)}>
+                          <Play className="size-3.5 fill-current" /> {group.kind === "series" ? "Open" : "Play"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          data-tv-focus
+                          aria-label={fav ? "Remove from favourites" : "Add to favourites"}
+                          className="size-8 focus:ring-2 focus:ring-primary"
+                          onClick={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: group.kind, itemId: item.id, title: item.name, logoUrl: item.image })}
+                        >
+                          <Star className={cn("size-4", fav && "fill-primary text-primary")} />
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
               ) : !group.loading ? <p className="text-xs text-muted-foreground">No matches.</p> : null}
             </div>
           ))}
