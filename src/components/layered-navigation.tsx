@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, Clapperboard, Home, ListVideo, MonitorPlay, ShieldCheck, Star, Tv } from "lucide-react";
+import { CalendarClock, Clapperboard, Download, Home, ListVideo, MonitorPlay, ShieldCheck, Star, Tv } from "lucide-react";
 import { useIsAdmin } from "@/lib/use-admin";
 import { useEffect, useRef } from "react";
 
@@ -37,6 +37,7 @@ export function SectionMenu({ tv, current }: { tv?: boolean; current?: string })
   const { isAdmin } = useIsAdmin();
   const extras = [
     { to: "/playlists", label: "Playlists", icon: ListVideo },
+    { to: "/download", label: "Get the TV app", icon: Download },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
   ];
   return (
