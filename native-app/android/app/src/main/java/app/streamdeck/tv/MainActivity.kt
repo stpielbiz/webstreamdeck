@@ -112,5 +112,10 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun version(): String = BuildConfig.VERSION_NAME
+
+        @JavascriptInterface
+        fun checkForUpdates() {
+            runOnUiThread { appUpdater.checkManually() }
+        }
     }
 }

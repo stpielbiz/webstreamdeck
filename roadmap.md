@@ -22,3 +22,4 @@
 - [x] Audit and correct Home, Sections, shared-page, and playback Back destinations across TV and browser modes.
 - [x] Merge Live TV and Guide into a persistent category-and-timeline workspace with remote navigation.
 - [x] Rebuild TV Home shelves at Netflix-style density with compact remote-navigable rows.
+- [x] Add a bottom TV Home menu action for manual native update checks and verify its browser fallback.

@@ -14,6 +14,7 @@ export interface NativePlayRequest {
 
 interface StreamDeckNativeBridge {
   play: (json: string) => void;
+  checkForUpdates?: () => void;
 }
 
 declare global {

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Clapperboard, Download, ListVideo, MonitorPlay, ShieldCheck, Star, Tv } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { TvShell } from "@/components/tv-shell";
 import { usePlaylists } from "@/components/playlist-context";
@@ -19,6 +20,8 @@ export const Route = createFileRoute("/_authenticated/tv/")({
       },
       { property: "og:title", content: "TV mode — Stream Deck" },
       { property: "og:description", content: "Remote-friendly big screen view of your playlists." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: TvHome,
@@ -31,6 +34,16 @@ function TvHome() {
   const { data: favorites } = useFavorites();
   const { isAdmin } = useIsAdmin();
   const [focusedSection, setFocusedSection] = useState("Home");
+  const checkForUpdates = () => {
+    const native = window.StreamDeckNative;
+    if (typeof native?.checkForUpdates === "function") {
+      native.checkForUpdates();
+      return;
+    }
+    toast.info(native ? "Install the latest TV app to enable manual update checks." : "The website updates automatically. Update checks are available in the Fire TV app.", {
+      action: { label: "Get the TV app", onClick: () => void navigate({ to: "/download", search: { mode: "tv" } }) },
+    });
+  };
 
   const resume = (progress ?? []).filter(
     (row) => row.playlistId === activeId && !row.completed && row.positionSeconds > 30,
@@ -60,7 +73,7 @@ function TvHome() {
     <TvShell title="Home" immersive onBack={returnToMenu}>
       <div data-tv-zone-group="tv-home" className="grid h-full min-h-0 grid-cols-[minmax(12rem,22%)_minmax(0,1fr)] gap-4 lg:gap-6">
         <aside className="min-h-0 border-r border-border pr-3 lg:pr-5">
-          <SectionMenu tv current="Home" focused={focusedSection} onFocusItem={setFocusedSection} compact zoneOrder={1} />
+          <SectionMenu tv current="Home" focused={focusedSection} onFocusItem={setFocusedSection} compact zoneOrder={1} onCheckUpdates={checkForUpdates} />
         </aside>
         <main data-tv-zone="home-content" data-tv-zone-order="2" data-horizontal-nav="true" className="scrollbar-thin min-h-0 overflow-y-auto overscroll-contain pr-2">
           {focusedSection === "Home" ? (

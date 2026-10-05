@@ -28,12 +28,34 @@ class AppUpdater(private val activity: Activity) {
     private val executor = Executors.newSingleThreadExecutor()
     private var pendingApk: File? = null
     private var permissionRequested = false
+    private var checking = false
 
     fun checkAtLaunch() {
+        checkForUpdates(manual = false)
+    }
+
+    fun checkManually() {
+        checkForUpdates(manual = true)
+    }
+
+    private fun checkForUpdates(manual: Boolean) {
+        if (checking) {
+            if (manual) Toast.makeText(activity, "An update check is already in progress.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        checking = true
+        if (manual) Toast.makeText(activity, "Checking for updates…", Toast.LENGTH_SHORT).show()
         executor.execute {
-            val release = fetchRelease() ?: return@execute
-            if (release.versionCode <= BuildConfig.VERSION_CODE) return@execute
-            activity.runOnUiThread { showUpdatePrompt(release) }
+            val release = fetchRelease()
+            activity.runOnUiThread {
+                checking = false
+                if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
+                when {
+                    release == null -> if (manual) Toast.makeText(activity, "Could not check for updates. Please try again.", Toast.LENGTH_LONG).show()
+                    release.versionCode > BuildConfig.VERSION_CODE -> showUpdatePrompt(release)
+                    manual -> Toast.makeText(activity, "Stream Deck is up to date (${BuildConfig.VERSION_NAME}).", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
