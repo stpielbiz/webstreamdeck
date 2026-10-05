@@ -34,6 +34,7 @@ export interface VideoPlayerProps {
   className?: string;
   onProgress?: (positionSeconds: number, durationSeconds: number | null) => void;
   onEnded?: () => void;
+  onStop?: () => void;
   /** Fired once per stream when playback is handed to an external player. */
   onExternalLaunch?: () => void;
 }
@@ -57,6 +58,7 @@ export function VideoPlayer({
   className,
   onProgress,
   onEnded,
+  onStop,
   onExternalLaunch,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -80,6 +82,8 @@ export function VideoPlayer({
   fallbackRef.current = fallbackSrc;
   const endedRef = useRef(onEnded);
   endedRef.current = onEnded;
+  const stopRef = useRef(onStop);
+  stopRef.current = onStop;
   const externalLaunchRef = useRef(onExternalLaunch);
   externalLaunchRef.current = onExternalLaunch;
   const [nativeActive, setNativeActive] = useState(false);
@@ -104,10 +108,16 @@ export function VideoPlayer({
       if (!live) progressRef.current?.(position, Number.isFinite(duration) && duration > 0 ? duration : null);
     };
     window.__streamDeckEnded = () => endedRef.current?.();
+    window.__streamDeckClosed = () => {
+      setNativeActive(false);
+      if (stopRef.current) stopRef.current();
+      else window.dispatchEvent(new CustomEvent("streamdeck-back", { cancelable: true }));
+    };
     setNativeActive(startNative());
     return () => {
       window.__streamDeckProgress = undefined;
       window.__streamDeckEnded = undefined;
+      window.__streamDeckClosed = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, fallbackSrc, live]);
@@ -267,6 +277,10 @@ export function VideoPlayer({
       destroyed = true;
       sourceAttemptRef.current += 1;
       hlsInstance?.destroy();
+      video.pause();
+      if (!live && video.currentTime > 0) progressRef.current?.(video.currentTime, Number.isFinite(video.duration) ? video.duration : null);
+      video.removeAttribute("src");
+      video.load();
     };
   }, [activeSrc, live]);
 

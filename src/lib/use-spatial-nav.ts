@@ -120,7 +120,15 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
       }
     };
 
+    const nativeBack = (event: Event) => {
+      event.preventDefault();
+      onBack?.();
+    };
+    window.addEventListener("streamdeck-back", nativeBack);
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("streamdeck-back", nativeBack);
+      window.removeEventListener("keydown", handler);
+    };
   }, [enabled, onBack]);
 }

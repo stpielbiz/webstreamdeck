@@ -24,3 +24,4 @@
 - [x] Rebuild TV Home shelves at Netflix-style density with compact remote-navigable rows.
 - [x] Add a bottom TV Home menu action for manual native update checks and verify its browser fallback.
 - [x] Make Live TV denser, show longer names, remove failed logos, and add all-channel search; verify against the connected playlist.
+- [ ] Make one Back stop playback, restore the previous selection, and prevent accidental native app exits.
