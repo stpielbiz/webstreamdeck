@@ -81,14 +81,22 @@ function TvWatchSeries() {
     if (!season.episodes[index + 1]) setSeasonIndex((value) => value + 1);
     setCurrent(next);
   };
+  const stopEpisode = () => {
+    const episodeId = current?.id;
+    setCurrent(null);
+    window.requestAnimationFrame(() => {
+      if (episodeId) document.querySelector<HTMLElement>(`[data-focus-key="episode-${CSS.escape(episodeId)}"]`)?.focus();
+    });
+  };
 
   return (
-    <TvShell title={show?.name ?? "Loading…"} onBack={() => void navigate({ to: from === "favorites" ? "/tv/favorites" : from === "home" ? "/tv" : "/tv/series" })}>
+    <TvShell title={show?.name ?? "Loading…"} onBack={() => { if (current) stopEpisode(); else void navigate({ to: from === "favorites" ? "/tv/favorites" : from === "home" ? "/tv" : "/tv/series" }); }}>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(20rem,1fr)_minmax(28rem,1.35fr)]">
         <div className="lg:order-2">
           <VideoPlayer
-            src={playback.data?.url ?? null}
-            fallbackSrc={playback.data?.directUrl ?? null}
+            onStop={stopEpisode}
+            src={current ? playback.data?.url ?? null : null}
+            fallbackSrc={current ? playback.data?.directUrl ?? null : null}
             title={current?.title ?? ""}
             poster={current?.image ?? show?.image ?? null}
             startPosition={resumeAt}
@@ -157,6 +165,7 @@ function TvWatchSeries() {
             {(season?.episodes ?? []).map((episode) => (
               <button
                 key={episode.id}
+                data-focus-key={`episode-${episode.id}`}
                 type="button"
                 data-tv-focus
                 onClick={() => setCurrent(episode)}
