@@ -16,12 +16,12 @@ export function DebugPanel() {
 
   const save = async () => {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) return toast.error("Sign in to save logs");
+    if (!data.user) { toast.error("Sign in to save logs"); return; }
     const code = "LOG-" + Math.random().toString(36).slice(2, 8).toUpperCase();
     const { error } = await supabase.from("stream_logs").insert({
       code, user_id: data.user.id, device: navigator.userAgent.slice(0, 300), entries: entries as never,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setSaved(code);
     toast.success(`Logs saved as ${code}`);
   };
