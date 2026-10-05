@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Clapperboard, Download, Home, ListVideo, MonitorPlay, ShieldCheck, Star, Tv } from "lucide-react";
+import { Clapperboard, Download, Home, ListVideo, MonitorPlay, RefreshCw, ShieldCheck, Star, Tv } from "lucide-react";
 import { useIsAdmin } from "@/lib/use-admin";
 import { useEffect, useRef, type FocusEvent } from "react";
 
@@ -39,6 +39,7 @@ export function SectionMenu({
   onFocusItem,
   compact = false,
   zoneOrder,
+  onCheckUpdates,
 }: {
   tv?: boolean;
   current?: string;
@@ -46,6 +47,7 @@ export function SectionMenu({
   onFocusItem?: (label: string) => void;
   compact?: boolean;
   zoneOrder?: number;
+  onCheckUpdates?: () => void;
 }) {
   const { isAdmin } = useIsAdmin();
   const extras = [
@@ -86,6 +88,11 @@ export function SectionMenu({
             </Link>
           </Button>
         ))}
+        {onCheckUpdates && (
+          <Button type="button" variant="ghost" onClick={onCheckUpdates} data-tv-focus data-focus-key="check-for-updates" className={compact ? "mt-3 h-11 justify-start border-t border-border px-3 text-base" : "mt-3 h-14 justify-start border-t border-border px-4 text-lg"}>
+            <RefreshCw className="size-5 shrink-0" /> Check for updates
+          </Button>
+        )}
       </div>
     </section>
   );
