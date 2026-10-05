@@ -37,12 +37,17 @@ export function PopularRow({
 
   const pick = async (title: string) => {
     if (!activeId) return;
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setBusy(title);
     try {
       const found = await fetchItems({ data: { playlistId: activeId, kind, search: title } });
       const target = norm(title);
       const match = found.find((i) => norm(i.name) === target) ?? found.find((i) => norm(i.name).includes(target)) ?? found[0];
-      if (match) onOpen(match.id);
+      if (match) {
+        if (trigger instanceof HTMLButtonElement) trigger.disabled = false;
+        trigger?.focus({ preventScroll: true });
+        onOpen(match.id);
+      }
       else toast("Not in your playlist", { description: title });
     } catch {
       toast.error("Your provider did not answer. Try again shortly.");
