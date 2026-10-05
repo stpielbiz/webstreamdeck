@@ -43,23 +43,29 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
       source: "tmdb" | "ai" | "none";
     }> = [];
 
-    for (let index = 0; index < keys.length; index += 150) {
-      const { data: chunk, error } = await context.supabase
-        .from("title_metadata")
-        .select("lookup_key, resolved_title, genres, year, poster_url, backdrop_url, overview, source")
-        .eq("item_kind", data.kind)
-        .in("lookup_key", keys.slice(index, index + 150));
-      if (error) throw new Error(error.message);
-      rows.push(...(chunk ?? []).map((row) => ({
-        lookup_key: row.lookup_key,
-        resolved_title: row.resolved_title,
-        genres: row.genres,
-        year: row.year,
-        poster_url: row.poster_url,
-        backdrop_url: row.backdrop_url,
-        overview: row.overview,
-        source: (row.source === "tmdb" || row.source === "ai" ? row.source : "none") as "tmdb" | "ai" | "none",
-      })));
+    const chunks: string[][] = [];
+    for (let index = 0; index < keys.length; index += 200) chunks.push(keys.slice(index, index + 200));
+    for (let start = 0; start < chunks.length; start += 8) {
+      const results = await Promise.all(chunks.slice(start, start + 8).map((slice) =>
+        context.supabase
+          .from("title_metadata")
+          .select("lookup_key, resolved_title, genres, year, poster_url, backdrop_url, overview, source")
+          .eq("item_kind", data.kind)
+          .in("lookup_key", slice),
+      ));
+      for (const { data: chunk, error } of results) {
+        if (error) throw new Error(error.message);
+        rows.push(...(chunk ?? []).map((row) => ({
+          lookup_key: row.lookup_key,
+          resolved_title: row.resolved_title,
+          genres: row.genres,
+          year: row.year,
+          poster_url: row.poster_url,
+          backdrop_url: row.backdrop_url,
+          overview: row.overview,
+          source: (row.source === "tmdb" || row.source === "ai" ? row.source : "none") as "tmdb" | "ai" | "none",
+        })));
+      }
     }
 
     const byKey = new Map(rows.map((row) => [row.lookup_key, row]));
