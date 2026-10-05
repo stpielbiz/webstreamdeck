@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { APK_URL } from "@/lib/app-download";
+import { useSpatialNav } from "@/lib/use-spatial-nav";
 
 export const Route = createFileRoute("/download")({
   validateSearch: z.object({ mode: z.literal("tv").optional() }),
@@ -37,6 +38,12 @@ const STEPS = [
 
 function DownloadPage() {
   const { mode } = Route.useSearch();
+  useSpatialNav({
+    enabled: mode === "tv",
+    onBack: () => {
+      if (mode === "tv") window.location.assign("/tv");
+    },
+  });
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-4xl items-center justify-between px-6 py-6">

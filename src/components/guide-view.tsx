@@ -28,12 +28,24 @@ export function GuideView({ tv = false }: { tv?: boolean }) {
   const [categoryId, setCategoryId] = useState<string | undefined>();
   const [channelId, setChannelId] = useState<string | null>(null);
 
-  const categories = useQuery({ queryKey: ["categories", activeId, "live"], queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind: "live" } }), enabled: !!activeId, staleTime: 10 * 60_000 });
-  const channels = useQuery({ queryKey: ["items", activeId, "live", categoryId ?? "all", ""], queryFn: () => fetchItems({ data: { playlistId: activeId!, kind: "live", categoryId } }), enabled: !!activeId, staleTime: 5 * 60_000 });
+  const categories = useQuery({ queryKey: ["categories", activeId, "live"], queryFn: () => {
+    if (!activeId) throw new Error("No active playlist");
+    return fetchCategories({ data: { playlistId: activeId, kind: "live" } });
+  }, enabled: !!activeId, staleTime: 10 * 60_000 });
+  const channels = useQuery({ queryKey: ["items", activeId, "live", categoryId ?? "all", ""], queryFn: () => {
+    if (!activeId) throw new Error("No active playlist");
+    return fetchItems({ data: { playlistId: activeId, kind: "live", categoryId } });
+  }, enabled: !!activeId, staleTime: 5 * 60_000 });
   const visible = useMemo(() => (channels.data ?? []).slice(0, 40), [channels.data]);
-  const epg = useQuery({ queryKey: ["nownext", activeId, visible.map((item) => item.id).join(",")], queryFn: () => fetchNowNext({ data: { playlistId: activeId!, channelIds: visible.map((item) => item.id) } }), enabled: !!activeId && visible.length > 0, staleTime: 5 * 60_000 });
+  const epg = useQuery({ queryKey: ["nownext", activeId, visible.map((item) => item.id).join(",")], queryFn: () => {
+    if (!activeId) throw new Error("No active playlist");
+    return fetchNowNext({ data: { playlistId: activeId, channelIds: visible.map((item) => item.id) } });
+  }, enabled: !!activeId && visible.length > 0, staleTime: 5 * 60_000 });
   const epgMap = useMemo(() => new Map((epg.data ?? []).map((entry) => [entry.channelId, entry])), [epg.data]);
-  const schedule = useQuery({ queryKey: ["schedule", activeId, channelId], queryFn: () => fetchSchedule({ data: { playlistId: activeId!, channelId: channelId! } }), enabled: !!activeId && !!channelId, staleTime: 5 * 60_000 });
+  const schedule = useQuery({ queryKey: ["schedule", activeId, channelId], queryFn: () => {
+    if (!activeId || !channelId) throw new Error("No channel selected");
+    return fetchSchedule({ data: { playlistId: activeId, channelId } });
+  }, enabled: !!activeId && !!channelId, staleTime: 5 * 60_000 });
 
   if (playlists.length === 0) {
     return <div className="p-6"><EmptyState title="No playlist yet" description="Add a playlist and, if your provider supplies listings, the guide will fill in automatically." action={<Button asChild><Link to="/playlists" search={tv ? { mode: "tv" } : {}}>Add a playlist</Link></Button>} /></div>;
