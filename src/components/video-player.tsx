@@ -1,3 +1,4 @@
+import { debugLog, redactUrl } from "@/lib/debug-log";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Maximize,
@@ -90,6 +91,7 @@ export function VideoPlayer({
   // fetches the stream over the device's own connection.
   const startNative = useCallback(() => {
     if (!fallbackSrc) return false;
+    debugLog("native", "Handing stream to the TV app player", { url: redactUrl(fallbackSrc), live, startPosition });
     return playNative({ url: fallbackSrc, title: title ?? "", live, startPosition });
   }, [fallbackSrc, title, live, startPosition]);
 
@@ -135,6 +137,7 @@ export function VideoPlayer({
     const link = externalLinks[0];
     if (status !== "error" || !link || autoLaunchRef.current === link.href) return;
     autoLaunchRef.current = link.href;
+    debugLog("external", `Auto-opening ${link.label ?? "external player"}`);
     setAutoLaunched(true);
     launchExternal(link.href);
     notifyExternalLaunch(link.href);
@@ -177,6 +180,7 @@ export function VideoPlayer({
 
   useEffect(() => {
     setActiveSrc(src);
+    if (src) debugLog("player", `New stream: ${title ?? ""}`, { relay: redactUrl(src), direct: redactUrl(fallbackSrc), live, nativeApp: hasNativePlayer() });
     setStatus(src ? "loading" : "idle");
     setErrorMessage(null);
   }, [src]);
@@ -196,6 +200,7 @@ export function VideoPlayer({
     const useFallback = () => {
       const fallback = fallbackRef.current;
       if (!fallback || activeSrc === fallback) return false;
+      debugLog("player", "Relay failed — trying direct provider link", redactUrl(fallback));
       setActiveSrc(fallback);
       return true;
     };
@@ -204,6 +209,7 @@ export function VideoPlayer({
 
     const attach = async () => {
       let usedHls = false;
+      debugLog("player", `Attaching ${isHls ? "HLS" : "progressive"} source`, redactUrl(activeSrc));
       if (isHls) {
         // Prefer hls.js wherever media source extensions exist. Android based
         // browsers (Fire TV Silk, Chrome) claim native HLS support but often
@@ -215,6 +221,12 @@ export function VideoPlayer({
           const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 30 });
           hlsInstance = hls;
           hls.on(Hls.Events.ERROR, (_event, data) => {
+            const response = (data as { response?: { code?: number; text?: string } }).response;
+            debugLog("hls", `${data.fatal ? "FATAL" : "warn"} ${data.type} / ${data.details}`, {
+              httpStatus: response?.code,
+              body: typeof response?.text === "string" ? response.text.slice(0, 200) : undefined,
+              url: redactUrl((data as { url?: string }).url ?? (data as { frag?: { url?: string } }).frag?.url),
+            });
             if (!data.fatal || destroyed || attempt !== sourceAttemptRef.current) return;
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR && useFallback()) return;
             setStatus("error");
@@ -226,6 +238,7 @@ export function VideoPlayer({
                   : "This stream can't be played in a browser.",
             );
           });
+          hls.on(Hls.Events.MANIFEST_PARSED, (_e, info) => debugLog("hls", `Manifest loaded (${info.levels.length} quality levels)`));
           hls.loadSource(activeSrc);
           hls.attachMedia(video);
         }
@@ -234,7 +247,9 @@ export function VideoPlayer({
 
       try {
         await video.play();
-      } catch {
+        debugLog("player", "Playback started");
+      } catch (error) {
+        debugLog("player", "Autoplay blocked, retrying muted", String(error));
         // Some devices (Fire TV Silk included) block sound-on autoplay.
         // Start muted so a picture appears, then let the viewer unmute.
         video.muted = true;
@@ -338,6 +353,7 @@ export function VideoPlayer({
             if (!live && startPosition > 5 && startPosition < video.duration - 10) {
               video.currentTime = startPosition;
             }
+            debugLog("player", "Metadata loaded", { duration: video.duration, size: `${video.videoWidth}x${video.videoHeight}` });
             setStatus("ready");
           }}
           onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
@@ -360,6 +376,7 @@ export function VideoPlayer({
           onError={(event) => {
             const mediaError = event.currentTarget.error;
             if (!mediaError || mediaError.code === MediaError.MEDIA_ERR_ABORTED) return;
+            debugLog("video", `Media error code ${mediaError.code}`, { message: mediaError.message, src: redactUrl(activeSrc) });
             const fallback = fallbackRef.current;
             if (fallback && activeSrc !== fallback) {
               setActiveSrc(fallback);
