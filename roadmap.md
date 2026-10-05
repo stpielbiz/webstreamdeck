@@ -17,3 +17,5 @@
 - [x] Keep Movies and Shows categories visible in a 20/80 split and correct Fire TV viewport scaling.
 - [x] Open selected Movies and Shows in a compact details and preview window.
 - [x] Rebuild the Fire TV home as a scrollable menu-and-details workspace with focus previews.
+- [x] Add a launch-time Fire TV update checker with a remote-friendly prompt and installer handoff.
+- [ ] Verify an over-the-top APK update on the owner's Firestick (blocked: requires the device and a consistently signed newer release).

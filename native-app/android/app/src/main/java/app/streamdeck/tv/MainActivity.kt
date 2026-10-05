@@ -19,12 +19,14 @@ import org.json.JSONObject
  */
 class MainActivity : Activity() {
     private lateinit var webView: WebView
+    private lateinit var appUpdater: AppUpdater
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         webView = WebView(this)
         setContentView(webView)
+        appUpdater = AppUpdater(this)
 
         webView.settings.apply {
             javaScriptEnabled = true
@@ -61,6 +63,12 @@ class MainActivity : Activity() {
         if (savedInstanceState != null) webView.restoreState(savedInstanceState)
         else webView.loadUrl(BuildConfig.START_URL)
         webView.requestFocus()
+        appUpdater.checkAtLaunch()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::appUpdater.isInitialized) appUpdater.onResume()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -78,6 +86,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         PlayerActivity.listener = null
+        if (::appUpdater.isInitialized) appUpdater.close()
         webView.destroy()
         super.onDestroy()
     }

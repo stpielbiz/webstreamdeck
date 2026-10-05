@@ -48,11 +48,15 @@ jobs:
         run: |
           gradle assembleRelease --no-daemon
           cp app/build/outputs/apk/release/app-release.apk stream-deck-tv.apk
+          printf '{"versionCode":%s,"versionName":"%s","apkUrl":"https://github.com/${{ github.repository }}/releases/latest/download/stream-deck-tv.apk"}\n' \
+            "$VERSION_CODE" "$VERSION_NAME" > update.json
 
       - uses: actions/upload-artifact@v4
         with:
           name: stream-deck-tv
-          path: native-app/android/stream-deck-tv.apk
+          path: |
+            native-app/android/stream-deck-tv.apk
+            native-app/android/update.json
 
       - name: Publish as latest release
         uses: softprops/action-gh-release@v2
@@ -60,4 +64,6 @@ jobs:
           tag_name: tv-app-v1.0.${{ github.run_number }}
           name: Stream Deck TV app 1.0.${{ github.run_number }}
           make_latest: "true"
-          files: native-app/android/stream-deck-tv.apk
+          files: |
+            native-app/android/stream-deck-tv.apk
+            native-app/android/update.json
