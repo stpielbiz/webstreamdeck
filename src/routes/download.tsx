@@ -1,10 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Download, Tv } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { APK_URL } from "@/lib/app-download";
+import { useSpatialNav } from "@/lib/use-spatial-nav";
 
 export const Route = createFileRoute("/download")({
+  validateSearch: z.object({ mode: z.literal("tv").optional() }),
   head: () => ({
     meta: [
       { title: "Download the Stream Deck TV app for Fire TV" },
@@ -33,10 +37,18 @@ const STEPS = [
 ];
 
 function DownloadPage() {
+  const { mode } = Route.useSearch();
+  const navigate = useNavigate();
+  useSpatialNav({
+    enabled: mode === "tv",
+    onBack: () => {
+      if (mode === "tv") void navigate({ to: "/tv" });
+    },
+  });
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-4xl items-center justify-between px-6 py-6">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to={mode === "tv" ? "/tv" : "/"} className="flex items-center gap-2">
           <span className="grid size-9 place-items-center rounded bg-primary text-primary-foreground">
             <Tv className="size-5" />
           </span>
@@ -48,6 +60,7 @@ function DownloadPage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-6 pb-16">
+        {mode === "tv" && <Button asChild variant="ghost" className="mb-6" data-tv-focus data-layer-back><Link to="/tv"><ArrowLeft className="size-4" /> Back to TV Home</Link></Button>}
         <h1 className="text-3xl font-bold sm:text-5xl">Stream Deck TV app</h1>
         <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
           The Fire TV app plays streams directly on your device, just like TiviMate, so providers

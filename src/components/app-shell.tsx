@@ -48,9 +48,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const tvMode = pathname === "/tv" || pathname.startsWith("/tv/");
+  const tvContext = useRouterState({ select: (state) => state.location.search['mode'] === "tv" });
+  const tvRoute = pathname === "/tv" || pathname.startsWith("/tv/");
+  const tvMode = tvRoute || tvContext;
   useSpatialNav({
-    enabled: !tvMode,
+    enabled: !tvRoute,
     onBack: () => {
       const dialogBack = document.querySelector<HTMLElement>("[data-dialog-back]");
       if (dialogBack) {

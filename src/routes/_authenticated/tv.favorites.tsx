@@ -60,8 +60,8 @@ function TvFavorites() {
                       group.key === "live"
                         ? { to: "/tv/live", search: { channel: row.itemId } }
                         : group.key === "movie"
-                          ? { to: "/tv/watch/movie/$id", params: { id: row.itemId } }
-                          : { to: "/tv/watch/series/$id", params: { id: row.itemId } },
+                          ? { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "favorites" } }
+                          : { to: "/tv/watch/series/$id", params: { id: row.itemId }, search: { from: "favorites" } },
                     )
                   }
                 />

@@ -80,7 +80,7 @@ function TvHome() {
                     subtitle={row.external ? "External player" : row.itemKind === "episode" ? `S${row.season} E${row.episode}` : row.durationSeconds ? `${Math.max(1, Math.round((row.durationSeconds - row.positionSeconds) / 60))} min left` : null}
                     progress={row.external ? null : row.durationSeconds ? row.positionSeconds / row.durationSeconds : null}
                     zoneEntry={index === 0}
-                    onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId } })}
+                    onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })}
                   />
                 ))}
               </HomeShelf>
@@ -91,7 +91,7 @@ function TvHome() {
               </HomeShelf>
               <HomeShelf title="Favourite movies and shows" empty="Star a movie or show to find it here.">
                 {favouriteTitles.slice(0, 10).map((row) => (
-                  <TvTile key={row.id} title={row.title} image={row.logoUrl} onSelect={() => void navigate(row.itemKind === "series" ? { to: "/tv/watch/series/$id", params: { id: row.itemId } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId } })} />
+                  <TvTile key={row.id} title={row.title} image={row.logoUrl} onSelect={() => void navigate(row.itemKind === "series" ? { to: "/tv/watch/series/$id", params: { id: row.itemId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })} />
                 ))}
               </HomeShelf>
             </div>
@@ -115,7 +115,7 @@ function HomeShelf({ title, empty, children }: { title: string; empty: string; c
 }
 
 const PREVIEWS = {
-  Guide: { icon: CalendarClock, title: "TV guide", body: "See what is playing now and what comes next.", to: "/guide", action: "Open guide" },
+  Guide: { icon: CalendarClock, title: "TV guide", body: "See what is playing now and what comes next.", to: "/tv/guide", action: "Open guide" },
   "Live TV": { icon: Tv, title: "Live TV", body: "Browse channels by category and start watching on this device.", to: "/tv/live", action: "Browse channels" },
   Movies: { icon: Clapperboard, title: "Movies", body: "Browse your movie library by system category, year, or title.", to: "/tv/movies", action: "Browse movies" },
   Shows: { icon: MonitorPlay, title: "Shows", body: "Find series, seasons, and episodes from your playlist.", to: "/tv/series", action: "Browse shows" },
@@ -140,7 +140,7 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin }: { sec
           <p className="mt-4 text-sm text-muted-foreground">{resumeCount} waiting to resume · {favouriteCount} favourites</p>
         )}
         <Button asChild size="lg" className="mt-7">
-          <Link to={preview.to} data-tv-focus data-zone-entry="true">{preview.action}</Link>
+          <Link to={preview.to} search={section === "Playlists" || section === "Get the TV app" || section === "Admin" ? { mode: "tv" } : {}} data-tv-focus data-zone-entry="true">{preview.action}</Link>
         </Button>
         <p className="mt-3 text-sm text-muted-foreground">Press OK on the menu to open, or press Right to use this button.</p>
       </section>
@@ -153,7 +153,7 @@ function HomeMessage({ title, body, to, action }: { title: string; body: string;
     <section className="border-y border-border py-5">
       <h3 className="font-display text-lg font-semibold">{title}</h3>
       <p className="mt-1 text-sm text-muted-foreground">{body}</p>
-      <Button asChild className="mt-4"><Link to={to} data-tv-focus data-zone-entry="true">{action}</Link></Button>
+      <Button asChild className="mt-4"><Link to={to} search={{ mode: "tv" }} data-tv-focus data-zone-entry="true">{action}</Link></Button>
     </section>
   );
 }

@@ -29,6 +29,7 @@ import { Route as AuthenticatedSeriesIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSeriesIdRouteImport } from './routes/_authenticated/series.$id'
 import { Route as AuthenticatedTvIndexRouteImport } from './routes/_authenticated/tv.index'
 import { Route as AuthenticatedTvFavoritesRouteImport } from './routes/_authenticated/tv.favorites'
+import { Route as AuthenticatedTvGuideRouteImport } from './routes/_authenticated/tv.guide'
 import { Route as AuthenticatedTvLiveRouteImport } from './routes/_authenticated/tv.live'
 import { Route as AuthenticatedTvMoviesRouteImport } from './routes/_authenticated/tv.movies'
 import { Route as AuthenticatedTvSeriesRouteImport } from './routes/_authenticated/tv.series'
@@ -138,6 +139,11 @@ const AuthenticatedTvFavoritesRoute =
     path: '/tv/favorites',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTvGuideRoute = AuthenticatedTvGuideRouteImport.update({
+  id: '/tv/guide',
+  path: '/tv/guide',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTvLiveRoute = AuthenticatedTvLiveRouteImport.update({
   id: '/tv/live',
   path: '/tv/live',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/movies/$id': typeof AuthenticatedMoviesIdRoute
   '/series/$id': typeof AuthenticatedSeriesIdRoute
   '/tv/favorites': typeof AuthenticatedTvFavoritesRoute
+  '/tv/guide': typeof AuthenticatedTvGuideRoute
   '/tv/live': typeof AuthenticatedTvLiveRoute
   '/tv/movies': typeof AuthenticatedTvMoviesRoute
   '/tv/series': typeof AuthenticatedTvSeriesRoute
@@ -215,6 +222,7 @@ export interface FileRoutesByTo {
   '/movies/$id': typeof AuthenticatedMoviesIdRoute
   '/series/$id': typeof AuthenticatedSeriesIdRoute
   '/tv/favorites': typeof AuthenticatedTvFavoritesRoute
+  '/tv/guide': typeof AuthenticatedTvGuideRoute
   '/tv/live': typeof AuthenticatedTvLiveRoute
   '/tv/movies': typeof AuthenticatedTvMoviesRoute
   '/tv/series': typeof AuthenticatedTvSeriesRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/_authenticated/movies/$id': typeof AuthenticatedMoviesIdRoute
   '/_authenticated/series/$id': typeof AuthenticatedSeriesIdRoute
   '/_authenticated/tv/favorites': typeof AuthenticatedTvFavoritesRoute
+  '/_authenticated/tv/guide': typeof AuthenticatedTvGuideRoute
   '/_authenticated/tv/live': typeof AuthenticatedTvLiveRoute
   '/_authenticated/tv/movies': typeof AuthenticatedTvMoviesRoute
   '/_authenticated/tv/series': typeof AuthenticatedTvSeriesRoute
@@ -273,6 +282,7 @@ export interface FileRouteTypes {
     | '/movies/$id'
     | '/series/$id'
     | '/tv/favorites'
+    | '/tv/guide'
     | '/tv/live'
     | '/tv/movies'
     | '/tv/series'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/movies/$id'
     | '/series/$id'
     | '/tv/favorites'
+    | '/tv/guide'
     | '/tv/live'
     | '/tv/movies'
     | '/tv/series'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/_authenticated/movies/$id'
     | '/_authenticated/series/$id'
     | '/_authenticated/tv/favorites'
+    | '/_authenticated/tv/guide'
     | '/_authenticated/tv/live'
     | '/_authenticated/tv/movies'
     | '/_authenticated/tv/series'
@@ -492,6 +504,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTvFavoritesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tv/guide': {
+      id: '/_authenticated/tv/guide'
+      path: '/tv/guide'
+      fullPath: '/tv/guide'
+      preLoaderRoute: typeof AuthenticatedTvGuideRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tv/live': {
       id: '/_authenticated/tv/live'
       path: '/tv/live'
@@ -548,6 +567,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMoviesIdRoute: typeof AuthenticatedMoviesIdRoute
   AuthenticatedSeriesIdRoute: typeof AuthenticatedSeriesIdRoute
   AuthenticatedTvFavoritesRoute: typeof AuthenticatedTvFavoritesRoute
+  AuthenticatedTvGuideRoute: typeof AuthenticatedTvGuideRoute
   AuthenticatedTvLiveRoute: typeof AuthenticatedTvLiveRoute
   AuthenticatedTvMoviesRoute: typeof AuthenticatedTvMoviesRoute
   AuthenticatedTvSeriesRoute: typeof AuthenticatedTvSeriesRoute
@@ -569,6 +589,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMoviesIdRoute: AuthenticatedMoviesIdRoute,
   AuthenticatedSeriesIdRoute: AuthenticatedSeriesIdRoute,
   AuthenticatedTvFavoritesRoute: AuthenticatedTvFavoritesRoute,
+  AuthenticatedTvGuideRoute: AuthenticatedTvGuideRoute,
   AuthenticatedTvLiveRoute: AuthenticatedTvLiveRoute,
   AuthenticatedTvMoviesRoute: AuthenticatedTvMoviesRoute,
   AuthenticatedTvSeriesRoute: AuthenticatedTvSeriesRoute,

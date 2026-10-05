@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
@@ -7,8 +7,10 @@ import { usePlaylists } from "@/components/playlist-context";
 import { TvShell } from "@/components/tv-shell";
 import { VideoPlayer } from "@/components/video-player";
 import { useProgress, useSaveProgress } from "@/lib/library-hooks";
+import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/tv/watch/movie/$id")({
+  validateSearch: z.object({ from: z.enum(["home", "favorites", "movies"]).optional() }),
   head: () => ({
     meta: [
       { title: "Watch a film on your TV — Stream Deck" },
@@ -26,6 +28,8 @@ export const Route = createFileRoute("/_authenticated/tv/watch/movie/$id")({
 
 function TvWatchMovie() {
   const { id } = Route.useParams();
+  const { from } = Route.useSearch();
+  const navigate = useNavigate();
   const { activeId } = usePlaylists();
   const fetchMovie = useServerFn(getMovie);
   const fetchPlayback = useServerFn(getPlayback);
@@ -56,7 +60,7 @@ function TvWatchMovie() {
     )?.positionSeconds ?? 0;
 
   return (
-    <TvShell title={film?.name ?? "Loading…"} onBack={() => window.history.back()}>
+    <TvShell title={film?.name ?? "Loading…"} onBack={() => void navigate({ to: from === "favorites" ? "/tv/favorites" : from === "home" ? "/tv" : "/tv/movies" })}>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(18rem,1fr)_minmax(28rem,1.35fr)]">
       <div className="min-w-0 lg:order-1">
         <h2 className="text-2xl font-semibold">{film?.name}</h2>

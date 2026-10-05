@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { createPlaylist, deletePlaylist } from "@/lib/iptv.functions";
 import { usePlaylists } from "@/components/playlist-context";
@@ -15,6 +16,7 @@ import { EmptyState } from "@/components/media";
 import { debugLog, redactUrl } from "@/lib/debug-log";
 
 export const Route = createFileRoute("/_authenticated/playlists")({
+  validateSearch: z.object({ mode: z.literal("tv").optional() }),
   head: () => ({
     meta: [
       { title: "Playlists — Stream Deck" },
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/playlists")({
 });
 
 function PlaylistsPage() {
+  const { mode } = Route.useSearch();
   const { playlists, refetch, activeId, setActiveId } = usePlaylists();
   const queryClient = useQueryClient();
   const create = useServerFn(createPlaylist);
@@ -81,6 +84,7 @@ function PlaylistsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 p-6">
+      {mode === "tv" && <Button asChild variant="ghost" data-tv-focus data-layer-back><Link to="/tv"><ArrowLeft className="size-4" /> Back to TV Home</Link></Button>}
       <div>
         <h1 className="font-display text-2xl font-bold">Playlists</h1>
         <p className="mt-1 text-sm text-muted-foreground">

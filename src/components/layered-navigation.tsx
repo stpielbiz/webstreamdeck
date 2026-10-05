@@ -9,7 +9,7 @@ export type BrowseLayer = "sections" | "categories" | "content";
 
 const SECTIONS = [
   { to: "/dashboard", tvTo: "/tv", label: "Home", icon: Home },
-  { to: "/guide", tvTo: "/guide", label: "Guide", icon: CalendarClock },
+  { to: "/guide", tvTo: "/tv/guide", label: "Guide", icon: CalendarClock },
   { to: "/live", tvTo: "/tv/live", label: "Live TV", icon: Tv },
   { to: "/movies", tvTo: "/tv/movies", label: "Movies", icon: Clapperboard },
   { to: "/series", tvTo: "/tv/series", label: "Shows", icon: MonitorPlay },
@@ -50,9 +50,9 @@ export function SectionMenu({
 }) {
   const { isAdmin } = useIsAdmin();
   const extras = [
-    { to: "/playlists", label: "Playlists", icon: ListVideo },
-    { to: "/download", label: "Get the TV app", icon: Download },
-    ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
+    { to: "/playlists" as const, label: "Playlists", icon: ListVideo },
+    { to: "/download" as const, label: "Get the TV app", icon: Download },
+    ...(isAdmin ? [{ to: "/admin" as const, label: "Admin", icon: ShieldCheck }] : []),
   ];
   const handleFocus = (event: FocusEvent<HTMLElement>) => {
     const item = event.target.closest<HTMLElement>("[data-section-label]");
@@ -74,7 +74,7 @@ export function SectionMenu({
           const destination = tv ? tvTo : to;
           return (
             <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
-              <Link to={destination} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
+            <Link to={destination} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
                 <Icon className="size-5 shrink-0" /> {label}
               </Link>
             </Button>
@@ -82,7 +82,7 @@ export function SectionMenu({
         })}
         {extras.map(({ to, label, icon: Icon }) => (
           <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
-            <Link to={to} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
+            <Link to={to} search={tv ? { mode: "tv" } : {}} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
               <Icon className="size-5 shrink-0" /> {label}
             </Link>
           </Button>
