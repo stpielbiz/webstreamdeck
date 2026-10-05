@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { TvShell } from "@/components/tv-shell";
+import { GlobalSearch } from "@/components/global-search";
 import { usePlaylists } from "@/components/playlist-context";
 import { useFavorites, useProgress } from "@/lib/library-hooks";
 import { SectionMenu } from "@/components/layered-navigation";
