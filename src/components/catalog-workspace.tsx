@@ -20,6 +20,8 @@ import { enrichTitles, getCachedTitleMetadata } from "@/lib/metadata.functions";
 import type { TitleMetadata } from "@/lib/metadata.server";
 import { useIsAdmin } from "@/lib/use-admin";
 import { cn } from "@/lib/utils";
+import { useVoiceSearch } from "@/lib/voice-search";
+import { VoiceButton } from "@/components/voice-button";
 import { LayerHeading } from "@/components/layered-navigation";
 
 type Kind = "movie" | "series";
@@ -42,6 +44,11 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const [genre, setGenre] = useState<string | null>(null);
   const [sort, setSort] = useState<"az" | "year">("year");
   const [search, setSearch] = useState("");
+  useVoiceSearch((spoken) => {
+    setSearch(spoken);
+    setSelectedId(null);
+    document.querySelector<HTMLElement>('[data-focus-key="catalog-search"]')?.focus();
+  });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [seasonIndex, setSeasonIndex] = useState(0);
   const [episode, setEpisode] = useState<EpisodeItem | null>(null);
@@ -291,6 +298,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
               <Button data-tv-focus size="sm" data-focus-key="sort-year" variant={sort === "year" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("year")}><CalendarArrowDown className="size-4" /> Newest</Button>
             </div>
             <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input data-tv-focus data-focus-key="catalog-search" type="search" onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-tv-zone="content"] [data-zone-entry="true"]')?.focus(); } }} value={search} onChange={(event) => { setSearch(event.target.value); setSelectedId(null); }} placeholder={`Search all ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
+            <VoiceButton />
           </div>
         </div>
           {!searching && <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />}
