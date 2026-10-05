@@ -48,7 +48,7 @@ function DownloadPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-4xl items-center justify-between px-6 py-6">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to={mode === "tv" ? "/tv" : "/"} className="flex items-center gap-2">
           <span className="grid size-9 place-items-center rounded bg-primary text-primary-foreground">
             <Tv className="size-5" />
           </span>

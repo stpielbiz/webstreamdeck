@@ -153,7 +153,7 @@ function HomeMessage({ title, body, to, action }: { title: string; body: string;
     <section className="border-y border-border py-5">
       <h3 className="font-display text-lg font-semibold">{title}</h3>
       <p className="mt-1 text-sm text-muted-foreground">{body}</p>
-      <Button asChild className="mt-4"><Link to={to} data-tv-focus data-zone-entry="true">{action}</Link></Button>
+      <Button asChild className="mt-4"><Link to={to} search={{ mode: "tv" }} data-tv-focus data-zone-entry="true">{action}</Link></Button>
     </section>
   );
 }
