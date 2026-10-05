@@ -23,4 +23,4 @@
 - [x] Merge Live TV and Guide into a persistent category-and-timeline workspace with remote navigation.
 - [x] Rebuild TV Home shelves at Netflix-style density with compact remote-navigable rows.
 - [x] Add a bottom TV Home menu action for manual native update checks and verify its browser fallback.
-- [ ] Make Live TV denser, show longer names, remove failed logos, and add all-channel search.
+- [x] Make Live TV denser, show longer names, remove failed logos, and add all-channel search; verify against the connected playlist.
