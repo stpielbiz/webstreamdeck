@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Download, Tv } from "lucide-react";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
@@ -38,10 +38,11 @@ const STEPS = [
 
 function DownloadPage() {
   const { mode } = Route.useSearch();
+  const navigate = useNavigate();
   useSpatialNav({
     enabled: mode === "tv",
     onBack: () => {
-      if (mode === "tv") window.location.assign("/tv");
+      if (mode === "tv") void navigate({ to: "/tv" });
     },
   });
   return (
