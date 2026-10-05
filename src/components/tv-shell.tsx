@@ -69,17 +69,20 @@ export function TvTile({
   image,
   progress,
   onSelect,
+  zoneEntry,
 }: {
   title: string;
   subtitle?: string | null;
   image?: string | null;
   progress?: number | null;
   onSelect: () => void;
+  zoneEntry?: boolean;
 }) {
   return (
     <button
       type="button"
       data-tv-focus
+      data-zone-entry={zoneEntry ? "true" : undefined}
       onClick={onSelect}
       className="group w-full overflow-hidden rounded-lg border border-border bg-card text-left outline-none transition focus:scale-[1.02] focus:border-primary focus:ring-4 focus:ring-primary/40"
     >
@@ -118,6 +121,6 @@ export function TvTile({
 
 export function TvGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8">{children}</div>
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">{children}</div>
   );
 }

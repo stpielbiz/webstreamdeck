@@ -104,14 +104,16 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
         best.element.focus();
         best.element.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
       } else {
-        event.preventDefault();
         if (group && Number.isFinite(order) && (direction === "left" || direction === "right")) {
           const nextOrder = order + (direction === "right" ? 1 : -1);
           const nextZone = group.querySelector<HTMLElement>(`[data-tv-zone-order="${nextOrder}"]`);
           const destination = nextZone?.querySelector<HTMLElement>("[data-zone-entry='true']")
             ?? nextZone?.querySelector<HTMLElement>(SELECTOR);
-          destination?.focus();
-          destination?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+          if (destination) {
+            event.preventDefault();
+            destination.focus();
+            destination.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+          }
         }
       }
     };
