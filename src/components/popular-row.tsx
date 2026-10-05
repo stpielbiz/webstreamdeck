@@ -19,7 +19,7 @@ export function PopularRow({
 }: {
   kind: "movie" | "series";
   tv?: boolean;
-  onOpen: (id: string) => void;
+  onOpen: (id: string, trigger?: HTMLElement | null) => void;
 }) {
   const { activeId } = usePlaylists();
   const fetchPopular = useServerFn(getPopular);
@@ -44,9 +44,7 @@ export function PopularRow({
       const target = norm(title);
       const match = found.find((i) => norm(i.name) === target) ?? found.find((i) => norm(i.name).includes(target)) ?? found[0];
       if (match) {
-        if (trigger instanceof HTMLButtonElement) trigger.disabled = false;
-        trigger?.focus({ preventScroll: true });
-        onOpen(match.id);
+        onOpen(match.id, trigger);
       }
       else toast("Not in your playlist", { description: title });
     } catch {

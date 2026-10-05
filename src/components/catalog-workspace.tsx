@@ -155,8 +155,8 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const selectedFavorite = selectedId ? isFavorite(favorites.data, activeId, kind, selectedId) : false;
   const resumeAt = (progress.data ?? []).find((row) => row.playlistId === activeId && row.itemId === mediaId && !row.completed)?.positionSeconds ?? 0;
 
-  const selectTitle = (id: string) => {
-    titleTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const selectTitle = (id: string, trigger?: HTMLElement | null) => {
+    titleTrigger.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     returnTitle.current = (catalogue.data ?? []).find((item) => item.id === id)?.name ?? null;
     setSelectedId(id);
     setSeasonIndex(0);
