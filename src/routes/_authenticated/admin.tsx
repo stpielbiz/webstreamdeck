@@ -16,6 +16,9 @@ import { useIsAdmin } from "@/lib/use-admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { setDebugEnabled, useDebugLog } from "@/lib/debug-log";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
@@ -48,6 +51,17 @@ function AdminPage() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("");
 
+  const debug = useDebugLog();
+  const [openLog, setOpenLog] = useState<string | null>(null);
+  const logs = useQuery({
+    queryKey: ["admin", "stream-logs"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("stream_logs").select("id, code, device, entries, created_at").order("created_at", { ascending: false }).limit(30);
+      if (error) throw error;
+      return data;
+    },
+  });
   const accountsFn = useServerFn(listAccounts);
   const statsFn = useServerFn(adminStats);
   const roleFn = useServerFn(setAdminRole);
@@ -152,6 +166,29 @@ function AdminPage() {
             <p className="mt-1 font-display text-2xl font-bold">
               {card.value === undefined ? "—" : card.value}
             </p>
+          </div>
+        ))}
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-border bg-card p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="font-display text-lg font-semibold">Connection & stream logs</h2>
+            <p className="text-sm text-muted-foreground">Turn on for this device. A Logs button appears bottom-left; press Save to store them with a code.</p>
+          </div>
+          <Switch data-tv-focus checked={debug.enabled} onCheckedChange={setDebugEnabled} aria-label="Connection and stream logs" />
+        </div>
+        {(logs.data ?? []).map((log) => (
+          <div key={log.id} className="rounded border border-border">
+            <button data-tv-focus className="flex w-full justify-between px-3 py-2 text-left text-sm" onClick={() => setOpenLog(openLog === log.id ? null : log.id)}>
+              <span className="font-mono font-semibold">{log.code}</span>
+              <span className="text-muted-foreground">{new Date(log.created_at).toLocaleString()}</span>
+            </button>
+            {openLog === log.id && (
+              <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-all border-t border-border p-2 font-mono text-[11px] text-muted-foreground">
+                {log.device + "\n" + (log.entries as { at: string; scope: string; message: string; detail?: string }[]).map((e) => `${e.at.slice(11, 23)} [${e.scope}] ${e.message}${e.detail ? " " + e.detail : ""}`).join("\n")}
+              </pre>
+            )}
           </div>
         ))}
       </section>
