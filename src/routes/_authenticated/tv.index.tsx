@@ -81,18 +81,19 @@ function TvHome() {
                     subtitle={row.external ? "External player" : row.itemKind === "episode" ? `S${row.season} E${row.episode}` : row.durationSeconds ? `${Math.max(1, Math.round((row.durationSeconds - row.positionSeconds) / 60))} min left` : null}
                     progress={row.external ? null : row.durationSeconds ? row.positionSeconds / row.durationSeconds : null}
                     zoneEntry={index === 0}
+                    edgeLeft={index === 0}
                     onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })}
                   />
                 ))}
               </HomeShelf>
               <HomeShelf title="Favourite channels" empty="Star channels to keep them close.">
                 {favouriteChannels.slice(0, 20).map((row, index) => (
-                  <HomeTile key={row.id} kind="channel" title={row.title} image={row.logoUrl} zoneEntry={resume.length === 0 && index === 0} onSelect={() => void navigate({ to: "/tv/live", search: { channel: row.itemId } })} />
+                  <HomeTile key={row.id} kind="channel" title={row.title} image={row.logoUrl} zoneEntry={resume.length === 0 && index === 0} edgeLeft={index === 0} onSelect={() => void navigate({ to: "/tv/live", search: { channel: row.itemId } })} />
                 ))}
               </HomeShelf>
               <HomeShelf title="Favourite movies and shows" empty="Star a movie or show to find it here.">
                 {favouriteTitles.slice(0, 20).map((row, index) => (
-                  <HomeTile key={row.id} kind="poster" title={row.title} image={row.logoUrl} zoneEntry={resume.length === 0 && favouriteChannels.length === 0 && index === 0} onSelect={() => void navigate(row.itemKind === "series" ? { to: "/tv/watch/series/$id", params: { id: row.itemId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })} />
+                  <HomeTile key={row.id} kind="poster" title={row.title} image={row.logoUrl} zoneEntry={resume.length === 0 && favouriteChannels.length === 0 && index === 0} edgeLeft={index === 0} onSelect={() => void navigate(row.itemKind === "series" ? { to: "/tv/watch/series/$id", params: { id: row.itemId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })} />
                 ))}
               </HomeShelf>
             </div>
@@ -123,6 +124,7 @@ function HomeTile({
   progress,
   onSelect,
   zoneEntry,
+  edgeLeft,
 }: {
   kind: "continue" | "channel" | "poster";
   title: string;
@@ -131,6 +133,7 @@ function HomeTile({
   progress?: number | null;
   onSelect: () => void;
   zoneEntry?: boolean;
+  edgeLeft?: boolean;
 }) {
   const shellClass = kind === "continue" ? "w-48" : kind === "channel" ? "w-28" : "w-28";
   const imageClass = kind === "continue" ? "aspect-video" : kind === "channel" ? "aspect-square" : "aspect-[2/3]";
@@ -140,7 +143,7 @@ function HomeTile({
       variant="ghost"
       data-tv-focus
       data-zone-entry={zoneEntry ? "true" : undefined}
-      data-zone-edge-left={zoneEntry ? "true" : undefined}
+      data-zone-edge-left={edgeLeft ? "true" : undefined}
       onClick={onSelect}
       className={`group h-auto shrink-0 flex-col items-stretch justify-start overflow-hidden rounded p-0 text-left outline-none transition focus:scale-[1.025] focus:ring-2 focus:ring-primary motion-reduce:transform-none ${shellClass}`}
     >
