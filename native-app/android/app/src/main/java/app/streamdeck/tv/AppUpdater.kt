@@ -91,7 +91,11 @@ class AppUpdater(private val activity: Activity) {
             .setTitle("Stream Deck update")
             .setDescription("Downloading the latest Fire TV app")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationUri(Uri.fromFile(destination))
+            .setDestinationInExternalFilesDir(
+                activity,
+                Environment.DIRECTORY_DOWNLOADS,
+                UPDATE_FILE_NAME,
+            )
             .setMimeType("application/vnd.android.package-archive")
 
         val manager = activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
