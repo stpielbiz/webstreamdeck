@@ -40,7 +40,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const toggleFavorite = useToggleFavorite();
   const saveProgress = useSaveProgress();
   const [genre, setGenre] = useState<string | null>(null);
-  const [sort, setSort] = useState<"az" | "year">("az");
+  const [sort, setSort] = useState<"az" | "year">("year");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [seasonIndex, setSeasonIndex] = useState(0);
@@ -56,14 +56,16 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     queryKey: ["system-catalogue", activeId, kind],
     queryFn: () => fetchItems({ data: { playlistId: activeId ?? "", kind } }),
     enabled: !!activeId,
-    staleTime: 5 * 60_000,
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
   });
   const names = useMemo(() => (catalogue.data ?? []).map((item) => item.name).slice(0, 5000), [catalogue.data]);
   const metadata = useQuery({
     queryKey: ["cached-title-metadata", activeId, kind, names.length],
     queryFn: () => fetchMetadata({ data: { playlistId: activeId ?? "", kind, names } }),
     enabled: !!activeId && names.length > 0,
-    staleTime: 10 * 60_000,
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
   });
 
   const groups = useMemo(() => {
@@ -277,17 +279,17 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         </div>
 
         <div className="mt-4 min-w-0">
-          <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
         <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <h2 className="truncate font-display text-lg font-semibold">{genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
           <div className="flex items-center gap-2">
             <div className="flex overflow-hidden rounded-md border border-border">
-              <Button data-tv-focus size="sm" variant={sort === "az" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("az")}><ArrowDownAZ className="size-4" /> A–Z</Button>
-              <Button data-tv-focus size="sm" variant={sort === "year" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("year")}><CalendarArrowDown className="size-4" /> Year</Button>
+              <Button data-tv-focus size="sm" data-focus-key="sort-az" variant={sort === "az" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("az")}><ArrowDownAZ className="size-4" /> A–Z</Button>
+              <Button data-tv-focus size="sm" data-focus-key="sort-year" variant={sort === "year" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("year")}><CalendarArrowDown className="size-4" /> Newest</Button>
             </div>
-            <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
+            <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input data-tv-focus data-focus-key="catalog-search" onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-tv-zone="content"] [data-zone-entry="true"]')?.focus(); } }} value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
           </div>
         </div>
+          <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
         {catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 && !catalogue.isLoading ? <EmptyState title="Nothing here" description="No titles match this system category." /> : sections.map((section, sectionIndex) => (
           <div key={section.label} className="mb-5">
             <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3>
