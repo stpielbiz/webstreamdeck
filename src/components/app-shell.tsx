@@ -36,6 +36,7 @@ const NAV = [
   { to: "/favorites", label: "Favourites", icon: Star },
   { to: "/playlists", label: "Playlists", icon: ListVideo },
   { to: "/device-login", label: "Log in another device", icon: LogIn },
+  { to: "/download", label: "Get the TV app", icon: MonitorPlay },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

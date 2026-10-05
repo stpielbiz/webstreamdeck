@@ -117,6 +117,9 @@ function Landing() {
           <Button asChild variant="ghost" size="lg">
             <Link to="/device-login">Log in another device</Link>
           </Button>
+          <Button asChild variant="ghost" size="lg">
+            <Link to="/download">Get the Fire TV app</Link>
+          </Button>
         </div>
         <p className="mt-4 text-sm text-muted-foreground">
           Your first day is free. A yearly subscription activates your account after the trial.
