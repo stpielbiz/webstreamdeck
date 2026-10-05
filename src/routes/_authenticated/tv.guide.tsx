@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { GuideView } from "@/components/guide-view";
-import { TvShell } from "@/components/tv-shell";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/tv/guide")({
+  beforeLoad: () => {
+    throw redirect({ to: "/tv/live" });
+  },
   head: () => ({
     meta: [
       { title: "TV guide on your TV — Stream Deck" },
@@ -14,9 +14,5 @@ export const Route = createFileRoute("/_authenticated/tv/guide")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: TvGuide,
+  component: () => null,
 });
-
-function TvGuide() {
-  return <TvShell title="Guide" immersive><div className="h-full overflow-y-auto"><GuideView tv /></div></TvShell>;
-}

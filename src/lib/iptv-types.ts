@@ -64,3 +64,8 @@ export interface NowNext {
   now: Programme | null;
   next: Programme | null;
 }
+
+export interface ChannelSchedule {
+  channelId: string;
+  programmes: Programme[];
+}

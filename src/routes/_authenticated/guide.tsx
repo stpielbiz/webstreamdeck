@@ -1,7 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { GuideView } from "@/components/guide-view";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/guide")({
+  beforeLoad: () => {
+    throw redirect({ to: "/live" });
+  },
   head: () => ({
     meta: [
       { title: "TV guide — Stream Deck" },
@@ -13,5 +15,5 @@ export const Route = createFileRoute("/_authenticated/guide")({
       { property: "og:description", content: "Now, next and today's listings." },
     ],
   }),
-  component: () => <GuideView />,
+  component: () => null,
 });

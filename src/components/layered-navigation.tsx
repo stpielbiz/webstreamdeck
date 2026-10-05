@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, Clapperboard, Download, Home, ListVideo, MonitorPlay, ShieldCheck, Star, Tv } from "lucide-react";
+import { Clapperboard, Download, Home, ListVideo, MonitorPlay, ShieldCheck, Star, Tv } from "lucide-react";
 import { useIsAdmin } from "@/lib/use-admin";
 import { useEffect, useRef, type FocusEvent } from "react";
 
@@ -9,7 +9,6 @@ export type BrowseLayer = "sections" | "categories" | "content";
 
 const SECTIONS = [
   { to: "/dashboard", tvTo: "/tv", label: "Home", icon: Home },
-  { to: "/guide", tvTo: "/tv/guide", label: "Guide", icon: CalendarClock },
   { to: "/live", tvTo: "/tv/live", label: "Live TV", icon: Tv },
   { to: "/movies", tvTo: "/tv/movies", label: "Movies", icon: Clapperboard },
   { to: "/series", tvTo: "/tv/series", label: "Shows", icon: MonitorPlay },

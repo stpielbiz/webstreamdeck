@@ -1,17 +1,22 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Play, Tv } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Play, Tv, X } from "lucide-react";
 import { z } from "zod";
 
-import { getCategories, getItems, getNowNext, getPlayback } from "@/lib/iptv.functions";
-import type { CatalogItem } from "@/lib/iptv-types";
+import { getCategories, getItems, getPlayback, getSchedules } from "@/lib/iptv.functions";
+import type { CatalogItem, Programme } from "@/lib/iptv-types";
 import { usePlaylists } from "@/components/playlist-context";
 import { TvShell } from "@/components/tv-shell";
 import { Button } from "@/components/ui/button";
 import { VideoPlayer } from "@/components/video-player";
 import { cn } from "@/lib/utils";
+
+const GUIDE_HOURS = 12;
+const GUIDE_WIDTH = 2880;
+const ROW_HEIGHT = 68;
+const PAGE_SIZE = 40;
 
 export const Route = createFileRoute("/_authenticated/tv/live")({
   validateSearch: z.object({ channel: z.string().optional() }),
@@ -32,80 +37,103 @@ export const Route = createFileRoute("/_authenticated/tv/live")({
 function TvLive() {
   const navigate = useNavigate();
   const { channel } = Route.useSearch();
-  const { activeId } = usePlaylists();
+  const { activeId, playlists } = usePlaylists();
   const fetchCategories = useServerFn(getCategories);
   const fetchItems = useServerFn(getItems);
-  const fetchNowNext = useServerFn(getNowNext);
+  const fetchSchedules = useServerFn(getSchedules);
   const resolve = useServerFn(getPlayback);
 
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState("");
   const [selected, setSelected] = useState<CatalogItem | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [directUrl, setDirectUrl] = useState<string | null>(null);
+  const [clock, setClock] = useState(() => Date.now());
+  const [page, setPage] = useState(0);
+  const [windowStart] = useState(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() < 30 ? 0 : 30, 0, 0);
+    return now.getTime();
+  });
+  const guideRef = useRef<HTMLDivElement>(null);
+  const windowEnd = windowStart + GUIDE_HOURS * 60 * 60_000;
 
   const categories = useQuery({
     queryKey: ["tv-live-categories", activeId],
-    queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind: "live" } }),
+    queryFn: () => {
+      if (!activeId) throw new Error("No active playlist");
+      return fetchCategories({ data: { playlistId: activeId, kind: "live" } });
+    },
     enabled: !!activeId,
     staleTime: 10 * 60_000,
   });
 
   const items = useQuery({
     queryKey: ["tv-live-items", activeId, categoryId],
-    queryFn: () =>
-      fetchItems({
-        data: { playlistId: activeId!, kind: "live", ...(categoryId ? { categoryId } : {}) },
-      }),
+    queryFn: () => {
+      if (!activeId) throw new Error("No active playlist");
+      return fetchItems({
+        data: { playlistId: activeId, kind: "live", ...(categoryId ? { categoryId } : {}) },
+      });
+    },
     enabled: !!activeId,
     staleTime: 10 * 60_000,
   });
 
   const channels = useMemo(() => items.data ?? [], [items.data]);
-  const focusedIndex = Math.max(
-    0,
-    channels.findIndex((item) => item.id === focusedId),
+  const pageCount = Math.max(1, Math.ceil(channels.length / PAGE_SIZE));
+  const visibleChannels = useMemo(
+    () => channels.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
+    [channels, page],
   );
-  const guideChannels = useMemo(() => {
-    const start = Math.max(0, Math.min(focusedIndex - 20, Math.max(0, channels.length - 60)));
-    return channels.slice(start, start + 60);
-  }, [channels, focusedIndex]);
+  const scheduleChannels = visibleChannels;
 
-  const guide = useQuery({
-    queryKey: ["tv-live-guide", activeId, guideChannels.map((item) => item.id).join(",")],
-    queryFn: () =>
-      fetchNowNext({
-        data: { playlistId: activeId!, channelIds: guideChannels.map((item) => item.id) },
-      }),
-    enabled: !!activeId && guideChannels.length > 0,
+  const schedules = useQuery({
+    queryKey: ["tv-live-schedules", activeId, scheduleChannels.map((item) => item.id).join(","), windowStart],
+    queryFn: () => {
+      if (!activeId) throw new Error("No active playlist");
+      return fetchSchedules({
+        data: {
+          playlistId: activeId,
+          channelIds: scheduleChannels.map((item) => item.id),
+          start: new Date(windowStart).toISOString(),
+          end: new Date(windowEnd).toISOString(),
+        },
+      });
+    },
+    enabled: !!activeId && scheduleChannels.length > 0,
     staleTime: 5 * 60_000,
   });
 
-  const guideMap = useMemo(
-    () => new Map((guide.data ?? []).map((entry) => [entry.channelId, entry])),
-    [guide.data],
+  const scheduleMap = useMemo(
+    () => new Map((schedules.data ?? []).map((entry) => [entry.channelId, entry.programmes])),
+    [schedules.data],
   );
 
   useEffect(() => {
-    if (selected || !channel || channels.length === 0) return;
+    if (!channel || channels.length === 0) return;
     const initial = channels.find((item) => item.id === channel);
     if (!initial) return;
-    setSelected(initial);
+    setPage(Math.floor(channels.indexOf(initial) / PAGE_SIZE));
     setFocusedId(initial.id);
-  }, [channels, channel, selected]);
+  }, [channels, channel]);
 
   useEffect(() => {
-    if (channels.length === 0) {
+    if (visibleChannels.length === 0) {
       setFocusedId(null);
       return;
     }
-    if (!focusedId || !channels.some((item) => item.id === focusedId)) {
-      setFocusedId(channels[0]?.id ?? null);
+    if (!focusedId || !visibleChannels.some((item) => item.id === focusedId)) {
+      setFocusedId(visibleChannels[0]?.id ?? null);
     }
-  }, [channels, focusedId]);
+  }, [visibleChannels, focusedId]);
 
   useEffect(() => {
-    if (!activeId || !selected) return;
+    if (!activeId || !selected) {
+      setUrl(null);
+      setDirectUrl(null);
+      return;
+    }
     let cancelled = false;
     setUrl(null);
     setDirectUrl(null);
@@ -123,132 +151,288 @@ function TvLive() {
     };
   }, [activeId, selected, resolve]);
 
-  const focused = channels.find((item) => item.id === focusedId) ?? selected;
-  const focusedGuide = focused ? guideMap.get(focused.id) : undefined;
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('[data-focus-key="live-category-all"]')?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    if (!selected) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('[data-focus-key="live-player-close"]')?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selected]);
+
+  const chooseCategory = (id: string) => {
+    setCategoryId(id);
+    setPage(0);
+    setFocusedId(null);
+    guideRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const playChannel = (item: CatalogItem) => {
+    setFocusedId(item.id);
+    setSelected(item);
+  };
+
+  const closePlayer = () => {
+    setSelected(null);
+    setUrl(null);
+    setDirectUrl(null);
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(focusedId ?? "")}"]`)?.focus();
+    });
+  };
+
+  const focused = channels.find((item) => item.id === focusedId) ?? null;
+  const focusedProgrammes = focused ? scheduleMap.get(focused.id) ?? [] : [];
+  const currentProgramme = focusedProgrammes.find((programme) => {
+    const start = Date.parse(programme.start ?? "");
+    const end = Date.parse(programme.end ?? "");
+    return Number.isFinite(start) && Number.isFinite(end) && start <= clock && end > clock;
+  });
+  const markerLeft = Math.max(0, Math.min(GUIDE_WIDTH, ((clock - windowStart) / (windowEnd - windowStart)) * GUIDE_WIDTH));
+
+  if (playlists.length === 0) {
+    return (
+      <TvShell title="Live TV" immersive onBack={() => void navigate({ to: "/tv" })}>
+        <div className="flex h-full items-center justify-center">
+          <div className="max-w-xl border-y border-border py-8 text-center">
+            <Tv className="mx-auto size-10 text-primary" />
+            <h2 className="mt-4 font-display text-2xl font-bold">No playlist yet</h2>
+            <p className="mt-2 text-muted-foreground">Add a playlist to load channels and programme listings.</p>
+            <Button asChild className="mt-5"><Link to="/playlists" search={{ mode: "tv" }} data-tv-focus>Add playlist</Link></Button>
+          </div>
+        </div>
+      </TvShell>
+    );
+  }
 
   return (
     <TvShell
       title="Live TV"
       immersive
-      onBack={
-        categoryId !== null
-            ? () => setCategoryId(null)
-            : () => void navigate({ to: "/tv" })
-      }
+      onBack={() => {
+        if (selected) {
+          closePlayer();
+          return;
+        }
+        const activeZone = document.activeElement?.closest<HTMLElement>("[data-tv-zone]")?.dataset['tvZone'];
+        if (activeZone === "live-guide") {
+          document.querySelector<HTMLElement>(`[data-focus-key="live-category-${CSS.escape(categoryId || "all")}"]`)?.focus();
+          return;
+        }
+        void navigate({ to: "/tv" });
+      }}
     >
-      {categoryId === null ? (
-        <div data-tv-zone="categories" className="scrollbar-thin mx-auto h-full max-w-3xl animate-slide-in-right overflow-y-auto py-2 motion-reduce:animate-none">
-          <h2 className="mb-4 text-2xl font-semibold">Choose a channel category</h2>
-          <div className="flex flex-col gap-1">
-            <Button data-tv-focus variant="ghost" className="h-14 justify-start truncate px-4 text-lg" onClick={() => { setCategoryId(""); setSelected(null); }}>All channels</Button>
+      <div data-tv-zone-group="live-workspace" className="grid h-full min-h-0 grid-cols-[minmax(11rem,20%)_minmax(0,1fr)] gap-3 lg:gap-5">
+        <aside className="flex min-h-0 flex-col border-r border-border pr-3">
+          <Button variant="ghost" size="sm" className="mb-2 justify-start" onClick={() => void navigate({ to: "/tv" })}>
+            <ArrowLeft className="size-4" /> TV Home
+          </Button>
+          <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Channel categories</p>
+          <div data-tv-zone="live-categories" data-tv-zone-order="1" className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <Button
+              data-tv-focus
+              data-focus-key="live-category-all"
+              variant={categoryId === "" ? "default" : "ghost"}
+              className="h-11 w-full justify-start truncate px-3 text-base"
+              onFocus={() => chooseCategory("")}
+              onClick={() => chooseCategory("")}
+            >
+              All channels
+            </Button>
             {(categories.data ?? []).map((category) => (
-              <Button key={category.id} data-tv-focus variant="ghost" className="h-14 justify-start truncate px-4 text-lg" onClick={() => { setCategoryId(category.id); setSelected(null); }}>{category.name}</Button>
+              <Button
+                key={category.id}
+                data-tv-focus
+                data-focus-key={`live-category-${category.id}`}
+                variant={categoryId === category.id ? "default" : "ghost"}
+                className="h-11 w-full justify-start truncate px-3 text-base"
+                onFocus={() => chooseCategory(category.id)}
+                onClick={() => chooseCategory(category.id)}
+              >
+                {category.name}
+              </Button>
             ))}
           </div>
-        </div>
-      ) : (
-      <div data-tv-zone="content" className="flex h-full min-h-0 animate-slide-in-right flex-col gap-2 motion-reduce:animate-none sm:gap-3">
-        <section className="grid shrink-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(22rem,42%)]">
-          <div className="min-w-0 self-center py-1 md:order-1">
-            <Button data-layer-back data-tv-focus variant="ghost" className="mb-2" onClick={() => { setSelected(null); setCategoryId(null); }}>
-              <ArrowLeft className="size-4" /> Categories
-            </Button>
-            <div className="mb-1 flex min-w-0 items-center gap-3">
-              {focused?.image ? (
-                <img src={focused.image} alt="" className="size-12 shrink-0 object-contain sm:size-16" />
-              ) : (
-                <span className="grid size-12 shrink-0 place-items-center rounded bg-muted sm:size-16"><Tv className="size-6 text-muted-foreground" /></span>
-              )}
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase text-primary">Live now</p>
-                <h2 className="truncate font-display text-xl font-bold sm:text-3xl">{focusedGuide?.now?.title ?? focused?.name ?? "Choose a channel"}</h2>
+        </aside>
+
+        <section className="flex min-h-0 min-w-0 flex-col">
+          <div className="mb-2 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b border-border pb-2">
+            <div className="min-w-0">
+              <p className="truncate font-display text-lg font-bold">{focused?.name ?? "Live TV guide"}</p>
+              <p className="truncate text-sm text-muted-foreground">{currentProgramme ? `On now · ${currentProgramme.title}` : `${channels.length} channels · ${formatWindow(windowStart, windowStart + 3 * 60 * 60_000)}`}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              {pageCount > 1 && <span className="text-xs tabular-nums text-muted-foreground">Channels {page * PAGE_SIZE + 1}–{Math.min(channels.length, (page + 1) * PAGE_SIZE)}</span>}
+              {focused && <p className="flex items-center gap-2 text-sm font-semibold text-primary"><Play className="size-4 fill-current" /> OK to watch</p>}
+            </div>
+          </div>
+
+          <div
+            ref={guideRef}
+            data-tv-zone="live-guide"
+            data-tv-zone-order="2"
+            data-horizontal-nav="true"
+            className="scrollbar-thin relative min-h-0 flex-1 overflow-auto overscroll-contain rounded border border-border bg-card"
+            aria-label="Programme guide"
+          >
+            <div className="sticky top-0 z-30 flex h-11 min-w-max border-b border-border bg-background">
+              <div className="sticky left-0 z-40 flex w-[220px] shrink-0 items-center border-r border-border bg-background px-3 text-xs font-semibold uppercase text-muted-foreground">Channels</div>
+              <div className="grid w-[2880px] shrink-0 grid-cols-24">
+                {Array.from({ length: 24 }).map((_, index) => (
+                  <div key={index} className="border-r border-border px-2 py-3 text-xs font-semibold tabular-nums text-muted-foreground">
+                    {timeLabel(new Date(windowStart + index * 30 * 60_000).toISOString())}
+                  </div>
+                ))}
               </div>
             </div>
-            <p className="truncate text-sm font-semibold text-muted-foreground sm:text-lg">{focused?.name}</p>
-            {focusedGuide?.now?.description && <p className="mt-1 line-clamp-2 max-w-4xl text-sm text-muted-foreground sm:text-base">{focusedGuide.now.description}</p>}
-            {focused && selected?.id !== focused.id && <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-primary"><Play className="size-4 fill-current" /> Press OK to watch</p>}
-          </div>
-          <div className="order-first max-h-[32vh] min-h-0 md:order-2 md:max-h-none">
-          <VideoPlayer
-            src={url}
-            fallbackSrc={directUrl}
-            title={selected?.name ?? ""}
-            poster={selected?.image ?? null}
-            live
-            className="aspect-video h-full max-h-[32vh] w-full overflow-hidden rounded-lg"
-          />
-          </div>
-        </section>
 
-        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border" aria-label="Channel guide">
-          <div className="hidden shrink-0 grid-cols-[4rem_minmax(14rem,1.25fr)_minmax(16rem,2fr)_minmax(14rem,1.5fr)] border-b border-border bg-muted/60 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground sm:grid">
-            <span>Channel</span>
-            <span>Name</span>
-            <span>On now</span>
-            <span>Up next</span>
-          </div>
-          <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            {items.isLoading && <p className="p-6 text-center text-muted-foreground">Loading channels…</p>}
-            {!items.isLoading && channels.length === 0 && (
-              <p className="p-6 text-center text-muted-foreground">No channels in this category.</p>
-            )}
-            {channels.map((item, index) => {
-              const entry = guideMap.get(item.id);
-              return (
-                <Button
-                  key={item.id}
-                  variant="ghost"
-                  data-tv-focus
-                  onFocus={() => setFocusedId(item.id)}
-                  onClick={() => {
-                    setFocusedId(item.id);
-                    setSelected(item);
-                  }}
-                  className={cn(
-                    "group grid h-auto min-h-16 w-full grid-cols-[3rem_minmax(0,1fr)] items-center gap-x-2 rounded-none border-b border-border/60 px-3 py-2 text-left transition sm:grid-cols-[4rem_minmax(14rem,1.25fr)_minmax(16rem,2fr)_minmax(14rem,1.5fr)] sm:gap-x-3",
-                    "focus-visible:relative focus-visible:z-10 focus-visible:bg-primary focus-visible:text-primary-foreground focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-primary",
-                    selected?.id === item.id && focusedId !== item.id && "bg-secondary",
-                  )}
-                >
-                  <span className="text-center text-base tabular-nums text-muted-foreground group-focus-visible:text-primary-foreground">
-                    {index + 1}
-                  </span>
-                  <span className="flex min-w-0 items-center gap-3">
-                    {item.image ? (
-                      <img src={item.image} alt="" loading="lazy" className="size-10 shrink-0 object-contain" />
-                    ) : (
-                      <span className="grid size-10 shrink-0 place-items-center rounded bg-muted">
-                        <Tv className="size-4 text-muted-foreground" />
-                      </span>
-                    )}
-                    <span className="min-w-0">
-                      <span className="block truncate text-base font-semibold sm:text-lg">{item.name}</span>
-                      <span className="block truncate text-sm font-normal text-muted-foreground group-focus-visible:text-primary-foreground/80 sm:hidden">
-                        {entry?.now?.title ?? "No programme information"}
-                      </span>
-                    </span>
-                  </span>
-                  <span className="hidden min-w-0 sm:block">
-                    <span className="block truncate text-base font-semibold">
-                      {entry?.now?.title ?? "No programme information"}
-                    </span>
-                    {entry?.now?.start && (
-                      <span className="block text-sm font-normal text-muted-foreground group-focus-visible:text-primary-foreground/80">
-                        {timeLabel(entry.now.start)} – {timeLabel(entry.now.end)}
-                      </span>
-                    )}
-                  </span>
-                  <span className="hidden truncate text-base font-normal text-muted-foreground group-focus-visible:text-primary-foreground/80 sm:block">
-                    {entry?.next?.title ?? "No programme information"}
-                  </span>
+            {items.isLoading && <p className="sticky left-0 p-6 text-muted-foreground">Loading channels…</p>}
+            {!items.isLoading && channels.length === 0 && <p className="sticky left-0 p-6 text-muted-foreground">No channels in this category.</p>}
+            {!items.isLoading && page > 0 && (
+              <div className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
+                <Button variant="ghost" data-tv-focus data-zone-edge-left="true" onClick={() => setPage((value) => Math.max(0, value - 1))} className="sticky left-0 z-20 h-full w-[220px] shrink-0 justify-start rounded-none border-r border-border bg-card px-3">
+                  <ChevronLeft className="size-5" /> Previous channels
                 </Button>
+                <div className="flex h-full w-[2880px] shrink-0 items-center bg-muted/20 px-4 text-sm text-muted-foreground">Previous group of {PAGE_SIZE} channels</div>
+              </div>
+            )}
+            {!items.isLoading && visibleChannels.map((item, index) => {
+              const programmes = scheduleMap.get(item.id) ?? [];
+              return (
+                <div key={item.id} className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
+                  <Button
+                    variant="ghost"
+                    data-tv-focus
+                    data-zone-entry={index === 0 ? "true" : undefined}
+                    data-zone-edge-left="true"
+                    data-focus-key={`channel-${item.id}`}
+                    onFocus={() => setFocusedId(item.id)}
+                    onClick={() => playChannel(item)}
+                    className={cn(
+                      "sticky left-0 z-20 h-full w-[220px] shrink-0 justify-start rounded-none border-r border-border bg-card px-3 text-left focus-visible:z-30",
+                      focusedId === item.id && "bg-secondary",
+                    )}
+                  >
+                    <span className="w-7 shrink-0 text-center text-xs tabular-nums text-muted-foreground">{item.number ?? page * PAGE_SIZE + index + 1}</span>
+                    {item.image ? <img src={item.image} alt="" className="size-9 shrink-0 object-contain" /> : <Tv className="size-5 shrink-0 text-muted-foreground" />}
+                    <span className="min-w-0 truncate text-sm font-semibold">{item.name}</span>
+                  </Button>
+                  <div className="relative h-full w-[2880px] shrink-0 bg-muted/20">
+                    <div className="pointer-events-none absolute inset-0 grid grid-cols-24">
+                      {Array.from({ length: 24 }).map((_, marker) => <span key={marker} className="border-r border-border/60" />)}
+                    </div>
+                    {programmes.length === 0 ? (
+                      <Button
+                        variant="ghost"
+                        data-tv-focus
+                        data-zone-edge-left="true"
+                        onFocus={() => setFocusedId(item.id)}
+                        onClick={() => playChannel(item)}
+                        className="absolute inset-y-1 left-1 w-[716px] justify-start border border-border bg-secondary/60 px-3 text-muted-foreground"
+                      >
+                        No programme information
+                      </Button>
+                    ) : programmes.map((programme, programmeIndex) => (
+                      <ProgrammeCell
+                        key={`${programme.start}-${programmeIndex}`}
+                        programme={programme}
+                        windowStart={windowStart}
+                        windowEnd={windowEnd}
+                        first={programmeIndex === 0}
+                        onFocus={() => setFocusedId(item.id)}
+                        onSelect={() => playChannel(item)}
+                      />
+                    ))}
+                    {clock >= windowStart && clock <= windowEnd && (
+                      <span className="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-primary" style={{ left: markerLeft }} aria-hidden="true" />
+                    )}
+                  </div>
+                </div>
               );
             })}
+            {!items.isLoading && page < pageCount - 1 && (
+              <div className="flex min-w-max" style={{ height: ROW_HEIGHT }}>
+                <Button variant="ghost" data-tv-focus data-zone-edge-left="true" onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))} className="sticky left-0 z-20 h-full w-[220px] shrink-0 justify-start rounded-none border-r border-border bg-card px-3">
+                  <ChevronRight className="size-5" /> Next channels
+                </Button>
+                <div className="flex h-full w-[2880px] shrink-0 items-center bg-muted/20 px-4 text-sm text-muted-foreground">Next group of {PAGE_SIZE} channels</div>
+              </div>
+            )}
           </div>
         </section>
       </div>
+
+      {selected && (
+        <div data-tv-zone="live-player" className="fixed inset-0 z-50 grid place-items-center bg-background/90 p-6" role="dialog" aria-label={`Playing ${selected.name}`}>
+          <div className="w-full max-w-5xl overflow-hidden rounded-lg border border-border bg-card shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate font-display text-xl font-bold">{selected.name}</p>
+                <p className="text-sm text-muted-foreground">Live TV</p>
+              </div>
+              <Button data-dialog-back data-tv-focus data-focus-key="live-player-close" variant="ghost" size="icon" aria-label="Close player" onClick={closePlayer}><X className="size-5" /></Button>
+            </div>
+            <VideoPlayer src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+          </div>
+        </div>
       )}
     </TvShell>
+  );
+}
+
+function ProgrammeCell({
+  programme,
+  windowStart,
+  windowEnd,
+  first,
+  onFocus,
+  onSelect,
+}: {
+  programme: Programme;
+  windowStart: number;
+  windowEnd: number;
+  first: boolean;
+  onFocus: () => void;
+  onSelect: () => void;
+}) {
+  const rawStart = Date.parse(programme.start ?? "");
+  const rawEnd = Date.parse(programme.end ?? "");
+  if (!Number.isFinite(rawStart) || !Number.isFinite(rawEnd)) return null;
+  const start = Math.max(windowStart, rawStart);
+  const end = Math.min(windowEnd, rawEnd);
+  if (end <= start) return null;
+  const left = ((start - windowStart) / (windowEnd - windowStart)) * GUIDE_WIDTH;
+  const width = Math.max(72, ((end - start) / (windowEnd - windowStart)) * GUIDE_WIDTH);
+
+  return (
+    <Button
+      variant="ghost"
+      data-tv-focus
+      data-zone-edge-left={first ? "true" : undefined}
+      onFocus={onFocus}
+      onClick={onSelect}
+      className="absolute inset-y-1 z-10 h-auto justify-start overflow-hidden rounded border border-border bg-secondary px-3 text-left focus-visible:z-20 focus-visible:bg-primary focus-visible:text-primary-foreground"
+      style={{ left, width: Math.max(64, width - 4) }}
+      title={programme.description ?? programme.title}
+    >
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold">{programme.title}</span>
+        <span className="block truncate text-xs font-normal text-muted-foreground group-focus-visible:text-primary-foreground/80">
+          {timeLabel(programme.start)} – {timeLabel(programme.end)}
+        </span>
+      </span>
+    </Button>
   );
 }
 
@@ -258,4 +442,8 @@ function timeLabel(iso: string | null) {
   return Number.isNaN(date.getTime())
     ? ""
     : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatWindow(start: number, end: number) {
+  return `${timeLabel(new Date(start).toISOString())} – ${timeLabel(new Date(end).toISOString())}`;
 }
