@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getItems } from "@/lib/iptv.functions";
 import type { CatalogItem } from "@/lib/iptv-types";
+import { useVoiceSearch } from "@/lib/voice-search";
+import { VoiceButton } from "@/components/voice-button";
 
 const LIMIT = 30;
 
@@ -18,6 +20,10 @@ export function GlobalSearch() {
   const { activeId } = usePlaylists();
   const fetchItems = useServerFn(getItems);
   const [search, setSearch] = useState("");
+  useVoiceSearch((spoken) => {
+    setSearch(spoken);
+    document.querySelector<HTMLElement>('[data-focus-key="global-search"]')?.focus();
+  });
   const query = search.trim().toLowerCase();
   const enabled = !!activeId && query.length > 0;
   const opts = (kind: "live" | "movie" | "series", key: string) => ({
@@ -71,6 +77,8 @@ export function GlobalSearch() {
             <X className="size-4" />
           </Button>
         )}
+        <VoiceButton className="absolute -right-11 top-0" />
+
       </div>
       {enabled && (
         <div className="space-y-4">
