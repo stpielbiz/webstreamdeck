@@ -133,6 +133,33 @@ export type Database = {
         }
         Relationships: []
       }
+      stream_logs: {
+        Row: {
+          code: string
+          created_at: string
+          device: string | null
+          entries: Json
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          device?: string | null
+          entries?: Json
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          device?: string | null
+          entries?: Json
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       title_metadata: {
         Row: {
           backdrop_url: string | null
