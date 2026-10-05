@@ -22,6 +22,7 @@ declare global {
     StreamDeckNative?: StreamDeckNativeBridge;
     __streamDeckProgress?: ((position: number, duration: number) => void) | undefined;
     __streamDeckEnded?: (() => void) | undefined;
+    __streamDeckClosed?: (() => void) | undefined;
   }
 }
 

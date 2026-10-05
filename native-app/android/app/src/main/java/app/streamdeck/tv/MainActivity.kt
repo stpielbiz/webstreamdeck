@@ -20,6 +20,7 @@ import org.json.JSONObject
 class MainActivity : Activity() {
     private lateinit var webView: WebView
     private lateinit var appUpdater: AppUpdater
+    private var lastPlayerClosedAt = 0L
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +59,14 @@ class MainActivity : Activity() {
                     webView.evaluateJavascript("window.__streamDeckEnded && window.__streamDeckEnded()", null)
                 }
             }
+
+            override fun onClosed() {
+                lastPlayerClosedAt = android.os.SystemClock.elapsedRealtime()
+                runOnUiThread {
+                    webView.evaluateJavascript("window.__streamDeckClosed && window.__streamDeckClosed()", null)
+                    webView.requestFocus()
+                }
+            }
         }
 
         if (savedInstanceState != null) webView.restoreState(savedInstanceState)
@@ -76,12 +85,18 @@ class MainActivity : Activity() {
         webView.saveState(outState)
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
-            webView.goBack()
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.keyCode == KeyEvent.KEYCODE_BACK) {
+            if (event.action == KeyEvent.ACTION_UP && !event.isCanceled &&
+                android.os.SystemClock.elapsedRealtime() - lastPlayerClosedAt > 600) {
+                webView.evaluateJavascript(
+                    "(() => { const e = new CustomEvent('streamdeck-back', {cancelable:true}); if (window.dispatchEvent(e)) { const close = document.querySelector('[data-dialog-back]'); if (close) close.click(); else if (location.pathname !== '/tv' && location.pathname !== '/tv/') location.assign('/tv'); } })()",
+                    null,
+                )
+            }
             return true
         }
-        return super.onKeyDown(keyCode, event)
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onDestroy() {

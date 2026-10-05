@@ -49,6 +49,8 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const [playing, setPlaying] = useState(false);
   const categoryFocus = useRef<HTMLButtonElement>(null);
   const previousGenre = useRef<string | null>(null);
+  const titleTrigger = useRef<HTMLElement | null>(null);
+  const returnTitle = useRef<string | null>(null);
 
   const catalogue = useQuery({
     queryKey: ["system-catalogue", activeId, kind],
@@ -153,12 +155,18 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const selectedFavorite = selectedId ? isFavorite(favorites.data, activeId, kind, selectedId) : false;
   const resumeAt = (progress.data ?? []).find((row) => row.playlistId === activeId && row.itemId === mediaId && !row.completed)?.positionSeconds ?? 0;
 
-  const selectTitle = (id: string) => {
+  const selectTitle = (id: string, trigger?: HTMLElement | null) => {
+    titleTrigger.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    returnTitle.current = (catalogue.data ?? []).find((item) => item.id === id)?.name ?? null;
     setSelectedId(id);
     setSeasonIndex(0);
     setEpisode(null);
     setPlaying(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const closeDetails = () => {
+    setSelectedId(null);
+    setEpisode(null);
+    setPlaying(false);
   };
   const returnToSections = () => void navigate({ to: tv ? "/tv" : "/dashboard" });
   const chooseGenre = (label: string) => {
@@ -289,8 +297,15 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         </div>
       </div>
 
-      <Dialog open={selectedId !== null} onOpenChange={(open) => { if (!open) { setSelectedId(null); setEpisode(null); setPlaying(false); } }}>
-        <DialogContent data-tv-zone="details" className="max-h-[86dvh] w-[min(92vw,56rem)] max-w-none gap-0 overflow-hidden p-0 sm:rounded-lg">
+      <Dialog open={selectedId !== null} onOpenChange={(open) => { if (!open) closeDetails(); }}>
+        <DialogContent onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          window.requestAnimationFrame(() => {
+            const trigger = titleTrigger.current;
+            const replacement = Array.from(document.querySelectorAll<HTMLElement>('[data-tv-zone="content"] [data-tv-focus]')).find((element) => element.textContent?.includes(returnTitle.current ?? "") || element.querySelector('img')?.alt === returnTitle.current);
+            (trigger?.isConnected ? trigger : replacement)?.focus({ preventScroll: true });
+          });
+        }} data-tv-zone="details" className="max-h-[86dvh] w-[min(92vw,56rem)] max-w-none gap-0 overflow-hidden p-0 sm:rounded-lg">
           <div className="scrollbar-thin max-h-[86dvh] overflow-y-auto">
             <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_minmax(18rem,46%)] md:p-5">
               <div className="min-w-0">
@@ -314,7 +329,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
               </div>
               <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
                 {playing && mediaId ? (
-                  <VideoPlayer src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
+                  <VideoPlayer onStop={closeDetails} src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
                 ) : (
                   <button
                     type="button"

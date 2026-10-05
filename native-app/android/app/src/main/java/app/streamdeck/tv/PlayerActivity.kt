@@ -28,6 +28,7 @@ class PlayerActivity : Activity() {
     interface Listener {
         fun onProgress(positionSeconds: Double, durationSeconds: Double)
         fun onEnded()
+        fun onClosed()
     }
 
     companion object {
@@ -45,6 +46,7 @@ class PlayerActivity : Activity() {
     private lateinit var playerView: PlayerView
     private val handler = Handler(Looper.getMainLooper())
     private var live = false
+    private var ended = false
     private var candidates: MutableList<String> = mutableListOf()
 
     private val progressTick = object : Runnable {
@@ -86,6 +88,7 @@ class PlayerActivity : Activity() {
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_ENDED && !live) {
+                    ended = true
                     reportProgress()
                     listener?.onEnded()
                     finish()
@@ -144,6 +147,18 @@ class PlayerActivity : Activity() {
         if (position > 0) listener?.onProgress(position, duration)
     }
 
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.keyCode == KeyEvent.KEYCODE_BACK) {
+            if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) {
+                reportProgress()
+                if (::player.isInitialized) player.pause()
+                finish()
+            }
+            return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
@@ -176,6 +191,7 @@ class PlayerActivity : Activity() {
 
     override fun onDestroy() {
         if (::player.isInitialized) player.release()
+        if (isFinishing && !ended) listener?.onClosed()
         super.onDestroy()
     }
 }

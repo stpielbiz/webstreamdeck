@@ -403,7 +403,7 @@ function TvLive() {
               </div>
               <Button data-dialog-back data-tv-focus data-focus-key="live-player-close" variant="ghost" size="icon" aria-label="Close player" onClick={closePlayer}><X className="size-5" /></Button>
             </div>
-            <VideoPlayer src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+            <VideoPlayer onStop={closePlayer} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
           </div>
         </div>
       )}

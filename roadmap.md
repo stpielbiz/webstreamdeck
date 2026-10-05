@@ -24,3 +24,4 @@
 - [x] Rebuild TV Home shelves at Netflix-style density with compact remote-navigable rows.
 - [x] Add a bottom TV Home menu action for manual native update checks and verify its browser fallback.
 - [x] Make Live TV denser, show longer names, remove failed logos, and add all-channel search; verify against the connected playlist.
+- [x] Route one Back through playback closure and restore previous selection; verified channel/movie/show closure with native bridge test doubles. Physical remote validation remains part of the device test above.
