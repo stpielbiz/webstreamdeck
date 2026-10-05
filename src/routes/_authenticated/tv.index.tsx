@@ -84,6 +84,7 @@ function TvHome() {
                 <p className="mt-1 text-sm text-muted-foreground">Pick up where you stopped or jump into a favourite.</p>
               </div>
               {!activeId && <HomeMessage title="No playlist yet" body="Add a playlist to see your channels, movies and shows here." to="/playlists" action="Add playlist" />}
+              {activeId && <GlobalSearch />}
               <HomeShelf title="Continue watching" empty="Nothing to resume yet.">
                 {resume.slice(0, 20).map((row, index) => (
                   <HomeTile
