@@ -48,7 +48,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const tvMode = pathname === "/tv" || pathname.startsWith("/tv/");
+  const tvContext = useRouterState({ select: (state) => state.location.search['mode'] === "tv" });
+  const tvMode = pathname === "/tv" || pathname.startsWith("/tv/") || tvContext;
   useSpatialNav({
     enabled: !tvMode,
     onBack: () => {

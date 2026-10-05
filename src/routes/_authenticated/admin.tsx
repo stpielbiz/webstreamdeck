@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ShieldCheck, ShieldOff, Trash2, KeyRound, RefreshCw } from "lucide-react";
+import { ArrowLeft, ShieldCheck, ShieldOff, Trash2, KeyRound, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import {
   adminStats,
@@ -21,6 +22,7 @@ import { setDebugEnabled, useDebugLog } from "@/lib/debug-log";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin")({
+  validateSearch: z.object({ mode: z.literal("tv").optional() }),
   component: AdminPage,
   head: () => ({
     meta: [
@@ -47,6 +49,7 @@ function fmt(value: string | null) {
 }
 
 function AdminPage() {
+  const { mode } = Route.useSearch();
   const { isAdmin, loading } = useIsAdmin();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("");
@@ -141,6 +144,7 @@ function AdminPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
+      {mode === "tv" && <Button asChild variant="ghost" data-tv-focus data-layer-back><Link to="/tv"><ArrowLeft className="size-4" /> Back to TV Home</Link></Button>}
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">Admin</h1>
