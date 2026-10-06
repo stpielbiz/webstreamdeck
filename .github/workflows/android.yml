@@ -39,6 +39,13 @@ jobs:
             # Strip spaces/newlines that sneak in when pasting the secret.
             printf '%s' "$KEYSTORE_BASE64" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/release.jks"
             echo "Keystore bytes: $(wc -c < "$RUNNER_TEMP/release.jks") (expected 2672)"
+            EXPECTED_SHA="dea1f22e6edd0e3d269d5edbaca0bc70d5dd17957bc3b350649d1d8a9d5061c2"
+            ACTUAL_SHA="$(sha256sum "$RUNNER_TEMP/release.jks" | cut -d' ' -f1)"
+            if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+              echo "::error::ANDROID_KEYSTORE_BASE64 does not match the Stream Deck signing key (a character was changed while copying). Re-paste it from streamdeck-release.base64.txt."
+              exit 1
+            fi
+            echo "Keystore fingerprint matches."
             PASS="$(printf '%s' "$KS_PASS" | tr -d '\r\n' | sed 's/^ *//;s/ *$//')"
             ALIAS="$(printf '%s' "$KEY_ALIAS" | tr -d '\r\n' | sed 's/^ *//;s/ *$//')"
             [ -z "$ALIAS" ] && ALIAS="streamdeck"
