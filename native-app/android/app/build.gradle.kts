@@ -29,9 +29,13 @@ android {
         if (keystorePath != null) {
             create("release") {
                 storeFile = file(keystorePath)
-                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+                storeType = "PKCS12"
+                // Trim stray spaces/newlines picked up when pasting secrets.
+                val storePass = System.getenv("ANDROID_KEYSTORE_PASSWORD")?.trim()
+                storePassword = storePass
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")?.trim()
+                // PKCS12 keys share the store password.
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")?.trim()?.ifEmpty { null } ?: storePass
             }
         }
     }

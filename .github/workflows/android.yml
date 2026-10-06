@@ -32,9 +32,17 @@ jobs:
       - name: Decode signing key (optional)
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            # Strip spaces/newlines that sneak in when pasting the secret.
+            printf '%s' "$KEYSTORE_BASE64" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "Keystore bytes: $(wc -c < "$RUNNER_TEMP/release.jks") (expected 2672)"
+            PASS="$(printf '%s' "$KS_PASS" | tr -d '\r\n' | sed 's/^ *//;s/ *$//')"
+            ALIAS="$(printf '%s' "$KEY_ALIAS" | tr -d '\r\n' | sed 's/^ *//;s/ *$//')"
+            echo "Password length: ${#PASS}, alias: $ALIAS"
+            keytool -list -keystore "$RUNNER_TEMP/release.jks" -storetype PKCS12 -storepass "$PASS" -alias "$ALIAS"
             echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
           fi
 
