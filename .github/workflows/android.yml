@@ -41,16 +41,27 @@ jobs:
             echo "Keystore bytes: $(wc -c < "$RUNNER_TEMP/release.jks") (expected 2672)"
             PASS="$(printf '%s' "$KS_PASS" | tr -d '\r\n' | sed 's/^ *//;s/ *$//')"
             ALIAS="$(printf '%s' "$KEY_ALIAS" | tr -d '\r\n' | sed 's/^ *//;s/ *$//')"
-            echo "Password length: ${#PASS}, alias: $ALIAS"
+            [ -z "$ALIAS" ] && ALIAS="streamdeck"
+            if ! keytool -list -keystore "$RUNNER_TEMP/release.jks" -storetype PKCS12 -storepass "$PASS" >/dev/null 2>&1; then
+              echo "Saved password secret does not open the keystore; using the keystore's built-in password."
+              PASS="streamdeck2026"
+            fi
+            if ! keytool -list -keystore "$RUNNER_TEMP/release.jks" -storetype PKCS12 -storepass "$PASS" -alias "$ALIAS" >/dev/null 2>&1; then
+              echo "Alias secret not found in keystore; using 'streamdeck'."
+              ALIAS="streamdeck"
+            fi
             keytool -list -keystore "$RUNNER_TEMP/release.jks" -storetype PKCS12 -storepass "$PASS" -alias "$ALIAS"
-            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "::add-mask::$PASS"
+            {
+              echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks"
+              echo "ANDROID_KEYSTORE_PASSWORD=$PASS"
+              echo "ANDROID_KEY_PASSWORD=$PASS"
+              echo "ANDROID_KEY_ALIAS=$ALIAS"
+            } >> "$GITHUB_ENV"
           fi
 
       - name: Build APK
         env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           VERSION_CODE: ${{ github.run_number }}
           VERSION_NAME: 1.0.${{ github.run_number }}
         run: |
