@@ -279,7 +279,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
               className="h-10 w-40 shrink-0 justify-start gap-2 px-3 text-left text-sm text-primary md:w-full"
               onClick={goToPopular}
             >
-              <Flame className="size-4" /> Popular now
+              <Flame className="size-4" /> Popular here
             </Button>
             {(["netflix", "prime"] as const).map((service) => (
               <Button

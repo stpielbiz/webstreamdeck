@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 const norm = (s: string) => s.toLowerCase().replace(/\(\d{4}\)|[^a-z0-9]+/g, " ").trim();
 
-/** "Popular now" top 10 row; resolves a pick against the user's own playlist. */
+/** "Popular on Stream Deck" top 10 row; resolves a pick against the user's own playlist. */
 export function PopularRow({
   kind,
   tv = false,
@@ -57,7 +57,7 @@ export function PopularRow({
   return (
     <section className="mb-6">
       <h2 className={cn("mb-3 flex items-center gap-2 font-display font-semibold", tv ? "text-2xl" : "text-lg")}>
-        <Flame className="size-5 text-primary" /> Popular now
+        <Flame className="size-5 text-primary" /> Popular on Stream Deck
       </h2>
       <div className="flex gap-3 overflow-x-auto pb-2">
         {rows.map((row, index) => (
