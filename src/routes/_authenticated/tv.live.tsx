@@ -217,8 +217,16 @@ function TvLive() {
     if (first) next = 0;
     else if (cellLeft < viewLeft) next = cellLeft - 16;
     else if (cellRight > viewRight) next = Math.min(cellLeft - 16, cellRight - (guide.clientWidth - 300) + 16);
-    if (next !== viewLeft) guide.scrollTo({ left: Math.max(0, next) });
-    cell.closest<HTMLElement>("[data-guide-row]")?.scrollIntoView({ block: "nearest" });
+    const row = cell.closest<HTMLElement>("[data-guide-row]");
+    let top = guide.scrollTop;
+    if (row) {
+      const box = guide.getBoundingClientRect();
+      const rect = row.getBoundingClientRect();
+      const header = 36;
+      if (rect.top < box.top + header) top += rect.top - box.top - header;
+      else if (rect.bottom > box.bottom) top += rect.bottom - box.bottom;
+    }
+    guide.scrollTo({ left: Math.max(0, next), top });
   };
 
   const jumpToNow = () => {
