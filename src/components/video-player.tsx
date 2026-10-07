@@ -35,6 +35,8 @@ export interface VideoPlayerProps {
   onProgress?: (positionSeconds: number, durationSeconds: number | null) => void;
   onEnded?: () => void;
   onStop?: () => void;
+  /** Set false to keep playback inline even inside the TV app. */
+  allowNative?: boolean;
   /** Fired once per stream when playback is handed to an external player. */
   onExternalLaunch?: () => void;
 }
@@ -59,6 +61,7 @@ export function VideoPlayer({
   onProgress,
   onEnded,
   onStop,
+  allowNative = true,
   onExternalLaunch,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -100,7 +103,7 @@ export function VideoPlayer({
   }, [fallbackSrc, title, live, startPosition]);
 
   useEffect(() => {
-    if (!src || !fallbackSrc || !hasNativePlayer()) {
+    if (!allowNative || !src || !fallbackSrc || !hasNativePlayer()) {
       setNativeActive(false);
       return;
     }
@@ -120,7 +123,7 @@ export function VideoPlayer({
       window.__streamDeckClosed = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, fallbackSrc, live]);
+  }, [src, fallbackSrc, live, allowNative]);
 
   const externalLinks = fallbackSrc ? externalPlayerLinks(fallbackSrc) : [];
 

@@ -50,6 +50,8 @@ function TvLive() {
 
   const [categoryId, setCategoryId] = useState("");
   const [selected, setSelected] = useState<CatalogItem | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const lastChannel = useRef<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [directUrl, setDirectUrl] = useState<string | null>(null);
@@ -183,12 +185,12 @@ function TvLive() {
   }, []);
 
   useEffect(() => {
-    if (!selected) return;
+    if (!fullscreen) return;
     const frame = window.requestAnimationFrame(() => {
       document.querySelector<HTMLElement>('[data-focus-key="live-player-close"]')?.focus();
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [selected]);
+  }, [fullscreen]);
 
   const focusTimer = useRef<number | null>(null);
   const previewCategory = (id: string) => {
@@ -204,18 +206,35 @@ function TvLive() {
     guideRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const restoreChannelFocus = () => {
+    window.requestAnimationFrame(() => {
+      const row = document.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(lastChannel.current ?? "")}"]`);
+      row?.focus({ preventScroll: true });
+      row?.scrollIntoView({ block: "center" });
+    });
+  };
+
   const playChannel = (item: CatalogItem) => {
     setFocusedId(item.id);
-    setSelected(item);
+    lastChannel.current = item.id;
+    if (selected?.id === item.id) setFullscreen(true);
+    else {
+      setSelected(item);
+      setFullscreen(false);
+    }
+  };
+
+  const exitFullscreen = () => {
+    setFullscreen(false);
+    restoreChannelFocus();
   };
 
   const closePlayer = () => {
+    setFullscreen(false);
     setSelected(null);
     setUrl(null);
     setDirectUrl(null);
-    window.requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(focusedId ?? "")}"]`)?.focus();
-    });
+    restoreChannelFocus();
   };
 
   const focused = channels.find((item) => item.id === focusedId) ?? null;
@@ -247,6 +266,10 @@ function TvLive() {
       title="Live TV"
       immersive
       onBack={() => {
+        if (fullscreen) {
+          exitFullscreen();
+          return;
+        }
         if (selected) {
           closePlayer();
           return;
@@ -409,7 +432,7 @@ function TvLive() {
         </section>
       </div>
 
-      {selected && (
+      {selected && fullscreen && (
         <div data-tv-zone="live-player" className="fixed inset-0 z-50 grid place-items-center bg-background/90 p-6" role="dialog" aria-label={`Playing ${selected.name}`}>
           <div className="w-full max-w-5xl overflow-hidden rounded-lg border border-border bg-card shadow-2xl">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -417,9 +440,9 @@ function TvLive() {
                 <p className="truncate font-display text-xl font-bold">{selected.name}</p>
                 <p className="text-sm text-muted-foreground">Live TV</p>
               </div>
-              <Button data-dialog-back data-tv-focus data-focus-key="live-player-close" variant="ghost" size="icon" aria-label="Close player" onClick={closePlayer}><X className="size-5" /></Button>
+              <Button data-dialog-back data-tv-focus data-focus-key="live-player-close" variant="ghost" size="icon" aria-label="Exit full screen" onClick={exitFullscreen}><X className="size-5" /></Button>
             </div>
-            <VideoPlayer onStop={closePlayer} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+            <VideoPlayer onStop={exitFullscreen} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
           </div>
         </div>
       )}
