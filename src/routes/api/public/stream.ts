@@ -37,6 +37,9 @@ async function handle(request: Request): Promise<Response> {
   if (!payload) return new Response("Link expired", { status: 403 });
 
   const headers = new Headers();
+  // Mirror the native player's agent: providers accept it from devices and
+  // refuse generic player/relay agents, which left previews stuck on an error.
+  headers.set("user-agent", "TiviMate/4.7.0 (Linux; Android 9)");
   const range = request.headers.get("range");
   if (range) headers.set("range", range);
 
