@@ -206,6 +206,35 @@ function TvLive() {
     guideRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const revealCell = (cell: HTMLElement, first: boolean) => {
+    const guide = guideRef.current;
+    if (!guide) return;
+    const cellLeft = cell.offsetLeft;
+    const cellRight = cellLeft + cell.offsetWidth;
+    const viewLeft = guide.scrollLeft;
+    const viewRight = viewLeft + guide.clientWidth - 300;
+    let next = viewLeft;
+    if (first) next = 0;
+    else if (cellLeft < viewLeft) next = cellLeft - 16;
+    else if (cellRight > viewRight) next = Math.min(cellLeft - 16, cellRight - (guide.clientWidth - 300) + 16);
+    const row = cell.closest<HTMLElement>("[data-guide-row]");
+    let top = guide.scrollTop;
+    if (row) {
+      const box = guide.getBoundingClientRect();
+      const rect = row.getBoundingClientRect();
+      const header = 36;
+      if (rect.top < box.top + header) top += rect.top - box.top - header;
+      else if (rect.bottom > box.bottom) top += rect.bottom - box.bottom;
+    }
+    guide.scrollTo({ left: Math.max(0, next), top });
+  };
+
+  const jumpToNow = () => {
+    const id = focusedId ?? visibleChannels[0]?.id;
+    guideRef.current?.scrollTo({ left: 0 });
+    if (id) document.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
+  };
+
   const restoreChannelFocus = () => {
     window.requestAnimationFrame(() => {
       const row = document.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(lastChannel.current ?? "")}"]`);
@@ -334,6 +363,7 @@ function TvLive() {
           )}
           <div data-tv-zone="live-guide" className="mb-2 flex shrink-0 items-center gap-2">
             <VoiceButton focusKey="live-voice" />
+            <Button data-tv-focus size="sm" variant="secondary" onClick={jumpToNow}>Now</Button>
             <div className="relative min-w-0 flex-1">
               <Search aria-hidden="true" className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
               <Input type="search" aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-focus-key="live-search" className="h-9 pl-8 text-sm" onChange={(event) => { setSearch(event.target.value); setPage(0); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
@@ -381,16 +411,12 @@ function TvLive() {
               </div>
             )}
             {!items.isLoading && visibleChannels.map((item, index) => {
-              const programmes = scheduleMap.get(item.id) ?? [];
+              const programmes = (scheduleMap.get(item.id) ?? []).filter((p) => { const st = Date.parse(p.start ?? ""); const en = Date.parse(p.end ?? ""); return Number.isFinite(st) && Number.isFinite(en) && en > windowStart && st < windowEnd; });
               return (
-                <div key={item.id} className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
+                <div key={item.id} data-guide-row className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
                   <Button
                     variant="ghost"
-                    data-tv-focus
-                    data-zone-entry={index === 0 ? "true" : undefined}
-                    data-zone-edge-left="true"
-                    data-focus-key={`channel-${item.id}`}
-                    onFocus={() => setFocusedId(item.id)}
+                    tabIndex={-1}
                     onClick={() => playChannel(item)}
                     title={item.name}
                     aria-label={item.name}
@@ -412,7 +438,9 @@ function TvLive() {
                         variant="ghost"
                         data-tv-focus
                         data-zone-edge-left="true"
-                        onFocus={() => setFocusedId(item.id)}
+                        data-zone-entry={index === 0 ? "true" : undefined}
+                        data-focus-key={`channel-${item.id}`}
+                        onFocus={(event) => { setFocusedId(item.id); revealCell(event.currentTarget, true); }}
                         onClick={() => playChannel(item)}
                         className="absolute inset-y-1 left-1 h-auto w-[716px] justify-start border border-border bg-secondary/60 px-2 text-xs text-muted-foreground"
                       >
@@ -425,7 +453,9 @@ function TvLive() {
                         windowStart={windowStart}
                         windowEnd={windowEnd}
                         first={programmeIndex === 0}
-                        onFocus={() => setFocusedId(item.id)}
+                        focusKey={programmeIndex === 0 ? `channel-${item.id}` : undefined}
+                        zoneEntry={index === 0 && programmeIndex === 0}
+                        onFocus={(element) => { setFocusedId(item.id); revealCell(element, programmeIndex === 0); }}
                         onSelect={() => playChannel(item)}
                       />
                     ))}
@@ -471,6 +501,8 @@ function ProgrammeCell({
   windowStart,
   windowEnd,
   first,
+  focusKey,
+  zoneEntry,
   onFocus,
   onSelect,
 }: {
@@ -478,7 +510,9 @@ function ProgrammeCell({
   windowStart: number;
   windowEnd: number;
   first: boolean;
-  onFocus: () => void;
+  focusKey?: string | undefined;
+  zoneEntry?: boolean;
+  onFocus: (element: HTMLElement) => void;
   onSelect: () => void;
 }) {
   const rawStart = Date.parse(programme.start ?? "");
@@ -495,7 +529,9 @@ function ProgrammeCell({
       variant="ghost"
       data-tv-focus
       data-zone-edge-left={first ? "true" : undefined}
-      onFocus={onFocus}
+      data-focus-key={focusKey}
+      data-zone-entry={zoneEntry ? "true" : undefined}
+      onFocus={(event) => onFocus(event.currentTarget)}
       onClick={onSelect}
       className="absolute inset-y-1 z-10 h-auto justify-start overflow-hidden rounded border border-border bg-secondary px-3 text-left focus-visible:z-20 focus-visible:bg-primary focus-visible:text-primary-foreground"
       style={{ left, width: Math.max(64, width - 4) }}
