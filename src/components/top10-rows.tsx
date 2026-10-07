@@ -18,15 +18,19 @@ export const normTitle = (s: string) =>
     .replace(/\b(19|20)\d{2}\s*$/, "")
     .trim();
 
-export function Top10Rows({
+export type Top10Service = "netflix" | "prime";
+
+export function Top10Row({
   kind,
   tv = false,
   items,
+  service,
   onOpen,
 }: {
   kind: "movie" | "series";
   tv?: boolean;
   items: CatalogItem[];
+  service: Top10Service;
   onOpen: (id: string, trigger?: HTMLElement | null) => void;
 }) {
   const fetchTop = useServerFn(getStreamingTop10);
@@ -43,65 +47,59 @@ export function Top10Rows({
     return map;
   }, [items]);
 
-  const rows = (["netflix", "prime"] as const).map((service) => {
-    const chart = (top.data ?? []).filter((r) => r.service === service);
-    const entries = chart.map((r) => {
+  const entries = (top.data ?? [])
+    .filter((r) => r.service === service)
+    .map((r) => {
       const found = index.get(normTitle(r.title));
       const item = found?.length
         ? (r.year && found.find((f) => String(f.year ?? "").startsWith(String(r.year)))) || found[0]!
         : null;
       return { rank: r.rank, item, title: r.title, poster: item?.image || r.poster_url };
     });
-    return { service, entries };
-  });
+
+  if (entries.length === 0) return null;
 
   return (
-    <>
-      {rows.map(({ service, entries }) =>
-        entries.length === 0 ? null : (
-          <section key={service} id={`top10-${service}`} className="mb-6">
-            <h2 className={cn("mb-3 flex items-center gap-2 font-display font-semibold", tv ? "text-2xl" : "text-lg")}>
-              <Trophy className="size-5 text-primary" /> Top 10 on {service === "netflix" ? "Netflix" : "Prime Video"}
-            </h2>
-            <div className="scrollbar-thin flex gap-3 overflow-x-auto pb-2">
-              {entries.map(({ rank, item, title, poster }, i) =>
-                item ? (
-                  <button
-                    key={`${service}-${rank}`}
-                    type="button"
-                    data-tv-focus
-                    data-focus-key={`top10-${service}-${i}`}
-                    onClick={(e) => onOpen(item.id, e.currentTarget)}
-                    className="group relative w-28 shrink-0 overflow-hidden rounded-md border border-border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <div className="aspect-[2/3] bg-muted">
-                      {poster && <img src={poster} alt={item.name} loading="lazy" className="size-full object-cover" />}
-                    </div>
-                    <span className="absolute left-1 top-1 rounded bg-primary px-1.5 text-xs font-bold text-primary-foreground">#{rank}</span>
-                    <p className="truncate px-2 py-1 text-xs font-medium">{item.name}</p>
-                  </button>
-                ) : (
-                  <div
-                    key={`${service}-${rank}`}
-                    className="relative w-28 shrink-0 overflow-hidden rounded-md border border-border bg-card opacity-60"
-                  >
-                    <div className="aspect-[2/3] bg-muted">
-                      {poster && <img src={poster} alt={title} loading="lazy" className="size-full object-cover opacity-30 grayscale" />}
-                    </div>
-                    <span className="absolute left-1 top-1 rounded bg-muted px-1.5 text-xs font-bold text-muted-foreground">#{rank}</span>
-                    <div className="absolute inset-x-1 top-1/2 flex -translate-y-1/2 justify-center">
-                      <span className="rounded bg-background/90 px-1.5 py-0.5 text-center text-[10px] font-medium text-muted-foreground">
-                        Not in your list
-                      </span>
-                    </div>
-                    <p className="truncate px-2 py-1 text-xs font-medium text-muted-foreground">{title}</p>
-                  </div>
-                ),
-              )}
+    <section id={`top10-${service}`} className="mb-6">
+      <h2 className={cn("mb-3 flex items-center gap-2 font-display font-semibold", tv ? "text-2xl" : "text-lg")}>
+        <Trophy className="size-5 text-primary" /> Top 10 on {service === "netflix" ? "Netflix" : "Prime Video"}
+      </h2>
+      <div className="scrollbar-thin flex gap-3 overflow-x-auto pb-2">
+        {entries.map(({ rank, item, title, poster }, i) =>
+          item ? (
+            <button
+              key={`${service}-${rank}`}
+              type="button"
+              data-tv-focus
+              data-focus-key={`top10-${service}-${i}`}
+              onClick={(e) => onOpen(item.id, e.currentTarget)}
+              className="group relative w-28 shrink-0 overflow-hidden rounded-md border border-border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div className="aspect-[2/3] bg-muted">
+                {poster && <img src={poster} alt={item.name} loading="lazy" className="size-full object-cover" />}
+              </div>
+              <span className="absolute left-1 top-1 rounded bg-primary px-1.5 text-xs font-bold text-primary-foreground">#{rank}</span>
+              <p className="truncate px-2 py-1 text-xs font-medium">{item.name}</p>
+            </button>
+          ) : (
+            <div
+              key={`${service}-${rank}`}
+              className="relative w-28 shrink-0 overflow-hidden rounded-md border border-border bg-card opacity-60"
+            >
+              <div className="aspect-[2/3] bg-muted">
+                {poster && <img src={poster} alt={title} loading="lazy" className="size-full object-cover opacity-30 grayscale" />}
+              </div>
+              <span className="absolute left-1 top-1 rounded bg-muted px-1.5 text-xs font-bold text-muted-foreground">#{rank}</span>
+              <div className="absolute inset-x-1 top-1/2 flex -translate-y-1/2 justify-center">
+                <span className="rounded bg-background/90 px-1.5 py-0.5 text-center text-[10px] font-medium text-muted-foreground">
+                  Not in your list
+                </span>
+              </div>
+              <p className="truncate px-2 py-1 text-xs font-medium text-muted-foreground">{title}</p>
             </div>
-          </section>
-        ),
-      )}
-    </>
+          ),
+        )}
+      </div>
+    </section>
   );
 }
