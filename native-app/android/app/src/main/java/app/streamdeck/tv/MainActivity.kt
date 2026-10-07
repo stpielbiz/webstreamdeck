@@ -38,7 +38,10 @@ class MainActivity : Activity() {
             useWideViewPort = true
             loadWithOverviewMode = true
             textZoom = 100
-            userAgentString = "$userAgentString StreamDeckTV/${BuildConfig.VERSION_NAME}"
+            // Present as the same player the providers already accept, so the
+            // in-page Live TV preview can fetch streams directly from this
+            // device instead of being refused like a browser.
+            userAgentString = "TiviMate/4.7.0 (Linux; Android 9) StreamDeckTV/${BuildConfig.VERSION_NAME}"
         }
         webView.webViewClient = WebViewClient()
         webView.webChromeClient = WebChromeClient()
