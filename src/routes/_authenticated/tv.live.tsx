@@ -229,6 +229,41 @@ function TvLive() {
     guide.scrollTo({ left: Math.max(0, next), top });
   };
 
+  const focusCategory = () => {
+    guideRef.current?.scrollTo({ left: 0 });
+    document.querySelector<HTMLElement>(`[data-focus-key="live-category-${CSS.escape(categoryId || "all")}"]`)?.focus();
+  };
+
+  const guideKeys = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const active = document.activeElement as HTMLElement | null;
+    const cell = active?.closest<HTMLElement>("[data-guide-cell]");
+    if (!cell) return;
+    const row = cell.closest<HTMLElement>("[data-guide-row]");
+    if (!row) return;
+    const cellsOf = (r: Element) => Array.from(r.querySelectorAll<HTMLElement>("[data-guide-cell]"));
+    const cells = cellsOf(row);
+    const idx = cells.indexOf(cell);
+    const stop = () => { event.preventDefault(); event.stopPropagation(); };
+    const go = (target: HTMLElement | null | undefined) => { if (target) target.focus({ preventScroll: true }); };
+    if (event.key === "ArrowRight") { stop(); go(cells[idx + 1]); return; }
+    if (event.key === "ArrowLeft") { stop(); if (idx <= 0) focusCategory(); else go(cells[idx - 1]); return; }
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      stop();
+      const rows = Array.from(guideRef.current?.querySelectorAll<HTMLElement>("[data-guide-row]") ?? []);
+      const ri = rows.indexOf(row);
+      const next = rows[ri + (event.key === "ArrowDown" ? 1 : -1)];
+      if (!next) {
+        if (event.key === "ArrowUp") go(document.querySelector<HTMLElement>('[data-focus-key="live-search"]'));
+        else go(guideRef.current?.querySelector<HTMLElement>("[data-guide-next]"));
+        return;
+      }
+      const time = Number(cell.dataset['start']);
+      const targets = cellsOf(next);
+      const match = idx === 0 ? targets[0] : targets.find((c) => Number(c.dataset['start']) <= time && Number(c.dataset['end']) > time) ?? targets.filter((c) => Number(c.dataset['start']) <= time).pop() ?? targets[0];
+      go(match);
+    }
+  };
+
   const jumpToNow = () => {
     const id = focusedId ?? visibleChannels[0]?.id;
     guideRef.current?.scrollTo({ left: 0 });
