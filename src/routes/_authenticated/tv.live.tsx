@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Play, Search, Tv, X } from "lucide-react";
 import { z } from "zod";
 
@@ -234,7 +234,7 @@ function TvLive() {
     document.querySelector<HTMLElement>(`[data-focus-key="live-category-${CSS.escape(categoryId || "all")}"]`)?.focus();
   };
 
-  const guideKeys = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const guideKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const active = document.activeElement as HTMLElement | null;
     const cell = active?.closest<HTMLElement>("[data-guide-cell]");
     if (!cell) return;
