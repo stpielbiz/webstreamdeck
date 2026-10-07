@@ -411,7 +411,7 @@ function TvLive() {
               </div>
             )}
             {!items.isLoading && visibleChannels.map((item, index) => {
-              const programmes = scheduleMap.get(item.id) ?? [];
+              const programmes = (scheduleMap.get(item.id) ?? []).filter((p) => { const st = Date.parse(p.start ?? ""); const en = Date.parse(p.end ?? ""); return Number.isFinite(st) && Number.isFinite(en) && en > windowStart && st < windowEnd; });
               return (
                 <div key={item.id} data-guide-row className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
                   <Button
@@ -510,7 +510,7 @@ function ProgrammeCell({
   windowStart: number;
   windowEnd: number;
   first: boolean;
-  focusKey?: string;
+  focusKey?: string | undefined;
   zoneEntry?: boolean;
   onFocus: (element: HTMLElement) => void;
   onSelect: () => void;
