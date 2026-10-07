@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { EmptyState, PosterGrid, PosterTile } from "@/components/media";
 import { PopularRow } from "@/components/popular-row";
-import { Top10Rows } from "@/components/top10-rows";
+import { Top10Row, type Top10Service } from "@/components/top10-rows";
 import { Flame, Trophy } from "lucide-react";
 import { VideoPlayer } from "@/components/video-player";
 import { usePlaylists } from "@/components/playlist-context";
@@ -61,9 +61,20 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const titleTrigger = useRef<HTMLElement | null>(null);
   const returnTitle = useRef<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [featured, setFeatured] = useState<"popular" | Top10Service>("popular");
   const goToPopular = () => {
+    setFeatured("popular");
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-    document.querySelector<HTMLElement>('[data-focus-key="popular-0"]')?.focus({ preventScroll: true });
+    window.requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-focus-key="popular-0"]')?.focus({ preventScroll: true }));
+  };
+  const goToTop10 = (service: Top10Service) => {
+    setFeatured(service);
+    contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    window.requestAnimationFrame(() => {
+      const first = document.querySelector<HTMLElement>(`[data-focus-key="top10-${service}-0"]`);
+      if (first) first.focus({ preventScroll: true });
+      else toast(`None of today's ${service === "netflix" ? "Netflix" : "Prime Video"} top 10 are in your playlist.`);
+    });
   };
 
   const catalogue = useQuery({
