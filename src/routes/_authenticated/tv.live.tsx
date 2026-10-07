@@ -316,6 +316,22 @@ function TvLive() {
         </aside>
 
         <section className="flex min-h-0 min-w-0 flex-col">
+          {selected && !fullscreen && (
+            <div className="mb-2 flex shrink-0 items-center gap-3 rounded-lg border border-border bg-card p-2" aria-label={`Preview of ${selected.name}`}>
+              <div className="w-64 shrink-0 overflow-hidden rounded bg-muted">
+                <VideoPlayer allowNative={false} onStop={closePlayer} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase text-primary">Preview</p>
+                <p className="truncate font-display text-base font-bold">{selected.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {(scheduleMap.get(selected.id) ?? []).find((p) => Date.parse(p.start ?? "") <= clock && Date.parse(p.end ?? "") > clock)?.title ?? "Live"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Press OK again on this channel for full screen · Back to stop</p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => setFullscreen(true)}>Full screen</Button>
+            </div>
+          )}
           <div data-tv-zone="live-guide" className="mb-2 flex shrink-0 items-center gap-2">
             <VoiceButton focusKey="live-voice" />
             <div className="relative min-w-0 flex-1">
