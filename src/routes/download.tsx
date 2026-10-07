@@ -31,7 +31,7 @@ export const Route = createFileRoute("/download")({
 const STEPS = [
   "On your Fire TV, open Settings → My Fire TV → Developer options and turn on “Apps from Unknown Sources” (or allow it for Downloader).",
   "From the Fire TV app store, install the free “Downloader” app.",
-  "Open Downloader and type the download link shown on this page, then press Go.",
+  "Open Downloader and type the Stream Deck website address, open Get the TV app, and press Download, then press Go.",
   "When the file finishes downloading, choose Install, then Open.",
   "Stream Deck TV shows a code — enter it on your phone or PC at Log in another device.",
 ];
@@ -75,8 +75,6 @@ function DownloadPage() {
                   <Download className="mr-2 size-5" /> Download for Fire TV (APK)
                 </a>
               </Button>
-              <p className="mt-4 text-sm text-muted-foreground">Link for the Downloader app:</p>
-              <p className="mt-1 break-all font-mono text-sm text-primary">{APK_URL}</p>
             </>
           ) : (
             <>

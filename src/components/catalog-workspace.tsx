@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { EmptyState, PosterGrid, PosterTile } from "@/components/media";
 import { PopularRow } from "@/components/popular-row";
+import { Flame } from "lucide-react";
 import { VideoPlayer } from "@/components/video-player";
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
@@ -58,10 +59,21 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const previousGenre = useRef<string | null>(null);
   const titleTrigger = useRef<HTMLElement | null>(null);
   const returnTitle = useRef<string | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const goToPopular = () => {
+    contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    document.querySelector<HTMLElement>('[data-focus-key="popular-0"]')?.focus({ preventScroll: true });
+  };
 
   const catalogue = useQuery({
     queryKey: ["system-catalogue", activeId, kind],
-    queryFn: () => fetchItems({ data: { playlistId: activeId ?? "", kind } }),
+    queryFn: async () => {
+      const rows = await fetchItems({ data: { playlistId: activeId ?? "", kind } });
+      writeCache(`catalogue:${activeId}:${kind}`, rows);
+      return rows;
+    },
+    initialData: () => readCache<CatalogItem[]>(`catalogue:${activeId}:${kind}`)?.data,
+    initialDataUpdatedAt: () => readCache(`catalogue:${activeId}:${kind}`)?.at,
     enabled: !!activeId,
     staleTime: 30 * 60_000,
     gcTime: 60 * 60_000,
@@ -69,7 +81,12 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const names = useMemo(() => (catalogue.data ?? []).map((item) => item.name).slice(0, 5000), [catalogue.data]);
   const metadata = useQuery({
     queryKey: ["cached-title-metadata", activeId, kind, names.length],
-    queryFn: () => fetchMetadata({ data: { playlistId: activeId ?? "", kind, names } }),
+    queryFn: async () => {
+      const rows = await fetchMetadata({ data: { playlistId: activeId ?? "", kind, names } });
+      writeCache(`metadata:${activeId}:${kind}`, rows);
+      return rows;
+    },
+    placeholderData: () => readCache<Awaited<ReturnType<typeof fetchMetadata>>>(`metadata:${activeId}:${kind}`)?.data,
     enabled: !!activeId && names.length > 0,
     staleTime: 30 * 60_000,
     gcTime: 60 * 60_000,
@@ -253,7 +270,16 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
           {isAdmin && <Button data-tv-focus size="icon" variant="ghost" title="Organise missing titles" disabled={organising} onClick={() => void organiseMissing()}><Sparkles className={cn("size-4", organising && "animate-pulse")} /></Button>}
         </div>
         <div className="scrollbar-thin flex min-h-0 gap-1 overflow-x-auto md:flex-col md:overflow-x-hidden md:overflow-y-auto">
-          {catalogue.isLoading || metadata.isLoading ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-10 w-36 shrink-0 md:w-full" />) : (<>
+          {catalogue.isLoading ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-10 w-36 shrink-0 md:w-full" />) : (<>
+            <Button
+              data-tv-focus
+              data-focus-key="category-popular"
+              variant="ghost"
+              className="h-10 w-40 shrink-0 justify-start gap-2 px-3 text-left text-sm text-primary md:w-full"
+              onClick={goToPopular}
+            >
+              <Flame className="size-4" /> Popular now
+            </Button>
             <Button
               ref={categoryFocus}
               data-tv-focus
@@ -279,11 +305,13 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             >
               <span className="truncate">{group.label}</span><span className="ml-2 text-xs text-muted-foreground">{group.items.length}</span>
             </Button>
-          ))}</>)}
+          ))}
+            {metadata.isLoading && !metadata.data && Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-10 w-36 shrink-0 md:w-full" />)}</>)}
         </div>
       </aside>
 
-      <div data-tv-zone="content" data-tv-zone-order="2" className="scrollbar-thin min-h-0 min-w-0 overflow-y-auto pr-1">
+      <div ref={contentRef} data-tv-zone="content" data-tv-zone-order="2" className="scrollbar-thin min-h-0 min-w-0 overflow-y-auto pr-1">
+        <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase text-primary">{genre ?? "Loading categories"}</p>
           <h1 className="mt-1 truncate font-display text-xl font-bold">{`Choose ${kind === "movie" ? "a movie" : "a show"}`}</h1>
@@ -300,7 +328,6 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             <VoiceButton focusKey="catalog-voice" /><div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input data-tv-focus data-focus-key="catalog-search" type="search" onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-tv-zone="content"] [data-zone-entry="true"]')?.focus(); } }} value={search} onChange={(event) => { setSearch(event.target.value); setSelectedId(null); }} placeholder={`Search all ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
           </div>
         </div>
-          {!searching && <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />}
         {catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 && !catalogue.isLoading ? <EmptyState title="Nothing here" description={searching ? `No titles match “${search.trim()}”.` : "No titles match this system category."} /> : sections.map((section, sectionIndex) => (
           <div key={section.label} className="mb-5">
             <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3>
@@ -387,4 +414,21 @@ function progressFor(rows: ReturnType<typeof useProgress>["data"], playlistId: s
   const row = (rows ?? []).find((entry) => entry.playlistId === playlistId && (entry.itemId === itemId || entry.seriesId === itemId) && !entry.completed);
   if (!row) return null;
   return row.durationSeconds ? row.positionSeconds / row.durationSeconds : 0.05;
+}
+const CACHE_PREFIX = "streamdeck-cache:";
+function readCache<T = unknown>(key: string): { at: number; data: T } | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = window.localStorage.getItem(CACHE_PREFIX + key);
+    return raw ? (JSON.parse(raw) as { at: number; data: T }) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+function writeCache(key: string, data: unknown) {
+  try {
+    window.localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ at: Date.now(), data }));
+  } catch {
+    /* storage full — skip */
+  }
 }

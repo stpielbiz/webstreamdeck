@@ -79,7 +79,8 @@ function TvLive() {
       return fetchCategories({ data: { playlistId: activeId, kind: "live" } });
     },
     enabled: !!activeId,
-    staleTime: 10 * 60_000,
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
   });
 
   const items = useQuery({
@@ -91,7 +92,8 @@ function TvLive() {
       });
     },
     enabled: !!activeId,
-    staleTime: 10 * 60_000,
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
   });
 
   const channels = useMemo(() => {
@@ -188,7 +190,13 @@ function TvLive() {
     return () => window.cancelAnimationFrame(frame);
   }, [selected]);
 
+  const focusTimer = useRef<number | null>(null);
+  const previewCategory = (id: string) => {
+    if (focusTimer.current) window.clearTimeout(focusTimer.current);
+    focusTimer.current = window.setTimeout(() => chooseCategory(id), 350);
+  };
   const chooseCategory = (id: string) => {
+    if (focusTimer.current) window.clearTimeout(focusTimer.current);
     setCategoryId(id);
     setSearch("");
     setPage(0);
@@ -263,7 +271,7 @@ function TvLive() {
               data-focus-key="live-category-all"
               variant={categoryId === "" ? "default" : "ghost"}
               className="h-9 w-full justify-start truncate px-2 text-xs"
-              onFocus={() => chooseCategory("")}
+              onFocus={() => previewCategory("")}
               onClick={() => chooseCategory("")}
             >
               All channels
@@ -275,7 +283,7 @@ function TvLive() {
                 data-focus-key={`live-category-${category.id}`}
                 variant={categoryId === category.id ? "default" : "ghost"}
                 className="h-9 w-full justify-start truncate px-2 text-xs"
-                onFocus={() => chooseCategory(category.id)}
+                onFocus={() => previewCategory(category.id)}
                 onClick={() => chooseCategory(category.id)}
               >
                 {category.name}
