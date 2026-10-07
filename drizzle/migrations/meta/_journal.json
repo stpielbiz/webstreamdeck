@@ -8,6 +8,13 @@
       "when": 1791220807469,
       "tag": "0000_stream_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791405806278,
+      "tag": "0001_streaming_top10",
+      "breakpoints": true
     }
   ]
 }
