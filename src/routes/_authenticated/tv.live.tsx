@@ -335,12 +335,15 @@ function TvLive() {
           return;
         }
         if (selected) {
-          closePlayer();
+          setSelected(null);
+          setUrl(null);
+          setDirectUrl(null);
+          window.requestAnimationFrame(focusCategory);
           return;
         }
         const activeZone = document.activeElement?.closest<HTMLElement>("[data-tv-zone]")?.dataset['tvZone'];
-        if (activeZone === "live-guide") {
-          document.querySelector<HTMLElement>(`[data-focus-key="live-category-${CSS.escape(categoryId || "all")}"]`)?.focus();
+        if (activeZone !== "live-categories") {
+          focusCategory();
           return;
         }
         void navigate({ to: "/tv" });
