@@ -65,7 +65,6 @@ export function PopularRow({
             key={row.title}
             data-tv-focus
             data-focus-key={`popular-${index}`}
-            data-zone-entry={index === 0 ? "true" : undefined}
             type="button"
             disabled={busy !== null}
             onClick={() => void pick(row.title)}
