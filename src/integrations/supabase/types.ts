@@ -160,6 +160,39 @@ export type Database = {
         }
         Relationships: []
       }
+      streaming_top10: {
+        Row: {
+          fetched_at: string
+          id: string
+          kind: string
+          poster_url: string | null
+          rank: number
+          service: string
+          title: string
+          year: number | null
+        }
+        Insert: {
+          fetched_at?: string
+          id?: string
+          kind: string
+          poster_url?: string | null
+          rank: number
+          service: string
+          title: string
+          year?: number | null
+        }
+        Update: {
+          fetched_at?: string
+          id?: string
+          kind?: string
+          poster_url?: string | null
+          rank?: number
+          service?: string
+          title?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       title_metadata: {
         Row: {
           backdrop_url: string | null
