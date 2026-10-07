@@ -7,7 +7,8 @@ import { toast } from "sonner";
 
 import { EmptyState, PosterGrid, PosterTile } from "@/components/media";
 import { PopularRow } from "@/components/popular-row";
-import { Flame } from "lucide-react";
+import { Top10Rows } from "@/components/top10-rows";
+import { Flame, Trophy } from "lucide-react";
 import { VideoPlayer } from "@/components/video-player";
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
@@ -280,6 +281,23 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             >
               <Flame className="size-4" /> Popular now
             </Button>
+            {(["netflix", "prime"] as const).map((service) => (
+              <Button
+                key={service}
+                data-tv-focus
+                data-focus-key={`category-top10-${service}`}
+                variant="ghost"
+                className="h-10 w-40 shrink-0 justify-start gap-2 px-3 text-left text-sm text-primary md:w-full"
+                onClick={() => {
+                  const first = document.querySelector<HTMLElement>(`[data-focus-key="top10-${service}-0"]`);
+                  if (!first) { toast(`None of today's ${service === "netflix" ? "Netflix" : "Prime Video"} top 10 are in your playlist.`); return; }
+                  document.getElementById(`top10-${service}`)?.scrollIntoView({ block: "start", behavior: "smooth" });
+                  first.focus({ preventScroll: true });
+                }}
+              >
+                <Trophy className="size-4" /> Top 10 {service === "netflix" ? "Netflix" : "Prime"}
+              </Button>
+            ))}
             <Button
               ref={categoryFocus}
               data-tv-focus
@@ -312,6 +330,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
 
       <div ref={contentRef} data-tv-zone="content" data-tv-zone-order="2" className="scrollbar-thin min-h-0 min-w-0 overflow-y-auto pr-1">
         <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
+        <Top10Rows kind={kind} tv={tv} items={catalogue.data ?? []} onOpen={selectTitle} />
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase text-primary">{genre ?? "Loading categories"}</p>
           <h1 className="mt-1 truncate font-display text-xl font-bold">{`Choose ${kind === "movie" ? "a movie" : "a show"}`}</h1>
