@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Play, Search, Tv, X } from "lucide-react";
 import { z } from "zod";
 
@@ -229,6 +229,41 @@ function TvLive() {
     guide.scrollTo({ left: Math.max(0, next), top });
   };
 
+  const focusCategory = () => {
+    guideRef.current?.scrollTo({ left: 0 });
+    document.querySelector<HTMLElement>(`[data-focus-key="live-category-${CSS.escape(categoryId || "all")}"]`)?.focus();
+  };
+
+  const guideKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const active = document.activeElement as HTMLElement | null;
+    const cell = active?.closest<HTMLElement>("[data-guide-cell]");
+    if (!cell) return;
+    const row = cell.closest<HTMLElement>("[data-guide-row]");
+    if (!row) return;
+    const cellsOf = (r: Element) => Array.from(r.querySelectorAll<HTMLElement>("[data-guide-cell]"));
+    const cells = cellsOf(row);
+    const idx = cells.indexOf(cell);
+    const stop = () => { event.preventDefault(); event.stopPropagation(); };
+    const go = (target: HTMLElement | null | undefined) => { if (target) target.focus({ preventScroll: true }); };
+    if (event.key === "ArrowRight") { stop(); go(cells[idx + 1]); return; }
+    if (event.key === "ArrowLeft") { stop(); if (idx <= 0) focusCategory(); else go(cells[idx - 1]); return; }
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      stop();
+      const rows = Array.from(guideRef.current?.querySelectorAll<HTMLElement>("[data-guide-row]") ?? []);
+      const ri = rows.indexOf(row);
+      const next = rows[ri + (event.key === "ArrowDown" ? 1 : -1)];
+      if (!next) {
+        if (event.key === "ArrowUp") go(document.querySelector<HTMLElement>('[data-focus-key="live-search"]'));
+        else go(guideRef.current?.querySelector<HTMLElement>("[data-guide-next]"));
+        return;
+      }
+      const time = Number(cell.dataset['start']);
+      const targets = cellsOf(next);
+      const match = idx === 0 ? targets[0] : targets.find((c) => Number(c.dataset['start']) <= time && Number(c.dataset['end']) > time) ?? targets.filter((c) => Number(c.dataset['start']) <= time).pop() ?? targets[0];
+      go(match);
+    }
+  };
+
   const jumpToNow = () => {
     const id = focusedId ?? visibleChannels[0]?.id;
     guideRef.current?.scrollTo({ left: 0 });
@@ -300,12 +335,15 @@ function TvLive() {
           return;
         }
         if (selected) {
-          closePlayer();
+          setSelected(null);
+          setUrl(null);
+          setDirectUrl(null);
+          window.requestAnimationFrame(focusCategory);
           return;
         }
         const activeZone = document.activeElement?.closest<HTMLElement>("[data-tv-zone]")?.dataset['tvZone'];
-        if (activeZone === "live-guide") {
-          document.querySelector<HTMLElement>(`[data-focus-key="live-category-${CSS.escape(categoryId || "all")}"]`)?.focus();
+        if (activeZone !== "live-categories") {
+          focusCategory();
           return;
         }
         void navigate({ to: "/tv" });
@@ -324,6 +362,8 @@ function TvLive() {
               variant={categoryId === "" ? "default" : "ghost"}
               className="h-9 w-full justify-start truncate px-2 text-xs"
               onFocus={() => previewCategory("")}
+              onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>("[data-guide-cell]")?.focus(); } }}
+
               onClick={() => chooseCategory("")}
             >
               All channels
@@ -336,6 +376,8 @@ function TvLive() {
                 variant={categoryId === category.id ? "default" : "ghost"}
                 className="h-9 w-full justify-start truncate px-2 text-xs"
                 onFocus={() => previewCategory(category.id)}
+                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>("[data-guide-cell]")?.focus(); } }}
+
                 onClick={() => chooseCategory(category.id)}
               >
                 {category.name}
@@ -386,6 +428,7 @@ function TvLive() {
             data-tv-zone="live-guide"
             data-tv-zone-order="2"
             data-horizontal-nav="true"
+            onKeyDown={guideKeys}
             className="scrollbar-thin relative min-h-0 flex-1 overflow-auto overscroll-contain rounded border border-border bg-card"
             aria-label="Programme guide"
           >
@@ -440,6 +483,9 @@ function TvLive() {
                         data-zone-edge-left="true"
                         data-zone-entry={index === 0 ? "true" : undefined}
                         data-focus-key={`channel-${item.id}`}
+                        data-guide-cell
+                        data-start={windowStart}
+                        data-end={windowEnd}
                         onFocus={(event) => { setFocusedId(item.id); revealCell(event.currentTarget, true); }}
                         onClick={() => playChannel(item)}
                         className="absolute inset-y-1 left-1 h-auto w-[716px] justify-start border border-border bg-secondary/60 px-2 text-xs text-muted-foreground"
@@ -468,7 +514,7 @@ function TvLive() {
             })}
             {!items.isLoading && page < pageCount - 1 && (
               <div className="flex min-w-max" style={{ height: ROW_HEIGHT }}>
-                <Button variant="ghost" data-tv-focus data-zone-edge-left="true" onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))} className="sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start rounded-none border-r border-border bg-card px-2 text-xs">
+                <Button variant="ghost" data-tv-focus data-guide-next data-zone-edge-left="true" onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))} className="sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start rounded-none border-r border-border bg-card px-2 text-xs">
                   <ChevronRight className="size-5" /> Next channels
                 </Button>
                 <div className="flex h-full w-[2880px] shrink-0 items-center bg-muted/20 px-4 text-sm text-muted-foreground">Next group of {PAGE_SIZE} channels</div>
@@ -531,6 +577,9 @@ function ProgrammeCell({
       data-zone-edge-left={first ? "true" : undefined}
       data-focus-key={focusKey}
       data-zone-entry={zoneEntry ? "true" : undefined}
+      data-guide-cell
+      data-start={first ? windowStart : start}
+      data-end={end}
       onFocus={(event) => onFocus(event.currentTarget)}
       onClick={onSelect}
       className="absolute inset-y-1 z-10 h-auto justify-start overflow-hidden rounded border border-border bg-secondary px-3 text-left focus-visible:z-20 focus-visible:bg-primary focus-visible:text-primary-foreground"

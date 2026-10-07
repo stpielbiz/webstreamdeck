@@ -24,6 +24,7 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
     if (!enabled) return;
 
     const handler = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
       const target = event.target as HTMLElement | null;
       const typing =
         target &&
