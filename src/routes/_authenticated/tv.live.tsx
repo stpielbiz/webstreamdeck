@@ -362,6 +362,8 @@ function TvLive() {
               variant={categoryId === "" ? "default" : "ghost"}
               className="h-9 w-full justify-start truncate px-2 text-xs"
               onFocus={() => previewCategory("")}
+              onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>("[data-guide-cell]")?.focus(); } }}
+
               onClick={() => chooseCategory("")}
             >
               All channels
@@ -374,6 +376,8 @@ function TvLive() {
                 variant={categoryId === category.id ? "default" : "ghost"}
                 className="h-9 w-full justify-start truncate px-2 text-xs"
                 onFocus={() => previewCategory(category.id)}
+                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>("[data-guide-cell]")?.focus(); } }}
+
                 onClick={() => chooseCategory(category.id)}
               >
                 {category.name}
@@ -424,6 +428,7 @@ function TvLive() {
             data-tv-zone="live-guide"
             data-tv-zone-order="2"
             data-horizontal-nav="true"
+            onKeyDown={guideKeys}
             className="scrollbar-thin relative min-h-0 flex-1 overflow-auto overscroll-contain rounded border border-border bg-card"
             aria-label="Programme guide"
           >
@@ -478,6 +483,9 @@ function TvLive() {
                         data-zone-edge-left="true"
                         data-zone-entry={index === 0 ? "true" : undefined}
                         data-focus-key={`channel-${item.id}`}
+                        data-guide-cell
+                        data-start={windowStart}
+                        data-end={windowEnd}
                         onFocus={(event) => { setFocusedId(item.id); revealCell(event.currentTarget, true); }}
                         onClick={() => playChannel(item)}
                         className="absolute inset-y-1 left-1 h-auto w-[716px] justify-start border border-border bg-secondary/60 px-2 text-xs text-muted-foreground"
@@ -506,7 +514,7 @@ function TvLive() {
             })}
             {!items.isLoading && page < pageCount - 1 && (
               <div className="flex min-w-max" style={{ height: ROW_HEIGHT }}>
-                <Button variant="ghost" data-tv-focus data-zone-edge-left="true" onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))} className="sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start rounded-none border-r border-border bg-card px-2 text-xs">
+                <Button variant="ghost" data-tv-focus data-guide-next data-zone-edge-left="true" onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))} className="sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start rounded-none border-r border-border bg-card px-2 text-xs">
                   <ChevronRight className="size-5" /> Next channels
                 </Button>
                 <div className="flex h-full w-[2880px] shrink-0 items-center bg-muted/20 px-4 text-sm text-muted-foreground">Next group of {PAGE_SIZE} channels</div>
@@ -569,6 +577,9 @@ function ProgrammeCell({
       data-zone-edge-left={first ? "true" : undefined}
       data-focus-key={focusKey}
       data-zone-entry={zoneEntry ? "true" : undefined}
+      data-guide-cell
+      data-start={first ? windowStart : start}
+      data-end={end}
       onFocus={(event) => onFocus(event.currentTarget)}
       onClick={onSelect}
       className="absolute inset-y-1 z-10 h-auto justify-start overflow-hidden rounded border border-border bg-secondary px-3 text-left focus-visible:z-20 focus-visible:bg-primary focus-visible:text-primary-foreground"
