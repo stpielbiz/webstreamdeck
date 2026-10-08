@@ -38,3 +38,22 @@ export function CatalogLoading({ title, tv = false }: { title: "Movies" | "Shows
     </section>
   );
 }
+
+export function CatalogGridLoading({ title }: { title: "Movies" | "Shows" }) {
+  return (
+    <div role="status" aria-live="polite" className="py-2">
+      <div className="flex items-center gap-3 text-muted-foreground">
+        <Loader2 className="size-5 animate-spin text-primary motion-reduce:animate-none" />
+        <span className="font-display text-base font-semibold text-foreground">Loading {title}…</span>
+      </div>
+      <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10">
+        {Array.from({ length: 20 }).map((_, index) => (
+          <div key={index} className="space-y-2">
+            <Skeleton className="aspect-[2/3] w-full" />
+            <Skeleton className="h-3 w-4/5" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
