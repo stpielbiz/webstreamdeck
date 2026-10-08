@@ -16,6 +16,8 @@ export interface TitleMetadata {
   backdrop: string | null;
   overview: string | null;
   source: "tmdb" | "ai" | "none";
+  /** Main actors, top-billed first. */
+  cast: string[];
 }
 
 const QUALITY_WORDS =
@@ -90,6 +92,7 @@ const TMDB_GENRES: Record<number, string> = {
 };
 
 interface TmdbResult {
+  id?: number;
   title?: string;
   name?: string;
   genre_ids?: number[];
@@ -137,6 +140,21 @@ async function tmdbLookup(
     ...new Set((best.genre_ids ?? []).map((id) => TMDB_GENRES[id]).filter(Boolean) as string[]),
   ];
 
+  let cast: string[] = [];
+  if (best.id) {
+    try {
+      const credits = await fetch(
+        `https://api.themoviedb.org/3/${path}/${best.id}/credits?api_key=${encodeURIComponent(apiKey)}`,
+      );
+      if (credits.ok) {
+        const body = (await credits.json()) as { cast?: { name?: string }[] };
+        cast = (body.cast ?? []).map((c) => c.name).filter(Boolean).slice(0, 8) as string[];
+      }
+    } catch {
+      // Cast is optional.
+    }
+  }
+
   return {
     key: "",
     title: best.title || best.name || title,
@@ -146,6 +164,7 @@ async function tmdbLookup(
     backdrop: best.backdrop_path ? `${TMDB_BACKDROP}${best.backdrop_path}` : null,
     overview: best.overview || null,
     source: "tmdb",
+    cast,
   };
 }
 
@@ -178,6 +197,7 @@ interface AiClassification {
   index: number;
   genres: string[];
   year: number | null;
+  cast: string[];
 }
 
 /** Classify a batch of titles with Lovable AI when TMDB has no match. */
@@ -201,7 +221,8 @@ async function aiClassify(
       `You classify ${kind === "movie" ? "films" : "TV shows"} by genre. For each numbered ` +
       `title, return one to three genres chosen only from this list: ${AI_GENRES.join(", ")}. ` +
       `Use "Unknown" when you do not recognise the title. Return the release year when you ` +
-      `know it, otherwise null. Return one entry per input index.`,
+      `know it, otherwise null. Return up to 6 top-billed actors in "cast" when you know them, ` +
+      `otherwise an empty array. Return one entry per input index.`,
     input: list,
     text: {
       format: {
@@ -221,8 +242,9 @@ async function aiClassify(
                   index: { type: "number" },
                   genres: { type: "array", items: { type: "string", enum: AI_GENRES } },
                   year: { type: ["number", "null"] },
+                  cast: { type: "array", items: { type: "string" } },
                 },
-                required: ["index", "genres", "year"],
+                required: ["index", "genres", "year", "cast"],
               },
             },
           },
@@ -285,7 +307,8 @@ async function aiClassify(
     for (const entry of parsed.items ?? []) {
       if (typeof entry.index !== "number") continue;
       const genres = (entry.genres ?? []).filter((genre) => genre && genre !== "Unknown");
-      out.set(entry.index, { index: entry.index, genres, year: entry.year ?? null });
+      const cast = Array.isArray(entry.cast) ? entry.cast.filter((n) => typeof n === "string" && n.trim()).slice(0, 8) : [];
+      out.set(entry.index, { index: entry.index, genres, year: entry.year ?? null, cast });
     }
   } catch {
     return out;
@@ -317,6 +340,8 @@ interface CachedRow {
   backdrop_url: string | null;
   overview: string | null;
   source: TitleMetadata["source"];
+  cast_names: string[] | null;
+  cast_checked: boolean | null;
 }
 
 /**
@@ -345,10 +370,12 @@ export async function resolveTitles(
     const slice = allKeys.slice(index, index + 200);
     const { data } = await admin
       .from("title_metadata")
-      .select("lookup_key, resolved_title, genres, year, poster_url, backdrop_url, overview, source")
+      .select("lookup_key, resolved_title, genres, year, poster_url, backdrop_url, overview, source, cast_names, cast_checked")
       .eq("item_kind", kind)
       .in("lookup_key", slice);
     for (const row of (data ?? []) as CachedRow[]) {
+      // Rows saved before cast existed are looked up again.
+      if (!row.cast_checked) continue;
       resolved.set(row.lookup_key, {
         key: row.lookup_key,
         title: row.resolved_title,
@@ -358,6 +385,7 @@ export async function resolveTitles(
         backdrop: row.backdrop_url,
         overview: row.overview,
         source: row.source,
+        cast: row.cast_names ?? [],
       });
     }
   }
