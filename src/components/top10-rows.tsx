@@ -60,11 +60,11 @@ export function Top10Row({
   if (entries.length === 0) return null;
 
   return (
-    <section id={`top10-${service}`} className="mb-6">
-      <h2 className={cn("mb-3 flex items-center gap-2 font-display font-semibold", tv ? "text-2xl" : "text-lg")}>
-        <Trophy className="size-5 text-primary" /> Top 10 on {service === "netflix" ? "Netflix" : "Prime Video"}
+    <section id={`top10-${service}`} className={cn("mb-6", tv && "mb-3")}>
+      <h2 className={cn("mb-3 flex items-center gap-2 font-display font-semibold", tv ? "mb-2 text-lg" : "text-lg")}>
+        <Trophy className={cn("text-primary", tv ? "size-4" : "size-5")} /> Top 10 on {service === "netflix" ? "Netflix" : "Prime Video"}
       </h2>
-      <div className="scrollbar-thin flex gap-3 overflow-x-auto pb-2">
+      <div className={cn("scrollbar-thin flex gap-3 overflow-x-auto pb-2", tv && "gap-2")}>
         {entries.map(({ rank, item, title, poster }, i) =>
           item ? (
             <button
@@ -73,7 +73,7 @@ export function Top10Row({
               data-tv-focus
               data-focus-key={`top10-${service}-${i}`}
               onClick={(e) => onOpen(item.id, e.currentTarget)}
-              className="group relative w-28 shrink-0 overflow-hidden rounded-md border border-border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className={cn("group relative shrink-0 overflow-hidden rounded-md border border-border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-primary", tv ? "w-24" : "w-28")}
             >
               <div className="aspect-[2/3] bg-muted">
                 {poster && <img src={poster} alt={item.name} loading="lazy" className="size-full object-cover" />}
@@ -84,7 +84,7 @@ export function Top10Row({
           ) : (
             <div
               key={`${service}-${rank}`}
-              className="relative w-28 shrink-0 overflow-hidden rounded-md border border-border bg-card opacity-60"
+              className={cn("relative shrink-0 overflow-hidden rounded-md border border-border bg-card opacity-60", tv ? "w-24" : "w-28")}
             >
               <div className="aspect-[2/3] bg-muted">
                 {poster && <img src={poster} alt={title} loading="lazy" className="size-full object-cover opacity-30 grayscale" />}
