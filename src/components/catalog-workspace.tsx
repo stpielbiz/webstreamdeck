@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowDownAZ, ArrowLeft, CalendarArrowDown, Play, Search, Sparkles, Star } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { toast } from "sonner";
 
 import { EmptyState, PosterGrid, PosterTile } from "@/components/media";
@@ -156,6 +156,33 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         : titleOf(a).localeCompare(titleOf(b)),
     );
   }, [genre, chosenGroup, catalogue.data, query, searching, sort, metadata.data]);
+  const featuredOrigin = useRef<HTMLElement | null>(null);
+  const enterFeatured = (event: ReactKeyboardEvent<HTMLElement>, choice: "popular" | Top10Service) => {
+    if (event.key !== "ArrowRight") return;
+    event.preventDefault();
+    event.stopPropagation();
+    featuredOrigin.current = event.currentTarget;
+    setFeatured(choice);
+    let tries = 0;
+    const attempt = () => {
+      const row = document.querySelector<HTMLElement>("[data-featured-row]");
+      const first = row?.querySelector<HTMLElement>("[data-tv-focus]:not([disabled])");
+      if (first) { first.focus(); first.scrollIntoView({ block: "nearest", inline: "nearest" }); return; }
+      if (++tries < 30) window.setTimeout(attempt, 100);
+    };
+    window.requestAnimationFrame(attempt);
+  };
+  const leaveFeatured = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.key !== "ArrowLeft" || !featuredOrigin.current?.isConnected) return;
+    const row = event.currentTarget;
+    const tiles = [...row.querySelectorAll<HTMLElement>("[data-tv-focus]")];
+    const target = event.target as HTMLElement;
+    const current = tiles.find((tile) => tile === target || tile.contains(target));
+    if (!current || current.getBoundingClientRect().left - 4 > Math.min(...tiles.map((t) => t.getBoundingClientRect().left))) return;
+    event.preventDefault();
+    event.stopPropagation();
+    featuredOrigin.current.focus();
+  };
   useEffect(() => { setLimits({}); }, [genre, search, sort, activeId, kind]);
   const sections = useMemo(() => {
     const buckets = new Map<string, CatalogItem[]>();
@@ -310,6 +337,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
               variant={featured === "popular" ? "secondary" : "ghost"}
               className="h-10 w-40 shrink-0 justify-start gap-2 px-3 text-left text-sm text-primary md:w-full"
               onClick={goToPopular}
+              onKeyDown={(event) => enterFeatured(event, "popular")}
             >
               <Flame className="size-4" /> Popular here
             </Button>
@@ -321,6 +349,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
                 variant={featured === service ? "secondary" : "ghost"}
                 className="h-10 w-40 shrink-0 justify-start gap-2 px-3 text-left text-sm text-primary md:w-full"
                 onClick={() => goToTop10(service)}
+                onKeyDown={(event) => enterFeatured(event, service)}
               >
                 <Trophy className="size-4" /> Top 10 {service === "netflix" ? "Netflix" : "Prime"}
               </Button>
@@ -356,11 +385,13 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       </aside>
 
       <div ref={contentRef} data-tv-zone="content" data-tv-zone-order="2" className="scrollbar-thin min-h-0 min-w-0 overflow-y-auto pr-1">
+        <div data-featured-row onKeyDown={leaveFeatured}>
         {featured === "popular" ? (
           <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
         ) : (
           <Top10Row kind={kind} tv={tv} items={catalogue.data ?? []} metadata={metadata.data} service={featured} onOpen={selectTitle} />
         )}
+        </div>
         <div ref={categoryContentRef} className="min-w-0 scroll-mt-2">
           <p className="text-xs font-semibold uppercase text-primary">{genre ?? "Loading categories"}</p>
           <h1 className="mt-1 truncate font-display text-xl font-bold">{`Choose ${kind === "movie" ? "a movie" : "a show"}`}</h1>
