@@ -25,6 +25,7 @@ export function Top10Row({
   kind,
   tv = false,
   items,
+  metadata,
   service,
   onOpen,
 }: {
