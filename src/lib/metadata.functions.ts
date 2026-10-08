@@ -41,6 +41,7 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
       backdrop_url: string | null;
       overview: string | null;
       source: "tmdb" | "ai" | "none";
+      cast_names: string[];
     }> = [];
 
     const chunks: string[][] = [];
@@ -49,7 +50,7 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
       const results = await Promise.all(chunks.slice(start, start + 8).map((slice) =>
         context.supabase
           .from("title_metadata")
-          .select("lookup_key, resolved_title, genres, year, poster_url, backdrop_url, overview, source")
+          .select("lookup_key, resolved_title, genres, year, poster_url, backdrop_url, overview, source, cast_names")
           .eq("item_kind", data.kind)
           .in("lookup_key", slice),
       ));
@@ -64,6 +65,7 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
           backdrop_url: row.backdrop_url,
           overview: row.overview,
           source: (row.source === "tmdb" || row.source === "ai" ? row.source : "none") as "tmdb" | "ai" | "none",
+          cast_names: row.cast_names ?? [],
         })));
       }
     }
@@ -82,6 +84,7 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
           backdrop: row.backdrop_url,
           overview: row.overview,
           source: row.source,
+          cast: row.cast_names,
         } satisfies TitleMetadata]];
       }),
     );
@@ -107,6 +110,36 @@ export const enrichTitles = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { resolveTitles } = await import("./metadata.server");
 
+    return resolveTitles(
+      supabaseAdmin as unknown as Parameters<typeof resolveTitles>[0],
+      data.names,
+      data.kind,
+      {
+        tmdb: process.env["TMDB_API_KEY"] || undefined,
+        lovable: process.env["LOVABLE_API_KEY"] || undefined,
+      },
+    );
+  });
+
+/**
+ * Background backfill for any signed-in user: resolves a small batch of
+ * titles that have no saved details (or no cast yet) into the shared store.
+ */
+export const backfillTitles = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      playlistId: z.string().uuid(),
+      kind: z.enum(["movie", "series"]),
+      names: z.array(z.string().min(1).max(300)).min(1).max(20),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<Record<string, TitleMetadata>> => {
+    const { data: playlist } = await context.supabase
+      .from("playlists").select("id").eq("id", data.playlistId).maybeSingle();
+    if (!playlist) throw new Error("Playlist not found");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { resolveTitles } = await import("./metadata.server");
     return resolveTitles(
       supabaseAdmin as unknown as Parameters<typeof resolveTitles>[0],
       data.names,
