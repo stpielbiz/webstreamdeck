@@ -437,6 +437,7 @@ export async function resolveTitles(
           backdrop: null,
           overview: null,
           source: guess && guess.genres.length > 0 ? "ai" : "none",
+          cast: guess?.cast ?? [],
         };
         resolved.set(key, record);
         fresh.push(record);
@@ -456,6 +457,8 @@ export async function resolveTitles(
         backdrop_url: record.backdrop,
         overview: record.overview,
         source: record.source,
+        cast_names: record.cast,
+        cast_checked: true,
       })),
       { onConflict: "lookup_key,item_kind" },
     );
