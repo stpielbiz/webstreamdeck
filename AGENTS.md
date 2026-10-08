@@ -19,3 +19,4 @@
 - Navigation preserves device mode: TV routes and TV-opened shared screens return to `/tv`, while regular browser screens return to `/dashboard` — this prevents remote users from falling into the desktop shell.
 - Live TV is the single guide destination and uses a persistent category rail with a horizontally navigable programme timeline — this avoids duplicate Live TV and Guide workflows.
 - Native Back is consumed once on key release and routed to the website's layer-aware handler; player closure has a separate bridge callback from completion — this restores browsing without skipping layers or exiting the app.
+- Provider library data (categories, channels, catalogue, guide) is persisted on-device in IndexedDB via src/lib/device-cache.ts and refreshed by useLibrarySync in PlaylistProvider — menus render from saved data instantly and only stale parts are re-fetched.
