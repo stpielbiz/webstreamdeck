@@ -1,3 +1,4 @@
+import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowDownAZ, ArrowLeft, CalendarArrowDown, Play, Search, Sparkles, Star } from "lucide-react";
@@ -42,6 +43,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const { isAdmin } = useIsAdmin();
   const favorites = useFavorites();
   const progress = useProgress();
+  const syncPlaylists = useSyncPlaylists();
   const toggleFavorite = useToggleFavorite();
   const saveProgress = useSaveProgress();
   const [genre, setGenre] = useState<string | null>(null);
@@ -202,7 +204,8 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const detailYear = selectedMetadata?.year || selectedItem?.year;
   const selectedProgress = (progress.data ?? []).find((row) => row.playlistId === activeId && (row.itemId === selectedId || row.seriesId === selectedId) && !row.completed);
   const selectedFavorite = selectedId ? isFavorite(favorites.data, activeId, kind, selectedId) : false;
-  const resumeAt = (progress.data ?? []).find((row) => row.playlistId === activeId && row.itemId === mediaId && !row.completed)?.positionSeconds ?? 0;
+  const resumeRow = mediaId ? findResume(progress.data, activeId, { itemId: mediaId, title: kind === "movie" ? selected?.name : null }, syncPlaylists) : undefined;
+  const resumeAt = resumeRow && !resumeRow.completed ? resumeRow.positionSeconds : 0;
 
   const selectTitle = (id: string, trigger?: HTMLElement | null) => {
     titleTrigger.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
