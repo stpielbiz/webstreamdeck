@@ -1,0 +1,95 @@
+import type { QueryClient, QueryKey } from "@tanstack/react-query";
+
+/**
+ * On-device library cache (IndexedDB). Saved provider data is loaded into the
+ * query cache before screens mount, so menus open instantly; screens then
+ * refresh stale data in the background.
+ */
+const DB_NAME = "streamdeck-library";
+const STORE = "queries";
+const MAX_AGE = 7 * 24 * 60 * 60_000;
+
+/** Query key prefixes worth keeping on the device. */
+const PERSISTED = new Set([
+  "playlists",
+  "tv-live-categories",
+  "tv-live-items",
+  "system-catalogue",
+  "cached-title-metadata",
+  "categories",
+  "items",
+  "global-search-live",
+  "global-search-movie",
+  "global-search-series",
+  "device-guide",
+]);
+
+interface Entry { key: string; queryKey: QueryKey; data: unknown; at: number }
+
+let dbPromise: Promise<IDBDatabase | null> | null = null;
+function openDb(): Promise<IDBDatabase | null> {
+  if (typeof indexedDB === "undefined") return Promise.resolve(null);
+  dbPromise ??= new Promise((resolve) => {
+    try {
+      const request = indexedDB.open(DB_NAME, 1);
+      request.onupgradeneeded = () => request.result.createObjectStore(STORE, { keyPath: "key" });
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+  return dbPromise;
+}
+
+async function readAll(): Promise<Entry[]> {
+  const db = await openDb();
+  if (!db) return [];
+  return new Promise((resolve) => {
+    const request = db.transaction(STORE, "readonly").objectStore(STORE).getAll();
+    request.onsuccess = () => resolve((request.result as Entry[]) ?? []);
+    request.onerror = () => resolve([]);
+  });
+}
+
+export async function writeEntry(queryKey: QueryKey, data: unknown, at = Date.now()) {
+  const db = await openDb();
+  if (!db) return;
+  try {
+    db.transaction(STORE, "readwrite").objectStore(STORE).put({ key: JSON.stringify(queryKey), queryKey, data, at });
+  } catch {
+    /* quota or serialisation issue — skip */
+  }
+}
+
+function shouldPersist(queryKey: QueryKey) {
+  return typeof queryKey[0] === "string" && PERSISTED.has(queryKey[0]);
+}
+
+let hydrated: Promise<void> | null = null;
+/** Load saved data into the query cache, then keep saving successful results. */
+export function hydrateDeviceCache(client: QueryClient): Promise<void> {
+  hydrated ??= (async () => {
+    const entries = await readAll();
+    const now = Date.now();
+    for (const entry of entries) {
+      if (now - entry.at > MAX_AGE) continue;
+      if (client.getQueryData(entry.queryKey) !== undefined) continue;
+      client.setQueryData(entry.queryKey, entry.data, { updatedAt: entry.at });
+    }
+    const pending = new Map<string, number>();
+    client.getQueryCache().subscribe((event) => {
+      if (event.type !== "updated" || event.action.type !== "success") return;
+      const { queryKey, state } = event.query;
+      if (!shouldPersist(queryKey)) return;
+      const id = JSON.stringify(queryKey);
+      const timer = pending.get(id);
+      if (timer) window.clearTimeout(timer);
+      pending.set(id, window.setTimeout(() => {
+        pending.delete(id);
+        void writeEntry(queryKey, state.data, state.dataUpdatedAt);
+      }, 500));
+    });
+  })().catch(() => undefined);
+  return hydrated;
+}
