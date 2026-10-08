@@ -374,7 +374,7 @@ function TvLive() {
             <ArrowLeft className="size-4" /> TV Home
           </Button>
           <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Channel categories</p>
-          <div data-tv-zone="live-categories" data-tv-zone-order="1" className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div data-tv-zone="live-categories" data-tv-zone-order="1" className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
             <Button
               data-tv-focus
               data-focus-key="live-category-all"

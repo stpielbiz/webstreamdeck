@@ -103,3 +103,24 @@ export function hydrateDeviceCache(client: QueryClient): Promise<void> {
   })().catch(() => undefined);
   return hydrated;
 }
+
+/** Delete every saved entry for one playlist except shared title details. */
+export async function clearPlaylistEntries(playlistId: string) {
+  const db = await openDb();
+  if (!db) return;
+  const entries = await readAll();
+  await new Promise<void>((resolve) => {
+    try {
+      const tx = db.transaction(STORE, "readwrite");
+      const store = tx.objectStore(STORE);
+      for (const entry of entries) {
+        if (entry.queryKey[0] === "cached-title-metadata") continue;
+        if (entry.queryKey.includes(playlistId)) store.delete(entry.key);
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}

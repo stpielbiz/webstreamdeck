@@ -1,5 +1,6 @@
-import { isTruncatedCatalogue } from "@/lib/device-cache";
-import { useEffect, useState } from "react";
+import { clearPlaylistEntries, isTruncatedCatalogue } from "@/lib/device-cache";
+import { toast } from "sonner";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
@@ -32,6 +33,33 @@ export function mergeGuide(client: QueryClient, playlistId: string, entries: { c
 
 export interface SyncStatus { running: boolean; done: number; total: number }
 
+/* -------- user-requested full refresh (Settings → Update library & guide) */
+export interface RefreshStatus { running: boolean; phase: string; done: number; total: number }
+let refreshState: RefreshStatus = { running: false, phase: "", done: 0, total: 0 };
+let refreshRequest: { playlistId: string; n: number } | null = null;
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((listener) => listener());
+function setRefresh(next: RefreshStatus) { refreshState = next; emit(); }
+export function requestLibraryRefresh(playlistId: string) {
+  if (refreshState.running) return;
+  refreshRequest = { playlistId, n: (refreshRequest?.n ?? 0) + 1 };
+  setRefresh({ running: true, phase: "Starting", done: 0, total: 0 });
+}
+export function useLibraryRefreshStatus() {
+  return useSyncExternalStore(
+    (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
+    () => refreshState,
+    () => refreshState,
+  );
+}
+function useRefreshRequest() {
+  return useSyncExternalStore(
+    (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
+    () => refreshRequest,
+    () => null,
+  );
+}
+
 /**
  * Background library sync: refreshes categories, channels, movies, shows and
  * the TV guide for the active playlist, only when the saved copy is stale.
@@ -42,16 +70,19 @@ export function useLibrarySync(playlistId: string | null): SyncStatus {
   const fetchItems = useServerFn(getItems);
   const fetchSchedules = useServerFn(getSchedules);
   const [status, setStatus] = useState<SyncStatus>({ running: false, done: 0, total: 0 });
+  const request = useRefreshRequest();
+  const force = !!request && request.playlistId === playlistId;
 
   useEffect(() => {
     if (!playlistId) return;
     let cancelled = false;
+    const phase = (name: string, done = 0, total = 0) => { if (force) setRefresh({ running: true, phase: name, done, total }); };
     const stale = (key: readonly unknown[], ttl: number) => {
       const state = client.getQueryState(key);
       return !state?.dataUpdatedAt || Date.now() - state.dataUpdatedAt > ttl || isTruncatedCatalogue(key, state.data);
     };
     const refresh = async <T,>(key: readonly unknown[], fn: () => Promise<T>) => {
-      if (!stale(key, LIBRARY_TTL)) return client.getQueryData<T>(key);
+      if (!force && !stale(key, LIBRARY_TTL)) return client.getQueryData<T>(key);
       try {
         const data = await fn();
         client.setQueryData(key, data);
@@ -62,22 +93,41 @@ export function useLibrarySync(playlistId: string | null): SyncStatus {
     };
 
     const run = async () => {
+      if (force) {
+        phase("Clearing saved copy");
+        await clearPlaylistEntries(playlistId);
+        for (const key of ["tv-live-categories", "tv-live-items", "system-catalogue", "device-guide", "global-search-live", "global-search"]) {
+          client.removeQueries({ predicate: (q) => q.queryKey[0] === key && q.queryKey.includes(playlistId) });
+        }
+        phase("Channels");
+      }
       const first = client.getQueryData(["tv-live-items", playlistId, ""]) === undefined;
       if (first) setStatus({ running: true, done: 0, total: 0 });
       await refresh(["tv-live-categories", playlistId], () => fetchCategories({ data: { playlistId, kind: "live" } }));
       const channels = await refresh<CatalogItem[]>(["tv-live-items", playlistId, ""], () => fetchItems({ data: { playlistId, kind: "live" } }));
       if (channels) client.setQueryData(["global-search-live", playlistId, "live"], channels);
       if (cancelled) return;
+      phase("Movies");
       await refresh(["system-catalogue", playlistId, "movie"], () => fetchItems({ data: { playlistId, kind: "movie" } }));
+      phase("Shows");
       await refresh(["system-catalogue", playlistId, "series"], () => fetchItems({ data: { playlistId, kind: "series" } }));
-      if (cancelled || !channels?.length) { setStatus({ running: false, done: 0, total: 0 }); return; }
+      const finish = () => {
+        setStatus({ running: false, done: 0, total: 0 });
+        if (force && !cancelled) {
+          setRefresh({ running: false, phase: "", done: 0, total: 0 });
+          refreshRequest = null; emit();
+          toast.success("Library updated");
+        }
+      };
+      if (cancelled || !channels?.length) { finish(); return; }
 
       // Guide: only channels missing from the saved copy or older than the TTL.
       const store = client.getQueryData<GuideStore>(guideKey(playlistId)) ?? {};
       const now = Date.now();
       const due = channels.slice(0, GUIDE_MAX_CHANNELS).map((c) => c.id).filter((id) => !store[id] || now - store[id]!.at > GUIDE_TTL);
-      if (due.length === 0) { setStatus({ running: false, done: 0, total: 0 }); return; }
+      if (due.length === 0) { finish(); return; }
       setStatus({ running: true, done: 0, total: due.length });
+      phase("TV guide", 0, due.length);
       for (let i = 0; i < due.length && !cancelled; i += GUIDE_BATCH) {
         const batch = due.slice(i, i + GUIDE_BATCH);
         try {
@@ -89,15 +139,16 @@ export function useLibrarySync(playlistId: string | null): SyncStatus {
           /* provider hiccup — retry next sync */
         }
         setStatus({ running: true, done: Math.min(due.length, i + GUIDE_BATCH), total: due.length });
+        phase("TV guide", Math.min(due.length, i + GUIDE_BATCH), due.length);
         await new Promise((resolve) => window.setTimeout(resolve, 250));
       }
-      if (!cancelled) setStatus({ running: false, done: 0, total: 0 });
+      if (!cancelled) finish();
     };
 
-    const idle = window.setTimeout(() => void run(), 1500);
+    const idle = window.setTimeout(() => void run(), force ? 0 : 1500);
     const interval = window.setInterval(() => void run(), GUIDE_TTL);
     return () => { cancelled = true; window.clearTimeout(idle); window.clearInterval(interval); };
-  }, [playlistId, client, fetchCategories, fetchItems, fetchSchedules]);
+  }, [playlistId, client, fetchCategories, fetchItems, fetchSchedules, force, request?.n]);
 
   return status;
 }
