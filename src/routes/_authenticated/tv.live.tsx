@@ -214,7 +214,7 @@ function TvLive() {
   const focusTimer = useRef<number | null>(null);
   const previewCategory = (id: string) => {
     if (focusTimer.current) window.clearTimeout(focusTimer.current);
-    focusTimer.current = window.setTimeout(() => chooseCategory(id), 350);
+    focusTimer.current = window.setTimeout(() => chooseCategory(id), 120);
   };
   const chooseCategory = (id: string) => {
     if (focusTimer.current) window.clearTimeout(focusTimer.current);

@@ -2,8 +2,8 @@ import { useEffect } from "react";
 
 const SELECTOR = "[data-tv-focus]:not([disabled]):not([tabindex='-1'])";
 
-function rects() {
-  return Array.from(document.querySelectorAll<HTMLElement>(SELECTOR))
+function rects(root: ParentNode = document) {
+  return Array.from(root.querySelectorAll<HTMLElement>(SELECTOR))
     .filter((element) => element.offsetParent !== null)
     .map((element) => ({ element, rect: element.getBoundingClientRect() }));
 }
@@ -45,9 +45,11 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
       if (!direction) return;
       if (typing && (direction === "left" || direction === "right")) return;
 
-      const allCandidates = rects();
       const active = document.activeElement as HTMLElement | null;
       const zone = active?.closest<HTMLElement>("[data-tv-zone]");
+      // Only measure elements in the current zone — scanning the whole page on
+      // every key press is what made held Up/Down feel laggy.
+      const allCandidates = rects(zone ?? document);
       const group = zone?.closest<HTMLElement>("[data-tv-zone-group]");
       const order = Number(zone?.dataset['tvZoneOrder']);
       const horizontalZone = zone?.dataset['horizontalNav'] === "true";
@@ -61,7 +63,7 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
         const destination = nextZone?.querySelector<HTMLElement>("[data-zone-entry='true']")
           ?? nextZone?.querySelector<HTMLElement>(SELECTOR);
         destination?.focus();
-        destination?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+        destination?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
         return;
       }
       const activeZone = zone?.dataset['tvZone'];
@@ -105,7 +107,7 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
       if (best) {
         event.preventDefault();
         best.element.focus();
-        best.element.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+        best.element.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
       } else {
         if (group && Number.isFinite(order) && (direction === "left" || direction === "right")) {
           const nextOrder = order + (direction === "right" ? 1 : -1);
@@ -115,7 +117,7 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
           if (destination) {
             event.preventDefault();
             destination.focus();
-            destination.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+            destination.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
           }
         }
       }
