@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Play, Search, Star, X } from "lucide-react";
@@ -52,10 +52,21 @@ export function GlobalSearch() {
   const live = useQuery(opts("live", "global-search-live"));
   const movies = useQuery(opts("movie", "system-catalogue"));
   const shows = useQuery(opts("series", "system-catalogue"));
-  const match = (items?: CatalogItem[]) => (items ?? []).filter((item) => item.name.toLowerCase().includes(query)).slice(0, LIMIT);
+  const client = useQueryClient();
+  const castFor = (kind: "movie" | "series") => {
+    const out: Record<string, string[]> = {};
+    for (const [, data] of client.getQueriesData<Record<string, { cast?: string[] }>>({ queryKey: ["cached-title-metadata", activeId, kind] })) {
+      for (const [name, meta] of Object.entries(data ?? {})) if (meta?.cast?.length) out[name] = meta.cast;
+    }
+    return out;
+  };
+  const match = (items?: CatalogItem[], cast?: Record<string, string[]>) => (items ?? []).filter((item) =>
+    item.name.toLowerCase().includes(query)
+    || (query.length >= 3 && (cast?.[item.name] ?? []).some((actor) => actor.toLowerCase().includes(query))),
+  ).slice(0, LIMIT);
   const groups = useMemo(() => [
-    { kind: "series" as const, title: "Shows", items: match(shows.data), loading: shows.isFetching },
-    { kind: "movie" as const, title: "Movies", items: match(movies.data), loading: movies.isFetching },
+    { kind: "series" as const, title: "Shows", items: match(shows.data, castFor("series")), loading: shows.isFetching },
+    { kind: "movie" as const, title: "Movies", items: match(movies.data, castFor("movie")), loading: movies.isFetching },
     { kind: "live" as const, title: "Channels", items: match(live.data), loading: live.isFetching },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [query, live.data, movies.data, shows.data, live.isFetching, movies.isFetching, shows.isFetching]);

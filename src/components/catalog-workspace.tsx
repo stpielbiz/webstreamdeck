@@ -136,7 +136,12 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const visibleItems = useMemo(() => {
     const source = searching || genre === "All" ? (catalogue.data ?? []) : (chosenGroup?.items ?? []);
     const filtered = searching
-      ? source.filter((item) => item.name.toLowerCase().includes(query) || (metadata.data?.[item.name]?.title ?? "").toLowerCase().includes(query))
+      ? source.filter((item) => {
+          const meta = metadata.data?.[item.name];
+          return item.name.toLowerCase().includes(query)
+            || (meta?.title ?? "").toLowerCase().includes(query)
+            || (query.length >= 3 && (meta?.cast ?? []).some((actor) => actor.toLowerCase().includes(query)));
+        })
       : source;
     const titleOf = (item: CatalogItem) => metadata.data?.[item.name]?.title || item.name;
     return [...filtered].sort((a, b) =>
@@ -395,6 +400,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
                   </DialogDescription>
                 </DialogHeader>
                 {overview && <p className="mt-4 line-clamp-5 text-sm leading-relaxed text-muted-foreground">{overview}</p>}
+                {(selectedMetadata?.cast?.length ?? 0) > 0 && <p className="mt-3 line-clamp-2 text-xs text-muted-foreground"><span className="font-semibold text-foreground">Cast:</span> {selectedMetadata!.cast.join(", ")}</p>}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {kind === "movie" && !playing && (
                     <Button data-tv-focus data-zone-entry="true" onClick={() => setPlaying(true)}><Play className="size-4" />{resumeAt > 0 ? "Resume" : "Play"}</Button>
