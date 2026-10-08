@@ -30,12 +30,12 @@ export function TitleDetailsDialog({
 }: {
   kind: TitleKind;
   id: string | null;
-  name?: string | null;
-  image?: string | null;
-  year?: string | number | null;
-  metadata?: TitleMetadata;
+  name?: string | null | undefined;
+  image?: string | null | undefined;
+  year?: string | number | null | undefined;
+  metadata?: TitleMetadata | undefined;
   onClose: () => void;
-  onCloseAutoFocus?: (event: Event) => void;
+  onCloseAutoFocus?: ((event: Event) => void) | undefined;
 }) {
   const { activeId } = usePlaylists();
   const fetchMovie = useServerFn(getMovie);
