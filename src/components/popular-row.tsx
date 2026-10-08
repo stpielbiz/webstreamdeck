@@ -55,11 +55,11 @@ export function PopularRow({
   };
 
   return (
-    <section className="mb-6">
-      <h2 className={cn("mb-3 flex items-center gap-2 font-display font-semibold", tv ? "text-2xl" : "text-lg")}>
-        <Flame className="size-5 text-primary" /> Popular on Stream Deck
+    <section className={cn("mb-6", tv && "mb-3")}>
+      <h2 className={cn("mb-3 flex items-center gap-2 font-display font-semibold", tv ? "mb-2 text-lg" : "text-lg")}>
+        <Flame className={cn("text-primary", tv ? "size-4" : "size-5")} /> Popular on Stream Deck
       </h2>
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className={cn("flex gap-3 overflow-x-auto pb-2", tv && "gap-2")}>
         {rows.map((row, index) => (
           <button
             key={row.title}
@@ -70,15 +70,15 @@ export function PopularRow({
             onClick={() => void pick(row.title)}
             className={cn(
               "group relative shrink-0 overflow-hidden rounded-lg bg-secondary text-left outline-none ring-primary focus-visible:ring-2 focus:ring-2",
-              tv ? "w-36" : "w-28",
+              tv ? "w-24" : "w-28",
               busy === row.title && "opacity-60",
             )}
           >
             <div className="aspect-[2/3] w-full bg-muted">
               {row.posterUrl && <img src={row.posterUrl} alt="" loading="lazy" className="h-full w-full object-cover" />}
             </div>
-            <span className="absolute left-1.5 top-1 font-display text-3xl font-black text-primary drop-shadow">{index + 1}</span>
-            <p className="truncate px-2 py-1.5 text-xs">{row.title}</p>
+            <span className={cn("absolute left-1.5 top-1 font-display font-black text-primary drop-shadow", tv ? "text-xl" : "text-3xl")}>{index + 1}</span>
+            <p className={cn("truncate px-2 text-xs", tv ? "py-1" : "py-1.5")}>{row.title}</p>
           </button>
         ))}
       </div>

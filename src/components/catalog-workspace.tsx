@@ -62,6 +62,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const titleTrigger = useRef<HTMLElement | null>(null);
   const returnTitle = useRef<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const categoryContentRef = useRef<HTMLDivElement>(null);
   const [featured, setFeatured] = useState<"popular" | Top10Service>("popular");
   const goToPopular = () => {
     setFeatured("popular");
@@ -220,6 +221,12 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     setEpisode(null);
     setPlaying(false);
     setSearch("");
+    window.requestAnimationFrame(() => {
+      const content = contentRef.current;
+      const categoryContent = categoryContentRef.current;
+      if (!content || !categoryContent) return;
+      content.scrollTo({ top: Math.max(0, categoryContent.offsetTop - 8), behavior: "auto" });
+    });
   };
   const playNext = () => {
     if (!episode || !season) return;
@@ -341,7 +348,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         ) : (
           <Top10Row kind={kind} tv={tv} items={catalogue.data ?? []} service={featured} onOpen={selectTitle} />
         )}
-        <div className="min-w-0">
+        <div ref={categoryContentRef} className="min-w-0 scroll-mt-2">
           <p className="text-xs font-semibold uppercase text-primary">{genre ?? "Loading categories"}</p>
           <h1 className="mt-1 truncate font-display text-xl font-bold">{`Choose ${kind === "movie" ? "a movie" : "a show"}`}</h1>
         </div>
