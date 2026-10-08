@@ -393,7 +393,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         )}
         </div>
         <div ref={categoryContentRef} className="min-w-0 scroll-mt-2">
-          <p className="text-xs font-semibold uppercase text-primary">{genre ?? "Loading categories"}</p>
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase text-primary">{genre ?? "Loading categories"}{catalogue.isFetching && catalogue.data && <span className="animate-pulse font-normal normal-case text-muted-foreground">Updating library…</span>}</p>
           <h1 className="mt-1 truncate font-display text-xl font-bold">{`Choose ${kind === "movie" ? "a movie" : "a show"}`}</h1>
         </div>
 
