@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/tv/")({
 
 function TvHome() {
   const navigate = useNavigate();
-  const { activeId } = usePlaylists();
+  const { activeId, sync } = usePlaylists();
   const { data: progress } = useProgress();
   const { data: favorites } = useFavorites();
   const { isAdmin } = useIsAdmin();
