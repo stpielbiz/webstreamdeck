@@ -451,7 +451,7 @@ export async function fetchItems(
     const needle = search.toLowerCase();
     items = items.filter((item) => item.name.toLowerCase().includes(needle));
   }
-  return items.slice(0, 3000);
+  return kind === "live" && search ? items.slice(0, 3000) : items;
 }
 
 export async function fetchMovie(playlist: PlaylistRow, id: string): Promise<MovieDetails> {
