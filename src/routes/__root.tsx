@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { DebugPanel } from "@/components/debug-panel";
+import { NavigationLoading } from "@/components/navigation-loading";
 import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
@@ -145,6 +146,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <NavigationLoading />
       <Toaster position="top-center" />
       <DebugPanel />
     </QueryClientProvider>

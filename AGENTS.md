@@ -21,3 +21,4 @@
 - Native Back is consumed once on key release and routed to the website's layer-aware handler; player closure has a separate bridge callback from completion — this restores browsing without skipping layers or exiting the app.
 - Provider library data (categories, channels, catalogue, guide) is persisted on-device in IndexedDB via src/lib/device-cache.ts and refreshed by useLibrarySync in PlaylistProvider — menus render from saved data instantly and only stale parts are re-fetched.
 - Movies and Shows use shared route and catalogue loading placeholders only when saved data is unavailable — cold provider fetches show immediate feedback without replacing cached content.
+- Client-side route changes show a global navigation overlay while TanStack Router is pending — remote clicks always receive immediate feedback instead of leaving a stale screen visible.
