@@ -7,6 +7,7 @@ import {
   LogOut,
   LogIn,
   MonitorPlay,
+  Settings,
   ShieldCheck,
   Star,
   Tv,
