@@ -3,6 +3,7 @@ import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { getCategories, getItems, getSchedules } from "@/lib/iptv.functions";
+import { backfillTitles } from "@/lib/metadata.functions";
 import type { CatalogItem, Programme } from "@/lib/iptv-types";
 
 export const GUIDE_TTL = 4 * 60 * 60_000;
@@ -98,4 +99,52 @@ export function useLibrarySync(playlistId: string | null): SyncStatus {
   }, [playlistId, client, fetchCategories, fetchItems, fetchSchedules]);
 
   return status;
+}
+
+const BACKFILL_BATCH = 20;
+const BACKFILL_PAUSE = 15_000;
+const doneKey = (playlistId: string, kind: string) => `streamdeck-backfilled:${playlistId}:${kind}`;
+
+/** True while a video is playing in the page, so background work steps aside. */
+function playing() {
+  return [...document.querySelectorAll("video")].some((video) => !video.paused && !video.ended);
+}
+
+/**
+ * Slowly fills in categories, artwork and cast for titles that have no saved
+ * details yet. Results are merged into the on-device metadata cache.
+ */
+export function useTitleBackfill(playlistId: string | null) {
+  const client = useQueryClient();
+  const backfill = useServerFn(backfillTitles);
+  useEffect(() => {
+    if (!playlistId) return;
+    let cancelled = false;
+    let timer = 0;
+    const kinds = ["movie", "series"] as const;
+    const step = async () => {
+      if (cancelled) return;
+      if (playing() || document.hidden) { timer = window.setTimeout(step, BACKFILL_PAUSE); return; }
+      for (const kind of kinds) {
+        const items = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
+        if (!items.length) continue;
+        let done: Set<string>;
+        try { done = new Set(JSON.parse(localStorage.getItem(doneKey(playlistId, kind)) ?? "[]") as string[]); } catch { done = new Set(); }
+        const known: Record<string, { cast?: string[] }> = {};
+        for (const [, data] of client.getQueriesData<Record<string, { cast?: string[] }>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) Object.assign(known, data ?? {});
+        const batch = items.map((item) => item.name).filter((name) => !done.has(name) && !(known[name]?.cast?.length)).slice(0, BACKFILL_BATCH);
+        if (!batch.length) continue;
+        try {
+          const result = await backfill({ data: { playlistId, kind, names: batch } });
+          client.setQueriesData<Record<string, unknown>>({ queryKey: ["cached-title-metadata", playlistId, kind] }, (old) => ({ ...(old ?? {}), ...result }));
+          for (const name of batch) done.add(name);
+          try { localStorage.setItem(doneKey(playlistId, kind), JSON.stringify([...done])); } catch { /* storage full */ }
+        } catch { /* try again later */ }
+        break;
+      }
+      timer = window.setTimeout(step, BACKFILL_PAUSE);
+    };
+    timer = window.setTimeout(step, 30_000);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [playlistId, client, backfill]);
 }
