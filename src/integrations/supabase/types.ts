@@ -196,6 +196,8 @@ export type Database = {
       title_metadata: {
         Row: {
           backdrop_url: string | null
+          cast_checked: boolean
+          cast_names: string[]
           confidence: number | null
           created_at: string
           genres: string[]
@@ -211,6 +213,8 @@ export type Database = {
         }
         Insert: {
           backdrop_url?: string | null
+          cast_checked?: boolean
+          cast_names?: string[]
           confidence?: number | null
           created_at?: string
           genres?: string[]
@@ -226,6 +230,8 @@ export type Database = {
         }
         Update: {
           backdrop_url?: string | null
+          cast_checked?: boolean
+          cast_names?: string[]
           confidence?: number | null
           created_at?: string
           genres?: string[]
@@ -258,6 +264,24 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          sync_playlists: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          sync_playlists?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          sync_playlists?: boolean
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
