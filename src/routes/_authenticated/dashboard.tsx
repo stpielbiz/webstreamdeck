@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFavorites, useProgress } from "@/lib/library-hooks";
 import { SectionMenu } from "@/components/layered-navigation";
+import { TitleDetailsDialog } from "@/components/title-details-dialog";
+import type { FavoriteRow } from "@/lib/iptv.functions";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -28,6 +31,7 @@ function Dashboard() {
   const { playlists, activeId, active, isLoading } = usePlaylists();
   const progress = useProgress();
   const favorites = useFavorites();
+  const [openFavourite, setOpenFavourite] = useState<FavoriteRow | null>(null);
 
   if (isLoading) {
     return (
@@ -183,16 +187,22 @@ function Dashboard() {
             {favouriteTitles.slice(0, 16).map((row) => (
               <PosterTile
                 key={row.id}
-                to={row.itemKind === "series" ? "/series/$id" : "/movies/$id"}
-                params={{ id: row.itemId }}
-                search={{ play: true }}
                 title={row.title}
                 image={row.logoUrl}
+                favorite
+                onSelect={() => setOpenFavourite(row)}
               />
             ))}
           </PosterGrid>
         )}
       </Shelf>
+      <TitleDetailsDialog
+        kind={openFavourite?.itemKind === "series" ? "series" : "movie"}
+        id={openFavourite?.itemId ?? null}
+        name={openFavourite?.title}
+        image={openFavourite?.logoUrl}
+        onClose={() => setOpenFavourite(null)}
+      />
     </div>
   );
 }
