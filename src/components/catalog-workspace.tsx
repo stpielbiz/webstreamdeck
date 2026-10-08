@@ -1,3 +1,4 @@
+import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowDownAZ, ArrowLeft, CalendarArrowDown, Play, Search, Sparkles, Star } from "lucide-react";
@@ -42,6 +43,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const { isAdmin } = useIsAdmin();
   const favorites = useFavorites();
   const progress = useProgress();
+  const syncPlaylists = useSyncPlaylists();
   const toggleFavorite = useToggleFavorite();
   const saveProgress = useSaveProgress();
   const [genre, setGenre] = useState<string | null>(null);
@@ -136,7 +138,12 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const visibleItems = useMemo(() => {
     const source = searching || genre === "All" ? (catalogue.data ?? []) : (chosenGroup?.items ?? []);
     const filtered = searching
-      ? source.filter((item) => item.name.toLowerCase().includes(query) || (metadata.data?.[item.name]?.title ?? "").toLowerCase().includes(query))
+      ? source.filter((item) => {
+          const meta = metadata.data?.[item.name];
+          return item.name.toLowerCase().includes(query)
+            || (meta?.title ?? "").toLowerCase().includes(query)
+            || (query.length >= 3 && (meta?.cast ?? []).some((actor) => actor.toLowerCase().includes(query)));
+        })
       : source;
     const titleOf = (item: CatalogItem) => metadata.data?.[item.name]?.title || item.name;
     return [...filtered].sort((a, b) =>
@@ -197,7 +204,8 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const detailYear = selectedMetadata?.year || selectedItem?.year;
   const selectedProgress = (progress.data ?? []).find((row) => row.playlistId === activeId && (row.itemId === selectedId || row.seriesId === selectedId) && !row.completed);
   const selectedFavorite = selectedId ? isFavorite(favorites.data, activeId, kind, selectedId) : false;
-  const resumeAt = (progress.data ?? []).find((row) => row.playlistId === activeId && row.itemId === mediaId && !row.completed)?.positionSeconds ?? 0;
+  const resumeRow = mediaId ? findResume(progress.data, activeId, { itemId: mediaId, title, season: kind === "movie" ? null : episode?.season, episode: kind === "movie" ? null : episode?.episode }, syncPlaylists) : undefined;
+  const resumeAt = resumeRow && !resumeRow.completed ? resumeRow.positionSeconds : 0;
 
   const selectTitle = (id: string, trigger?: HTMLElement | null) => {
     titleTrigger.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
@@ -395,6 +403,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
                   </DialogDescription>
                 </DialogHeader>
                 {overview && <p className="mt-4 line-clamp-5 text-sm leading-relaxed text-muted-foreground">{overview}</p>}
+                {(selectedMetadata?.cast?.length ?? 0) > 0 && <p className="mt-3 line-clamp-2 text-xs text-muted-foreground"><span className="font-semibold text-foreground">Cast:</span> {selectedMetadata!.cast.join(", ")}</p>}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {kind === "movie" && !playing && (
                     <Button data-tv-focus data-zone-entry="true" onClick={() => setPlaying(true)}><Play className="size-4" />{resumeAt > 0 ? "Resume" : "Play"}</Button>

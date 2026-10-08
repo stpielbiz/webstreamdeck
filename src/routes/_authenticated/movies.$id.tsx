@@ -1,3 +1,4 @@
+import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -48,6 +49,7 @@ function MovieDetail() {
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
   const progress = useProgress();
+  const syncPlaylists = useSyncPlaylists();
   const saveProgress = useSaveProgress();
 
   const movie = useQuery({
@@ -68,9 +70,7 @@ function MovieDetail() {
   });
 
   const resumeAt =
-    (progress.data ?? []).find(
-      (row) => row.playlistId === activeId && row.itemId === id && !row.completed,
-    )?.positionSeconds ?? 0;
+    ((r) => (r && !r.completed ? r.positionSeconds : 0))(findResume(progress.data, activeId, { itemId: id, title: movie.data?.name }, syncPlaylists));
 
   if (movie.isLoading) {
     return (

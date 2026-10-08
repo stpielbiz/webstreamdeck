@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { hydrateDeviceCache } from "@/lib/device-cache";
-import { useLibrarySync, type SyncStatus } from "@/lib/library-sync";
+import { useLibrarySync, useTitleBackfill, type SyncStatus } from "@/lib/library-sync";
 import { useServerFn } from "@tanstack/react-start";
 
 import { listPlaylists, type PlaylistSummary } from "@/lib/iptv.functions";
@@ -54,6 +54,7 @@ function PlaylistProviderInner({ children }: { children: ReactNode }) {
   }, [playlists]);
 
   const sync = useLibrarySync(activeId);
+  useTitleBackfill(activeId);
   const value = useMemo<PlaylistContextValue>(
     () => ({
       playlists,

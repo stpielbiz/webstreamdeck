@@ -15,6 +15,13 @@
       "when": 1791405806278,
       "tag": "0001_streaming_top10",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791472038922,
+      "tag": "0002_cast_and_user_settings",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -41,6 +42,7 @@ function TvShowDetails() {
   const fetchSeries = useServerFn(getSeries);
   const fetchPlayback = useServerFn(getPlayback);
   const progress = useProgress();
+  const syncPlaylists = useSyncPlaylists();
   const saveProgress = useSaveProgress();
   const favorites = useFavorites();
   const toggleFavorite = useToggleFavorite();
@@ -63,7 +65,7 @@ function TvShowDetails() {
   const show = series.data;
   const seasons = show?.seasons ?? [];
   const season = seasons[seasonIndex];
-  const rowFor = (episodeId: string) => (progress.data ?? []).find((row) => row.playlistId === activeId && row.itemId === episodeId);
+  const rowFor = (episodeId: string) => { const ep = seasons.flatMap((s) => s.episodes).find((e) => e.id === episodeId); return findResume(progress.data, activeId, { itemId: episodeId, title: ep?.title, season: ep?.season, episode: ep?.episode }, syncPlaylists); };
   const resumeAt = current ? (rowFor(current.id)?.completed ? 0 : rowFor(current.id)?.positionSeconds ?? 0) : 0;
   const fav = isFavorite(favorites.data, activeId, "series", id);
 
