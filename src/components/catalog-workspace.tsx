@@ -204,7 +204,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const detailYear = selectedMetadata?.year || selectedItem?.year;
   const selectedProgress = (progress.data ?? []).find((row) => row.playlistId === activeId && (row.itemId === selectedId || row.seriesId === selectedId) && !row.completed);
   const selectedFavorite = selectedId ? isFavorite(favorites.data, activeId, kind, selectedId) : false;
-  const resumeRow = mediaId ? findResume(progress.data, activeId, { itemId: mediaId, title: kind === "movie" ? selected?.name : null }, syncPlaylists) : undefined;
+  const resumeRow = mediaId ? findResume(progress.data, activeId, { itemId: mediaId, title, season: kind === "movie" ? null : episode?.season, episode: kind === "movie" ? null : episode?.episode }, syncPlaylists) : undefined;
   const resumeAt = resumeRow && !resumeRow.completed ? resumeRow.positionSeconds : 0;
 
   const selectTitle = (id: string, trigger?: HTMLElement | null) => {
