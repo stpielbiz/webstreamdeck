@@ -69,31 +69,59 @@ const createSchema = z
     message: "Missing playlist details.",
   });
 
+export interface ConnectionSummary { live: number; movie: number; series: number; unit: "categories" | "entries" }
+
+/** Checks the provider accepts the details; returns what it found. */
+async function probeSource(data: z.infer<typeof sourceSchema>, existingPassword?: string | null): Promise<ConnectionSummary> {
+  const provider = await import("./iptv.server");
+  if (data.kind === "xtream") {
+    const row = {
+      id: "probe", name: data.name, kind: "xtream" as const,
+      server_url: data.serverUrl ?? null, username: data.username ?? null,
+      password: data.password || existingPassword || null, m3u_url: null,
+    };
+    await provider.verifyXtream(row);
+    const count = async (kind: "live" | "movie" | "series") => {
+      try { return (await provider.fetchCategories(row, kind)).length; } catch { return 0; }
+    };
+    const [live, movie, series] = await Promise.all([count("live"), count("movie"), count("series")]);
+    return { live, movie, series, unit: "categories" };
+  }
+  let response: Response;
+  try {
+    response = await provider.providerFetch(data.m3uUrl!, { method: "GET" });
+  } catch {
+    throw new Error("Could not reach that link. Check the address and try again.");
+  }
+  if (!response.ok) throw new Error(`The playlist link returned an error (${response.status}).`);
+  const text = await response.text();
+  const head = text.slice(0, 2000).toUpperCase();
+  if (!head.includes("#EXTM3U") && !head.includes("#EXTINF")) throw new Error("That link does not look like an M3U playlist.");
+  let live = 0, movie = 0, series = 0;
+  for (const line of text.split("\n")) {
+    if (!line.startsWith("#EXTINF")) continue;
+    const next = line.toLowerCase();
+    if (next.includes("series")) series++;
+    else if (next.includes("movie") || next.includes("vod")) movie++;
+    else live++;
+  }
+  return { live, movie, series, unit: "entries" };
+}
+
+const sourceSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  kind: z.enum(["xtream", "m3u"]),
+  serverUrl: z.string().trim().max(500).optional(),
+  username: z.string().trim().max(200).optional(),
+  password: z.string().max(200).optional(),
+  m3uUrl: z.string().trim().max(2000).optional(),
+});
+
 export const createPlaylist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createSchema.parse(input))
-  .handler(async ({ data, context }): Promise<PlaylistSummary> => {
-    const provider = await import("./iptv.server");
-
-    if (data.kind === "xtream") {
-      await provider.verifyXtream({
-        id: "new",
-        name: data.name,
-        kind: "xtream",
-        server_url: data.serverUrl ?? null,
-        username: data.username ?? null,
-        password: data.password ?? null,
-        m3u_url: null,
-      });
-    } else {
-      const response = await provider.providerFetch(data.m3uUrl!, { method: "GET" });
-      if (!response.ok) throw new Error(`The playlist link returned an error (${response.status}).`);
-      const sample = (await response.text()).slice(0, 2000);
-      if (!sample.toUpperCase().includes("#EXTM3U") && !sample.toUpperCase().includes("#EXTINF")) {
-        throw new Error("That link does not look like an M3U playlist.");
-      }
-    }
-
+  .handler(async ({ data, context }): Promise<{ playlist: PlaylistSummary; summary: ConnectionSummary }> => {
+    const summary = await probeSource(data);
     const { data: row, error } = await context.supabase
       .from("playlists")
       .insert({
@@ -108,7 +136,32 @@ export const createPlaylist = createServerFn({ method: "POST" })
       .select("id, name, kind, server_url, username, m3u_url, created_at")
       .single();
     if (error) throw new Error(error.message);
-    return toSummary(row);
+    return { playlist: toSummary(row), summary };
+  });
+
+export const updatePlaylist = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => sourceSchema.extend({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<{ playlist: PlaylistSummary; summary: ConnectionSummary }> => {
+    const existing = await loadPlaylist(context.supabase, data.id);
+    if (data.kind === "xtream" && (!data.serverUrl || !data.username)) throw new Error("Missing playlist details.");
+    if (data.kind === "m3u" && !data.m3uUrl) throw new Error("Missing playlist link.");
+    const summary = await probeSource(data, existing.password);
+    const { data: row, error } = await context.supabase
+      .from("playlists")
+      .update({
+        name: data.name,
+        kind: data.kind,
+        server_url: data.kind === "xtream" ? (data.serverUrl ?? null) : null,
+        username: data.kind === "xtream" ? (data.username ?? null) : null,
+        password: data.kind === "xtream" ? (data.password || existing.password) : null,
+        m3u_url: data.kind === "m3u" ? (data.m3uUrl ?? null) : null,
+      })
+      .eq("id", data.id)
+      .select("id, name, kind, server_url, username, m3u_url, created_at")
+      .single();
+    if (error) throw new Error(error.message);
+    return { playlist: toSummary(row), summary };
   });
 
 export const deletePlaylist = createServerFn({ method: "POST" })
