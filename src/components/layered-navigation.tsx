@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Clapperboard, Download, Home, ListVideo, MonitorPlay, RefreshCw, ShieldCheck, Star, Tv } from "lucide-react";
+import { Clapperboard, Download, Home, ListVideo, Loader2, MonitorPlay, RefreshCw, ShieldCheck, Star, Tv } from "lucide-react";
 import { useIsAdmin } from "@/lib/use-admin";
-import { useEffect, useRef, type FocusEvent } from "react";
+import { useEffect, useRef, useState, type FocusEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -50,6 +50,7 @@ export function SectionMenu({
   onCheckUpdates?: () => void;
 }) {
   const { isAdmin } = useIsAdmin();
+  const [opening, setOpening] = useState<string | null>(null);
   const extras = [
     { to: "/playlists" as const, label: "Playlists", icon: ListVideo },
     { to: "/download" as const, label: "Get the TV app", icon: Download },
@@ -61,7 +62,8 @@ export function SectionMenu({
     if (label) onFocusItem?.(label);
   };
   return (
-    <section
+    <>
+      <section
       data-tv-zone="sections"
       data-tv-zone-order={zoneOrder}
       onFocus={handleFocus}
@@ -75,7 +77,7 @@ export function SectionMenu({
           const destination = tv ? tvTo : to;
           return (
             <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
-            <Link to={destination} preload="intent" data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
+            <Link to={destination} preload="intent" onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
                 <Icon className="size-5 shrink-0" /> {label}
               </Link>
             </Button>
@@ -83,7 +85,7 @@ export function SectionMenu({
         })}
         {extras.map(({ to, label, icon: Icon }) => (
           <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
-            <Link to={to} search={tv ? { mode: "tv" } : {}} preload="intent" data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
+            <Link to={to} search={tv ? { mode: "tv" } : {}} preload="intent" onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
               <Icon className="size-5 shrink-0" /> {label}
             </Link>
           </Button>
@@ -94,7 +96,16 @@ export function SectionMenu({
           </Button>
         )}
       </div>
-    </section>
+      </section>
+      {opening && (
+        <div role="status" aria-live="polite" className="fixed inset-0 z-[100] grid place-items-center bg-background/85 backdrop-blur-sm">
+          <div className="flex items-center gap-3 rounded border border-border bg-card px-5 py-4 shadow-lg">
+            <Loader2 className="size-6 animate-spin text-primary motion-reduce:animate-none" />
+            <span className="font-display text-lg font-semibold">Opening {opening}…</span>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
