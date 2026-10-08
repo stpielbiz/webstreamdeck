@@ -86,6 +86,7 @@ function TvHome() {
               </div>
               {!activeId && <HomeMessage title="No playlist yet" body="Add a playlist to see your channels, movies and shows here." to="/playlists" action="Add playlist" />}
               {activeId && <GlobalSearch />}
+              {sync.running && <p role="status" className="text-xs text-muted-foreground">{sync.total ? `Preparing your library… TV guide ${sync.done}/${sync.total} channels` : "Preparing your library…"}</p>}
               <HomeShelf title="Continue watching" empty="Nothing to resume yet.">
                 {resume.slice(0, 20).map((row, index) => (
                   <HomeTile
