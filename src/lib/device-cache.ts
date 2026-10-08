@@ -24,7 +24,14 @@ const PERSISTED = new Set([
   "device-guide",
 ]);
 
-interface Entry { key: string; queryKey: QueryKey; data: unknown; at: number }
+interface Entry { key: string; queryKey: QueryKey; data: unknown; at: number; v?: number }
+
+/** Bump when saved lists from older app versions must be re-downloaded. */
+const CACHE_VERSION = 2;
+/** Older servers cut movie/show lists off at 3,000 titles. */
+export function isTruncatedCatalogue(queryKey: QueryKey, data: unknown) {
+  return queryKey[0] === "system-catalogue" && Array.isArray(data) && data.length === 3000;
+}
 
 let dbPromise: Promise<IDBDatabase | null> | null = null;
 function openDb(): Promise<IDBDatabase | null> {
@@ -56,7 +63,7 @@ export async function writeEntry(queryKey: QueryKey, data: unknown, at = Date.no
   const db = await openDb();
   if (!db) return;
   try {
-    db.transaction(STORE, "readwrite").objectStore(STORE).put({ key: JSON.stringify(queryKey), queryKey, data, at });
+    db.transaction(STORE, "readwrite").objectStore(STORE).put({ key: JSON.stringify(queryKey), queryKey, data, at, v: CACHE_VERSION });
   } catch {
     /* quota or serialisation issue — skip */
   }
@@ -75,7 +82,10 @@ export function hydrateDeviceCache(client: QueryClient): Promise<void> {
     for (const entry of entries) {
       if (now - entry.at > MAX_AGE) continue;
       if (client.getQueryData(entry.queryKey) !== undefined) continue;
-      client.setQueryData(entry.queryKey, entry.data, { updatedAt: entry.at });
+      // Outdated or cut-off lists still show instantly but are marked stale so
+      // they are downloaded again in the background.
+      const outdated = entry.queryKey[0] === "system-catalogue" && ((entry.v ?? 1) < CACHE_VERSION || isTruncatedCatalogue(entry.queryKey, entry.data));
+      client.setQueryData(entry.queryKey, entry.data, { updatedAt: outdated ? 1 : entry.at });
     }
     const pending = new Map<string, number>();
     client.getQueryCache().subscribe((event) => {

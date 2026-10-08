@@ -1,3 +1,4 @@
+import { isTruncatedCatalogue } from "@/lib/device-cache";
 import { useEffect, useState } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -47,7 +48,7 @@ export function useLibrarySync(playlistId: string | null): SyncStatus {
     let cancelled = false;
     const stale = (key: readonly unknown[], ttl: number) => {
       const state = client.getQueryState(key);
-      return !state?.dataUpdatedAt || Date.now() - state.dataUpdatedAt > ttl;
+      return !state?.dataUpdatedAt || Date.now() - state.dataUpdatedAt > ttl || isTruncatedCatalogue(key, state.data);
     };
     const refresh = async <T,>(key: readonly unknown[], fn: () => Promise<T>) => {
       if (!stale(key, LIBRARY_TTL)) return client.getQueryData<T>(key);
