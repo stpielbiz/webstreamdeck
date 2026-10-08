@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { CatalogBrowser } from "@/components/catalog-browser";
+import { CatalogLoading } from "@/components/catalog-loading";
 
 export const Route = createFileRoute("/_authenticated/movies/")({
   head: () => ({
@@ -14,6 +15,9 @@ export const Route = createFileRoute("/_authenticated/movies/")({
       { property: "og:description", content: "Your playlist's film library, organised." },
     ],
   }),
+  pendingMs: 0,
+  pendingMinMs: 300,
+  pendingComponent: () => <CatalogLoading title="Movies" />,
   component: MoviesPage,
 });
 

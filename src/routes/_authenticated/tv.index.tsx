@@ -214,7 +214,7 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin }: { sec
           <p className="mt-4 text-sm text-muted-foreground">{resumeCount} waiting to resume · {favouriteCount} favourites</p>
         )}
         <Button asChild size="lg" className="mt-7">
-          <Link to={preview.to} search={section === "Playlists" || section === "Get the TV app" || section === "Admin" ? { mode: "tv" } : {}} data-tv-focus data-zone-entry="true">{preview.action}</Link>
+          <Link to={preview.to} search={section === "Playlists" || section === "Get the TV app" || section === "Admin" ? { mode: "tv" } : {}} preload="intent" data-tv-focus data-zone-entry="true">{preview.action}</Link>
         </Button>
         <p className="mt-3 text-sm text-muted-foreground">Press OK on the menu to open, or press Right to use this button.</p>
       </section>
