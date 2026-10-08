@@ -37,7 +37,7 @@ const showName = (title: string) => title.replace(/\s+[—-]\s+S\d+.*$/i, "");
 export function findResume(
   rows: ProgressRow[] | undefined,
   activeId: string | null,
-  target: { itemId: string; title?: string | null; season?: number | null; episode?: number | null },
+  target: { itemId: string; title?: string | null | undefined; season?: number | null | undefined; episode?: number | null | undefined },
   sync: boolean,
 ): ProgressRow | undefined {
   const list = rows ?? [];
