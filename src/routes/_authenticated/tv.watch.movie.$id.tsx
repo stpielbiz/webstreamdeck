@@ -1,3 +1,4 @@
+import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -34,6 +35,7 @@ function TvWatchMovie() {
   const fetchMovie = useServerFn(getMovie);
   const fetchPlayback = useServerFn(getPlayback);
   const progress = useProgress();
+  const syncPlaylists = useSyncPlaylists();
   const saveProgress = useSaveProgress();
 
   const movie = useQuery({
@@ -55,9 +57,7 @@ function TvWatchMovie() {
 
   const film = movie.data;
   const resumeAt =
-    (progress.data ?? []).find(
-      (row) => row.playlistId === activeId && row.itemId === id && !row.completed,
-    )?.positionSeconds ?? 0;
+    ((r) => (r && !r.completed ? r.positionSeconds : 0))(findResume(progress.data, activeId, { itemId: id, title: movie.data?.name }, syncPlaylists));
 
   return (
     <TvShell title={film?.name ?? "Loading…"} onBack={() => void navigate({ to: from === "favorites" ? "/tv/favorites" : from === "home" ? "/tv" : "/tv/movies" })}>

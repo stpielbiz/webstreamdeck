@@ -53,6 +53,7 @@ export function SectionMenu({
   const [opening, setOpening] = useState<string | null>(null);
   const extras = [
     { to: "/playlists" as const, label: "Playlists", icon: ListVideo },
+    { to: "/settings" as const, label: "Settings", icon: Settings },
     { to: "/download" as const, label: "Get the TV app", icon: Download },
     ...(isAdmin ? [{ to: "/admin" as const, label: "Admin", icon: ShieldCheck }] : []),
   ];

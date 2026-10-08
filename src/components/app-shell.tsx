@@ -33,6 +33,7 @@ const NAV = [
   { to: "/series", label: "Series", icon: MonitorPlay },
   { to: "/favorites", label: "Favourites", icon: Star },
   { to: "/playlists", label: "Playlists", icon: ListVideo },
+  { to: "/settings", label: "Settings", icon: Settings },
   { to: "/device-login", label: "Log in another device", icon: LogIn },
   { to: "/download", label: "Get the TV app", icon: MonitorPlay },
 ] as const;

@@ -46,9 +46,13 @@ function TvHome() {
     });
   };
 
-  const resume = (progress ?? []).filter(
-    (row) => row.playlistId === activeId && !row.completed && row.positionSeconds > 30,
-  );
+  const syncPlaylists = useSyncPlaylists();
+  const queryClient = useQueryClient();
+  const resume = syncedResumeRows(
+    progress, activeId, syncPlaylists,
+    queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, "movie"]),
+    queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, "series"]),
+  ).filter((row) => !row.completed && row.positionSeconds > 30);
   const favouriteChannels = (favorites ?? []).filter(
     (row) => row.playlistId === activeId && row.itemKind === "live",
   );
@@ -194,6 +198,7 @@ const PREVIEWS = {
   Movies: { icon: Clapperboard, title: "Movies", body: "Browse your movie library by system category, year, or title.", to: "/tv/movies", action: "Browse movies" },
   Shows: { icon: MonitorPlay, title: "Shows", body: "Find series, seasons, and episodes from your playlist.", to: "/tv/series", action: "Browse shows" },
   Favourites: { icon: Star, title: "Favourites", body: "Your saved channels, movies, and shows in one place.", to: "/tv/favorites", action: "Open favourites" },
+  Settings: { icon: Settings, title: "Settings", body: "Sync my playlists and other preferences.", to: "/settings", action: "Open settings" },
   Playlists: { icon: ListVideo, title: "Playlists", body: "Add or switch the IPTV source used by Stream Deck.", to: "/playlists", action: "Manage playlists" },
   "Get the TV app": { icon: Download, title: "Get the TV app", body: "Download the latest Stream Deck app for Fire TV.", to: "/download", action: "Open download page" },
   Admin: { icon: ShieldCheck, title: "Admin", body: "Manage organisation tools and connection logs.", to: "/admin", action: "Open admin" },
@@ -214,7 +219,7 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin }: { sec
           <p className="mt-4 text-sm text-muted-foreground">{resumeCount} waiting to resume · {favouriteCount} favourites</p>
         )}
         <Button asChild size="lg" className="mt-7">
-          <Link to={preview.to} search={section === "Playlists" || section === "Get the TV app" || section === "Admin" ? { mode: "tv" } : {}} preload="intent" data-tv-focus data-zone-entry="true">{preview.action}</Link>
+          <Link to={preview.to} search={section === "Playlists" || section === "Settings" || section === "Get the TV app" || section === "Admin" ? { mode: "tv" } : {}} preload="intent" data-tv-focus data-zone-entry="true">{preview.action}</Link>
         </Button>
         <p className="mt-3 text-sm text-muted-foreground">Press OK on the menu to open, or press Right to use this button.</p>
       </section>

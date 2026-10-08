@@ -1,3 +1,4 @@
+import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -37,6 +38,7 @@ function TvWatchSeries() {
   const fetchSeries = useServerFn(getSeries);
   const fetchPlayback = useServerFn(getPlayback);
   const progress = useProgress();
+  const syncPlaylists = useSyncPlaylists();
   const saveProgress = useSaveProgress();
 
   const [seasonIndex, setSeasonIndex] = useState(0);
@@ -69,9 +71,7 @@ function TvWatchSeries() {
   const season = seasons[seasonIndex];
 
   const resumeAt =
-    (progress.data ?? []).find(
-      (row) => row.playlistId === activeId && row.itemId === current?.id && !row.completed,
-    )?.positionSeconds ?? 0;
+    ((r) => (r && !r.completed ? r.positionSeconds : 0))(current ? findResume(progress.data, activeId, { itemId: current.id, title: current.title, season: current.season, episode: current.episode }, syncPlaylists) : undefined);
 
   const playNext = () => {
     if (!current || !season) return;
