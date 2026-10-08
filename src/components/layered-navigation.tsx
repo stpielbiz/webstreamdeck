@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Clapperboard, Download, Home, ListVideo, Loader2, MonitorPlay, RefreshCw, ShieldCheck, Star, Tv } from "lucide-react";
+import { Clapperboard, Download, Home, ListVideo, Loader2, MonitorPlay, RefreshCw, Settings, ShieldCheck, Star, Tv } from "lucide-react";
 import { useIsAdmin } from "@/lib/use-admin";
 import { useEffect, useRef, useState, type FocusEvent } from "react";
 

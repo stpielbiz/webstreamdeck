@@ -1,5 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Clapperboard, Download, ListVideo, MonitorPlay, ShieldCheck, Star, Tv } from "lucide-react";
+import { Clapperboard, Download, ListVideo, MonitorPlay, Settings, ShieldCheck, Star, Tv } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { CatalogItem } from "@/lib/iptv-types";
+import { syncedResumeRows, useSyncPlaylists } from "@/lib/playlist-sync";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
