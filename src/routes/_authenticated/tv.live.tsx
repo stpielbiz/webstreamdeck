@@ -126,10 +126,12 @@ function TvLive() {
     staleTime: 5 * 60_000,
   });
 
-  const scheduleMap = useMemo(
-    () => new Map((schedules.data ?? []).map((entry) => [entry.channelId, entry.programmes])),
-    [schedules.data],
-  );
+  const scheduleMap = useMemo(() => {
+    const map = new Map<string, Programme[]>();
+    for (const [id, value] of Object.entries(guideStore.data ?? {})) map.set(id, value.p);
+    for (const entry of schedules.data ?? []) map.set(entry.channelId, entry.programmes);
+    return map;
+  }, [schedules.data, guideStore.data]);
 
   useEffect(() => {
     if (!channel || channels.length === 0) return;
