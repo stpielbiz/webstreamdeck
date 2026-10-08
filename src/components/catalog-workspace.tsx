@@ -329,7 +329,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
           <LayerHeading title={kind === "movie" ? "Movies" : "Shows"} subtitle="System categories" />
           {isAdmin && <Button data-tv-focus size="icon" variant="ghost" title="Organise missing titles" disabled={organising} onClick={() => void organiseMissing()}><Sparkles className={cn("size-4", organising && "animate-pulse")} /></Button>}
         </div>
-        <div className="scrollbar-thin flex min-h-0 gap-1 overflow-x-auto md:flex-col md:overflow-x-hidden md:overflow-y-auto">
+        <div className="scrollbar-thin flex min-h-0 gap-1 overflow-x-auto p-1 md:flex-col md:overflow-x-hidden md:overflow-y-auto">
           {catalogue.isLoading ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-10 w-36 shrink-0 md:w-full" />) : (<>
             <Button
               data-tv-focus
