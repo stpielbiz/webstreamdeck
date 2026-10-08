@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CatalogWorkspace } from "@/components/catalog-workspace";
+import { CatalogLoading } from "@/components/catalog-loading";
 import { TvShell } from "@/components/tv-shell";
 
 export const Route = createFileRoute("/_authenticated/tv/series")({
@@ -14,6 +15,9 @@ export const Route = createFileRoute("/_authenticated/tv/series")({
       { property: "og:description", content: "Big-screen series library." },
     ],
   }),
+  pendingMs: 0,
+  pendingMinMs: 300,
+  pendingComponent: () => <CatalogLoading title="Shows" tv />,
   component: TvSeries,
 });
 

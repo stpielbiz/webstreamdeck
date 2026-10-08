@@ -75,7 +75,7 @@ export function SectionMenu({
           const destination = tv ? tvTo : to;
           return (
             <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
-            <Link to={destination} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
+            <Link to={destination} preload="intent" data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
                 <Icon className="size-5 shrink-0" /> {label}
               </Link>
             </Button>
@@ -83,7 +83,7 @@ export function SectionMenu({
         })}
         {extras.map(({ to, label, icon: Icon }) => (
           <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
-            <Link to={to} search={tv ? { mode: "tv" } : {}} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
+            <Link to={to} search={tv ? { mode: "tv" } : {}} preload="intent" data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
               <Icon className="size-5 shrink-0" /> {label}
             </Link>
           </Button>
