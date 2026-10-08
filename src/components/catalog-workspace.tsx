@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowDownAZ, ArrowLeft, CalendarArrowDown, Play, Search, Sparkles, Star } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { toast } from "sonner";
 
 import { EmptyState, PosterGrid, PosterTile } from "@/components/media";
@@ -157,7 +157,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     );
   }, [genre, chosenGroup, catalogue.data, query, searching, sort, metadata.data]);
   const featuredOrigin = useRef<HTMLElement | null>(null);
-  const enterFeatured = (event: React.KeyboardEvent<HTMLElement>, choice: "popular" | Top10Service) => {
+  const enterFeatured = (event: ReactKeyboardEvent<HTMLElement>, choice: "popular" | Top10Service) => {
     if (event.key !== "ArrowRight") return;
     event.preventDefault();
     event.stopPropagation();
@@ -172,7 +172,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     };
     window.requestAnimationFrame(attempt);
   };
-  const leaveFeatured = (event: React.KeyboardEvent<HTMLElement>) => {
+  const leaveFeatured = (event: ReactKeyboardEvent<HTMLElement>) => {
     if (event.key !== "ArrowLeft" || !featuredOrigin.current?.isConnected) return;
     const row = event.currentTarget;
     const tiles = [...row.querySelectorAll<HTMLElement>("[data-tv-focus]")];
