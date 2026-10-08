@@ -84,25 +84,27 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const catalogue = useQuery({
     queryKey: ["system-catalogue", activeId, kind],
     queryFn: async () => {
-      const rows = await fetchItems({ data: { playlistId: activeId ?? "", kind } });
-      writeCache(`catalogue:${activeId}:${kind}`, rows);
-      return rows;
+      // Large libraries are saved on-device by the library cache (IndexedDB);
+      // clear the old size-limited browser copy.
+      dropCache(`catalogue:${activeId}:${kind}`);
+      return fetchItems({ data: { playlistId: activeId ?? "", kind } });
     },
-    initialData: () => readCache<CatalogItem[]>(`catalogue:${activeId}:${kind}`)?.data,
-    initialDataUpdatedAt: () => readCache(`catalogue:${activeId}:${kind}`)?.at,
     enabled: !!activeId,
     staleTime: 30 * 60_000,
     gcTime: 60 * 60_000,
   });
-  const names = useMemo(() => (catalogue.data ?? []).map((item) => item.name).slice(0, 5000), [catalogue.data]);
+  const names = useMemo(() => (catalogue.data ?? []).map((item) => item.name), [catalogue.data]);
   const metadata = useQuery({
     queryKey: ["cached-title-metadata", activeId, kind, names.length],
     queryFn: async () => {
-      const rows = await fetchMetadata({ data: { playlistId: activeId ?? "", kind, names } });
-      writeCache(`metadata:${activeId}:${kind}`, rows);
-      return rows;
+      dropCache(`metadata:${activeId}:${kind}`);
+      const out: Awaited<ReturnType<typeof fetchMetadata>> = {};
+      for (let i = 0; i < names.length; i += 5000) {
+        Object.assign(out, await fetchMetadata({ data: { playlistId: activeId ?? "", kind, names: names.slice(i, i + 5000) } }));
+      }
+      return out;
     },
-    placeholderData: () => readCache<Awaited<ReturnType<typeof fetchMetadata>>>(`metadata:${activeId}:${kind}`)?.data,
+    placeholderData: (previous) => previous,
     enabled: !!activeId && names.length > 0,
     staleTime: 30 * 60_000,
     gcTime: 60 * 60_000,
@@ -354,7 +356,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         {featured === "popular" ? (
           <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
         ) : (
-          <Top10Row kind={kind} tv={tv} items={catalogue.data ?? []} service={featured} onOpen={selectTitle} />
+          <Top10Row kind={kind} tv={tv} items={catalogue.data ?? []} metadata={metadata.data} service={featured} onOpen={selectTitle} />
         )}
         <div ref={categoryContentRef} className="min-w-0 scroll-mt-2">
           <p className="text-xs font-semibold uppercase text-primary">{genre ?? "Loading categories"}</p>
@@ -375,7 +377,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         {catalogue.isLoading && !catalogue.data ? <CatalogGridLoading title={kind === "movie" ? "Movies" : "Shows"} /> : catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 ? <EmptyState title="Nothing here" description={searching ? `No titles match “${search.trim()}”.` : "No titles match this system category."} /> : sections.map((section, sectionIndex) => (
           <div key={section.label} className="mb-5">
             <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3>
-            <PosterGrid>{section.items.slice(0, 180).map((item, index) => <PosterTile key={item.id} zoneEntry={sectionIndex === 0 && index === 0} title={metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(metadata.data?.[item.name]?.year || item.year || "")} progress={progressFor(progress.data, activeId, item.id)} favorite={isFavorite(favorites.data, activeId, kind, item.id)} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: item.id, title: item.name, logoUrl: item.image })} />)}</PosterGrid>
+            <PosterGrid>{section.items.slice(0, limitFor(section.label)).map((item, index) => <PosterTile key={item.id} zoneEntry={sectionIndex === 0 && index === 0} title={metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(metadata.data?.[item.name]?.year || item.year || "")} progress={progressFor(progress.data, activeId, item.id)} favorite={isFavorite(favorites.data, activeId, kind, item.id)} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: item.id, title: item.name, logoUrl: item.image })} />)}</PosterGrid>
           </div>
         ))}
         </div>
@@ -470,6 +472,10 @@ function readCache<T = unknown>(key: string): { at: number; data: T } | undefine
     return undefined;
   }
 }
+function dropCache(key: string) {
+  try { window.localStorage.removeItem(CACHE_PREFIX + key); } catch { /* ignore */ }
+}
+
 function writeCache(key: string, data: unknown) {
   try {
     window.localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ at: Date.now(), data }));
