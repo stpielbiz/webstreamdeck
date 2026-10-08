@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 export const normTitle = (s: string) =>
   s
     .toLowerCase()
+    .replace(/[:–—-]\s*(season|series|part|volume|vol\.?|chapter|limited series|miniseries|the series)\b.*$/, "")
     .replace(/^[a-z]{2,3}\s*[|:-]\s+/, "")
     .replace(/\(\d{4}\)|\[[^\]]*\]|\b(4k|uhd|fhd|hd|sd|multi|vostfr|s\d{1,2}(e\d{1,3})?)\b/g, " ")
     .replace(/&/g, "and")
@@ -24,12 +25,14 @@ export function Top10Row({
   kind,
   tv = false,
   items,
+  metadata,
   service,
   onOpen,
 }: {
   kind: "movie" | "series";
   tv?: boolean;
   items: CatalogItem[];
+  metadata?: Record<string, { title: string | null }> | undefined;
   service: Top10Service;
   onOpen: (id: string, trigger?: HTMLElement | null) => void;
 }) {
@@ -38,14 +41,19 @@ export function Top10Row({
 
   const index = useMemo(() => {
     const map = new Map<string, CatalogItem[]>();
-    for (const item of items) {
-      const k = normTitle(item.name);
+    const add = (k: string, item: CatalogItem) => {
+      if (!k) return;
       const list = map.get(k);
-      if (list) list.push(item);
-      else map.set(k, [item]);
+      if (!list) map.set(k, [item]);
+      else if (!list.includes(item)) list.push(item);
+    };
+    for (const item of items) {
+      add(normTitle(item.name), item);
+      const resolved = metadata?.[item.name]?.title;
+      if (resolved) add(normTitle(resolved), item);
     }
     return map;
-  }, [items]);
+  }, [items, metadata]);
 
   const entries = (top.data ?? [])
     .filter((r) => r.service === service)
