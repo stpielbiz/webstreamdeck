@@ -3,7 +3,8 @@ import { Clapperboard, Download, ListVideo, MonitorPlay, Settings, ShieldCheck, 
 import { useQueryClient } from "@tanstack/react-query";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { syncedResumeRows, useSyncPlaylists } from "@/lib/playlist-sync";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { TitleDetailsDialog } from "@/components/title-details-dialog";
 import { toast } from "sonner";
 
 import { TvShell } from "@/components/tv-shell";
@@ -62,6 +63,13 @@ function TvHome() {
   const favouriteTitles = (favorites ?? []).filter(
     (row) => row.playlistId === activeId && row.itemKind !== "live",
   );
+  const [openFavourite, setOpenFavourite] = useState<(typeof favouriteTitles)[number] | null>(null);
+  const favouriteTrigger = useRef<HTMLElement | null>(null);
+  const openTitle = (row: (typeof favouriteTitles)[number]) => {
+    favouriteTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setOpenFavourite(row);
+  };
+
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -116,7 +124,7 @@ function TvHome() {
               </HomeShelf>
               <HomeShelf title="Favourite movies and shows" empty="Star a movie or show to find it here.">
                 {favouriteTitles.slice(0, 20).map((row, index) => (
-                  <HomeTile key={row.id} kind="poster" title={row.title} image={row.logoUrl} zoneEntry={resume.length === 0 && favouriteChannels.length === 0 && index === 0} edgeLeft={index === 0} onSelect={() => void navigate(row.itemKind === "series" ? { to: "/tv/watch/series/$id", params: { id: row.itemId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })} />
+                  <HomeTile key={row.id} kind="poster" title={row.title} image={row.logoUrl} zoneEntry={resume.length === 0 && favouriteChannels.length === 0 && index === 0} edgeLeft={index === 0} onSelect={() => openTitle(row)} />
                 ))}
               </HomeShelf>
             </div>
@@ -125,6 +133,21 @@ function TvHome() {
           )}
         </main>
       </div>
+      <TitleDetailsDialog
+        kind={openFavourite?.itemKind === "series" ? "series" : "movie"}
+        id={openFavourite?.itemId ?? null}
+        name={openFavourite?.title}
+        image={openFavourite?.logoUrl}
+        onClose={() => setOpenFavourite(null)}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          const trigger = favouriteTrigger.current;
+          window.requestAnimationFrame(() => {
+            if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+            else document.querySelector<HTMLElement>('[data-tv-zone="home-content"] [data-tv-focus]')?.focus();
+          });
+        }}
+      />
     </TvShell>
   );
 }
