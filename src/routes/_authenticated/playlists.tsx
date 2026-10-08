@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { debugLog, redactUrl } from "@/lib/debug-log";
 import { requestLibraryRefresh } from "@/lib/library-sync";
-import type { PlaylistSummary } from "@/lib/iptv-types";
+import type { PlaylistSummary } from "@/lib/iptv.functions";
 
 export const Route = createFileRoute("/_authenticated/playlists")({
   validateSearch: z.object({ mode: z.literal("tv").optional() }),
