@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { GUIDE_TTL, guideKey, mergeGuide, type GuideStore } from "@/lib/library-sync";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Play, Search, Tv, X } from "lucide-react";
@@ -107,20 +108,36 @@ function TvLive() {
     () => channels.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
     [channels, page],
   );
-  const scheduleChannels = visibleChannels;
+  const queryClient = useQueryClient();
+  const guideStore = useQuery<GuideStore>({
+    queryKey: guideKey(activeId),
+    queryFn: () => queryClient.getQueryData<GuideStore>(guideKey(activeId)) ?? {},
+    enabled: !!activeId,
+    staleTime: Infinity,
+  });
+  // Only ask the provider for channels the saved guide doesn't cover yet.
+  const scheduleChannels = useMemo(() => {
+    const now = Date.now();
+    return visibleChannels.filter((item) => {
+      const saved = guideStore.data?.[item.id];
+      return !saved || now - saved.at > GUIDE_TTL;
+    });
+  }, [visibleChannels, guideStore.data]);
 
   const schedules = useQuery({
     queryKey: ["tv-live-schedules", activeId, scheduleChannels.map((item) => item.id).join(","), windowStart],
-    queryFn: () => {
+    queryFn: async () => {
       if (!activeId) throw new Error("No active playlist");
-      return fetchSchedules({
+      const result = await fetchSchedules({
         data: {
           playlistId: activeId,
           channelIds: scheduleChannels.map((item) => item.id),
           start: new Date(windowStart).toISOString(),
-          end: new Date(windowEnd).toISOString(),
+          end: new Date(windowStart + 24 * 60 * 60_000).toISOString(),
         },
       });
+      mergeGuide(queryClient, activeId, result);
+      return result;
     },
     enabled: !!activeId && scheduleChannels.length > 0,
     staleTime: 5 * 60_000,
