@@ -109,7 +109,8 @@ export function TitleDetailsDialog({
   const variantIds = new Set(availableVariants.map((variant) => variant.item.id));
   const selectedProgress = (progress.data ?? []).find((row) => row.playlistId === activeId && (variantIds.has(row.itemId) || (row.seriesId ? variantIds.has(row.seriesId) : false) || mediaMatchKey(row.title) === mediaMatchKey(name ?? "")) && !row.completed);
   const selectedFavorite = availableVariants.some((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id));
-  const resumeRow = mediaId ? findResume(progress.data, activeId, { itemId: mediaId, title, season: kind === "movie" ? null : episode?.season, episode: kind === "movie" ? null : episode?.episode }, syncPlaylists) : undefined;
+  const variantResume = mediaId ? (progress.data ?? []).find((row) => row.playlistId === activeId && !row.completed && (row.itemId === mediaId || (kind === "movie" && variantIds.has(row.itemId)) || (kind === "series" && row.seriesId != null && variantIds.has(row.seriesId) && row.season === episode?.season && row.episode === episode?.episode))) : undefined;
+  const resumeRow = variantResume ?? (mediaId ? findResume(progress.data, activeId, { itemId: mediaId, title, season: kind === "movie" ? null : episode?.season, episode: kind === "movie" ? null : episode?.episode }, syncPlaylists) : undefined);
   const resumeAt = resumeRow && !resumeRow.completed ? resumeRow.positionSeconds : 0;
 
   const close = () => {

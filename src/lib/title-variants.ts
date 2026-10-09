@@ -38,15 +38,15 @@ const DETAIL_TAGS: { pattern: RegExp; label: string }[] = [
   { pattern: /\b(multi|multisub)\b/i, label: "Multi" },
   { pattern: /\b(vostfr)\b/i, label: "VOSTFR" },
   { pattern: /\b(dubbed|dub)\b/i, label: "Dubbed" },
-  { pattern: /\b(english|eng|en)\b/i, label: "English" },
-  { pattern: /\b(french|fra|fre|fr)\b/i, label: "French" },
-  { pattern: /\b(spanish|spa|es)\b/i, label: "Spanish" },
-  { pattern: /\b(german|deu|ger|de)\b/i, label: "German" },
-  { pattern: /\b(italian|ita|it)\b/i, label: "Italian" },
-  { pattern: /\b(portuguese|por|pt)\b/i, label: "Portuguese" },
+  { pattern: /\b(english|eng)\b/i, label: "English" },
+  { pattern: /\b(french|fra|fre)\b/i, label: "French" },
+  { pattern: /\b(spanish|spa)\b/i, label: "Spanish" },
+  { pattern: /\b(german|deu|ger)\b/i, label: "German" },
+  { pattern: /\b(italian|ita)\b/i, label: "Italian" },
+  { pattern: /\b(portuguese|por)\b/i, label: "Portuguese" },
 ];
 
-const DECORATION_WORDS = /\b(4k|2160p|uhd|fhd|1080p|720p|hd|sd|576p|480p|hevc|h[ .]?265|x265|h[ .]?264|x264|avc|imax|remux|web[ ._-]?dl|blu[ ._-]?ray|multi|multisub|vostfr|dubbed|dub|english|eng|en|french|fra|fre|fr|spanish|spa|es|german|deu|ger|de|italian|ita|it|portuguese|por|pt)\b/gi;
+const DECORATION_WORDS = /\b(4k|2160p|uhd|fhd|1080p|720p|hd|sd|576p|480p|hevc|h[ .]?265|x265|h[ .]?264|x264|avc|imax|remux|web[ ._-]?dl|blu[ ._-]?ray|multi|multisub|vostfr|dubbed|dub|english|eng|french|fra|fre|spanish|spa|german|deu|ger|italian|ita|portuguese|por)\b/gi;
 
 function extractYear(raw: string): number | null {
   const matches = raw.match(/\b(?:19|20)\d{2}\b/g);
