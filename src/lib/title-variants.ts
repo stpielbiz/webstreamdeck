@@ -76,6 +76,11 @@ export function titleMatchKey(raw: string): string {
     .trim();
 }
 
+/** Broader matching for charts and cross-playlist resume. */
+export function mediaMatchKey(raw: string): string {
+  return titleMatchKey(raw.replace(/[:–—-]\s*(season|series|part|volume|vol\.?|chapter|limited series|miniseries|the series)\b.*$/i, ""));
+}
+
 function tagsFor(name: string) {
   const tags: string[] = [];
   let qualityRank = 1;
