@@ -70,7 +70,7 @@ function PlaylistsPage() {
   // Own arrow-key handling: predictable grid on the list, linear order on other steps.
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      const dir = ({ ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as const)[event.key as "ArrowUp"];
+      const dir = ({ ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as Record<string, "up" | "down" | "left" | "right">)[event.key];
       if (!dir || !root.current) return;
       const active = document.activeElement as HTMLElement | null;
       const typing = active?.tagName === "INPUT" || active?.tagName === "TEXTAREA";
