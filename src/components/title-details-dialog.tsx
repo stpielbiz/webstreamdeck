@@ -14,6 +14,8 @@ import { getCachedTitleMetadata } from "@/lib/metadata.functions";
 import type { TitleMetadata } from "@/lib/metadata.server";
 import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { cn } from "@/lib/utils";
+import type { CatalogItem } from "@/lib/iptv-types";
+import { mediaMatchKey, type TitleVariant } from "@/lib/title-variants";
 
 export type TitleKind = "movie" | "series";
 
@@ -25,6 +27,7 @@ export function TitleDetailsDialog({
   image,
   year,
   metadata: providedMetadata,
+  variants,
   onClose,
   onCloseAutoFocus,
 }: {
@@ -34,6 +37,7 @@ export function TitleDetailsDialog({
   image?: string | null | undefined;
   year?: string | number | null | undefined;
   metadata?: TitleMetadata | undefined;
+  variants?: TitleVariant[] | undefined;
   onClose: () => void;
   onCloseAutoFocus?: ((event: Event) => void) | undefined;
 }) {
@@ -50,12 +54,19 @@ export function TitleDetailsDialog({
   const [seasonIndex, setSeasonIndex] = useState(0);
   const [episode, setEpisode] = useState<EpisodeItem | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(id);
 
   useEffect(() => {
     setSeasonIndex(0);
     setEpisode(null);
     setPlaying(false);
+    setSelectedVariantId(id);
   }, [id, kind]);
+
+  const availableVariants = variants?.length ? variants : id ? [{ item: { id, name: name ?? "", image: image ?? null, categoryId: null } satisfies CatalogItem, label: "Link 1", tags: [], qualityRank: 1 }] : [];
+  const selectedVariant = availableVariants.find((variant) => variant.item.id === selectedVariantId) ?? availableVariants[0];
+  const activeItem = selectedVariant?.item;
+  const activeItemId = activeItem?.id ?? id;
 
   const ownMetadata = useQuery({
     queryKey: ["title-metadata-one", activeId, kind, name],
@@ -66,18 +77,18 @@ export function TitleDetailsDialog({
   const selectedMetadata = providedMetadata ?? ownMetadata.data ?? undefined;
 
   const movie = useQuery({
-    queryKey: ["movie", activeId, id],
-    queryFn: () => fetchMovie({ data: { playlistId: activeId ?? "", id: id ?? "" } }),
-    enabled: !!activeId && kind === "movie" && !!id,
+    queryKey: ["movie", activeId, activeItemId],
+    queryFn: () => fetchMovie({ data: { playlistId: activeId ?? "", id: activeItemId ?? "" } }),
+    enabled: !!activeId && kind === "movie" && !!activeItemId,
     staleTime: 10 * 60_000,
   });
   const series = useQuery({
-    queryKey: ["series", activeId, id],
-    queryFn: () => fetchSeries({ data: { playlistId: activeId ?? "", id: id ?? "" } }),
-    enabled: !!activeId && kind === "series" && !!id,
+    queryKey: ["series", activeId, activeItemId],
+    queryFn: () => fetchSeries({ data: { playlistId: activeId ?? "", id: activeItemId ?? "" } }),
+    enabled: !!activeId && kind === "series" && !!activeItemId,
     staleTime: 10 * 60_000,
   });
-  const mediaId = kind === "movie" ? id : episode?.id ?? null;
+  const mediaId = kind === "movie" ? activeItemId : episode?.id ?? null;
   const mediaExt = kind === "movie" ? movie.data?.ext : episode?.ext;
   const playback = useQuery({
     queryKey: ["playback", activeId, kind, mediaId, mediaExt],
@@ -95,8 +106,9 @@ export function TitleDetailsDialog({
   const overview = details?.plot || selectedMetadata?.overview;
   const detailGenres = selectedMetadata?.genres?.length ? selectedMetadata.genres : details?.genre ? [details.genre] : [];
   const detailYear = selectedMetadata?.year || year;
-  const selectedProgress = (progress.data ?? []).find((row) => row.playlistId === activeId && (row.itemId === id || row.seriesId === id) && !row.completed);
-  const selectedFavorite = id ? isFavorite(favorites.data, activeId, kind, id) : false;
+  const variantIds = new Set(availableVariants.map((variant) => variant.item.id));
+  const selectedProgress = (progress.data ?? []).find((row) => row.playlistId === activeId && (variantIds.has(row.itemId) || (row.seriesId ? variantIds.has(row.seriesId) : false) || mediaMatchKey(row.title) === mediaMatchKey(name ?? "")) && !row.completed);
+  const selectedFavorite = availableVariants.some((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id));
   const resumeRow = mediaId ? findResume(progress.data, activeId, { itemId: mediaId, title, season: kind === "movie" ? null : episode?.season, episode: kind === "movie" ? null : episode?.episode }, syncPlaylists) : undefined;
   const resumeAt = resumeRow && !resumeRow.completed ? resumeRow.positionSeconds : 0;
 
@@ -119,7 +131,7 @@ export function TitleDetailsDialog({
       playlistId: activeId,
       itemKind: kind === "movie" ? "movie" : "episode",
       itemId: mediaId,
-      seriesId: kind === "series" ? id : null,
+      seriesId: kind === "series" ? activeItemId : null,
       season: episode?.season ?? null,
       episode: episode?.episode ?? null,
       title,
@@ -147,11 +159,19 @@ export function TitleDetailsDialog({
               </DialogHeader>
               {overview && <p className="mt-4 line-clamp-5 text-sm leading-relaxed text-muted-foreground">{overview}</p>}
               {(selectedMetadata?.cast?.length ?? 0) > 0 && <p className="mt-3 line-clamp-2 text-xs text-muted-foreground"><span className="font-semibold text-foreground">Cast:</span> {selectedMetadata!.cast.join(", ")}</p>}
+              {availableVariants.length > 1 && (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Version</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableVariants.map((variant) => <Button key={variant.item.id} data-tv-focus size="sm" variant={activeItemId === variant.item.id ? "default" : "outline"} onClick={() => { setSelectedVariantId(variant.item.id); setSeasonIndex(0); setEpisode(null); setPlaying(false); }}>{variant.label}</Button>)}
+                  </div>
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap gap-2">
                 {kind === "movie" && !playing && (
                   <Button data-tv-focus data-zone-entry="true" onClick={() => setPlaying(true)}><Play className="size-4" />{resumeAt > 0 ? "Resume" : "Play"}</Button>
                 )}
-                {id && <Button data-tv-focus variant="secondary" onClick={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: id, title: name ?? title ?? "", logoUrl: poster ?? null })}><Star className={cn("size-4", selectedFavorite && "fill-primary text-primary")} />{selectedFavorite ? "Remove from favourites" : "Add to favourites"}</Button>}
+                {activeItemId && <Button data-tv-focus variant="secondary" onClick={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: selectedFavorite ? availableVariants.find((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id))?.item.id ?? activeItemId : activeItemId, title: selectedMetadata?.title ?? name ?? title ?? "", logoUrl: poster ?? null })}><Star className={cn("size-4", selectedFavorite && "fill-primary text-primary")} />{selectedFavorite ? "Remove from favourites" : "Add to favourites"}</Button>}
                 <DialogClose asChild><Button data-dialog-back data-tv-focus variant="outline">Close</Button></DialogClose>
               </div>
             </div>
