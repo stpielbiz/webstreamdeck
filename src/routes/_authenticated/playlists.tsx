@@ -53,10 +53,64 @@ function PlaylistsPage() {
 
   // Focus the first control of each step so the remote always lands somewhere useful.
   useEffect(() => {
-    const id = window.requestAnimationFrame(() => {
-      root.current?.querySelector<HTMLElement>("[data-step-entry]")?.focus();
-    });
+    let tries = 0;
+    let id = 0;
+    const attempt = () => {
+      const target = step === "list"
+        ? root.current?.querySelector<HTMLElement>("[data-pl-row='0'][data-pl-col='1']")
+          ?? root.current?.querySelector<HTMLElement>("[data-pl-add]")
+        : root.current?.querySelector<HTMLElement>("[data-step-entry]");
+      if (target) target.focus();
+      else if (tries++ < 30) id = window.requestAnimationFrame(attempt);
+    };
+    id = window.requestAnimationFrame(attempt);
     return () => window.cancelAnimationFrame(id);
+  }, [step, playlists.length]);
+
+  // Own arrow-key handling: predictable grid on the list, linear order on other steps.
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const dir = ({ ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as Record<string, "up" | "down" | "left" | "right">)[event.key];
+      if (!dir || !root.current) return;
+      const active = document.activeElement as HTMLElement | null;
+      const typing = active?.tagName === "INPUT" || active?.tagName === "TEXTAREA";
+      if (typing && (dir === "left" || dir === "right")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const scope = root.current;
+      if (step === "list") {
+        const buttons = Array.from(scope.querySelectorAll<HTMLElement>("[data-pl-row]"));
+        if (!buttons.length) return;
+        const pos = (el: HTMLElement) => ({ row: Number(el.dataset['plRow']), col: Number(el.dataset['plCol']) });
+        const cur = active && buttons.includes(active) ? pos(active) : null;
+        let next: HTMLElement | undefined;
+        if (!cur) next = buttons[0];
+        else if (dir === "left" || dir === "right") {
+          const same = buttons.filter((b) => pos(b).row === cur.row).sort((a, b) => pos(a).col - pos(b).col);
+          const i = same.indexOf(active!);
+          next = same[i + (dir === "right" ? 1 : -1)];
+        } else {
+          const rows = Array.from(new Set(buttons.map((b) => pos(b).row))).sort((a, b) => a - b);
+          const targetRow = rows[rows.indexOf(cur.row) + (dir === "down" ? 1 : -1)];
+          if (targetRow !== undefined) {
+            const inRow = buttons.filter((b) => pos(b).row === targetRow);
+            next = inRow.find((b) => pos(b).col === cur.col)
+              ?? inRow.sort((a, b) => Math.abs(pos(a).col - cur.col) - Math.abs(pos(b).col - cur.col))[0];
+          }
+        }
+        next?.focus();
+        next?.scrollIntoView({ block: "nearest" });
+        return;
+      }
+      const items = Array.from(scope.querySelectorAll<HTMLElement>("[data-pl-item]:not([disabled])"));
+      if (!items.length) return;
+      const i = active ? items.indexOf(active) : -1;
+      const next = i < 0 ? items[0] : items[i + (dir === "down" || dir === "right" ? 1 : -1)];
+      next?.focus();
+      next?.scrollIntoView({ block: "nearest" });
+    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
   }, [step]);
 
   const set = (key: keyof Form) => (value: string) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -115,8 +169,8 @@ function PlaylistsPage() {
     : !!form.serverUrl.trim() && !!form.username.trim() && (!!editing || !!form.password));
 
   const backButton = step === "list"
-    ? mode === "tv" && <Button asChild variant="ghost" data-tv-focus data-layer-back><Link to="/tv"><ArrowLeft className="size-4" /> Back to TV Home</Link></Button>
-    : step !== "testing" && <Button variant="ghost" data-tv-focus data-layer-back onClick={back}><ArrowLeft className="size-4" /> Back</Button>;
+    ? mode === "tv" && <Link to="/tv" data-layer-back tabIndex={-1} className="sr-only">Back to TV Home</Link>
+    : step !== "testing" && <Button variant="ghost" tabIndex={-1} data-layer-back onClick={back}><ArrowLeft className="size-4" /> Back</Button>;
 
   return (
     <div ref={root} className="mx-auto max-w-3xl space-y-6 p-6">
@@ -142,14 +196,14 @@ function PlaylistsPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  {playlist.id !== activeId && <Button size="sm" data-tv-focus data-step-entry={index === 0 ? true : undefined} onClick={() => { setActiveId(playlist.id); toast.success(`Now using ${playlist.name}`); }}>Use</Button>}
-                  <Button size="sm" variant="outline" data-tv-focus data-step-entry={index === 0 && playlist.id === activeId ? true : undefined} onClick={() => startEdit(playlist)}><Pencil className="size-4" /> Edit</Button>
-                  <Button size="sm" variant="outline" data-tv-focus onClick={() => { setDeleting(playlist); setStep("delete"); }}><Trash2 className="size-4 text-destructive" /> Delete</Button>
+                  {playlist.id !== activeId && <Button size="sm" data-pl-row={index} data-pl-col={0} onClick={() => { setActiveId(playlist.id); toast.success(`Now using ${playlist.name}`); }}>Use</Button>}
+                  <Button size="sm" variant="outline" data-pl-row={index} data-pl-col={1} onClick={() => startEdit(playlist)}><Pencil className="size-4" /> Edit</Button>
+                  <Button size="sm" variant="outline" data-pl-row={index} data-pl-col={2} onClick={() => { setDeleting(playlist); setStep("delete"); }}><Trash2 className="size-4 text-destructive" /> Delete</Button>
                 </div>
               </div>
             ))}
           </div>
-          <Button size="lg" data-tv-focus data-step-entry={playlists.length === 0 ? true : undefined} onClick={startAdd} className="w-full sm:w-auto"><Plus className="size-4" /> Add a source</Button>
+          <Button size="lg" data-pl-add data-pl-row={playlists.length} data-pl-col={1} onClick={startAdd} className="w-full sm:w-auto"><Plus className="size-4" /> Add a source</Button>
         </>
       )}
 
@@ -177,8 +231,8 @@ function PlaylistsPage() {
             <Field label="Playlist link" value={form.m3uUrl} onChange={set("m3uUrl")} placeholder="http://example.com/get.php?username=...&type=m3u_plus" />
           )}
           <div className="flex gap-2 pt-2">
-            <Button type="submit" data-tv-focus disabled={!canConnect}>{editing ? "Save and connect" : "Connect"}</Button>
-            <Button type="button" variant="ghost" data-tv-focus onClick={() => setStep("list")}>Cancel</Button>
+            <Button type="submit" data-tv-focus data-pl-item disabled={!canConnect}>{editing ? "Save and connect" : "Connect"}</Button>
+            <Button type="button" variant="ghost" data-tv-focus data-pl-item onClick={() => setStep("list")}>Cancel</Button>
           </div>
         </form>
       )}
@@ -198,7 +252,7 @@ function PlaylistsPage() {
               <CheckCircle2 className="size-12 text-primary" />
               <p className="font-display text-xl font-bold">Connected to {result.name}</p>
               <p className="text-sm text-muted-foreground">{describe(result.summary)}</p>
-              <Button data-tv-focus data-step-entry onClick={() => { setActiveId(result.id); setStep("list"); }}>Done</Button>
+              <Button data-tv-focus data-pl-item data-step-entry onClick={() => { setActiveId(result.id); setStep("list"); }}>Done</Button>
             </>
           ) : (
             <>
@@ -206,8 +260,8 @@ function PlaylistsPage() {
               <p className="font-display text-xl font-bold">Could not connect</p>
               <p className="max-w-md text-sm text-muted-foreground">{result.message}</p>
               <div className="flex gap-2">
-                <Button data-tv-focus data-step-entry onClick={() => setStep("details")}>Try again</Button>
-                <Button variant="ghost" data-tv-focus onClick={() => setStep("list")}>Cancel</Button>
+                <Button data-tv-focus data-pl-item data-step-entry onClick={() => setStep("details")}>Try again</Button>
+                <Button variant="ghost" data-tv-focus data-pl-item onClick={() => setStep("list")}>Cancel</Button>
               </div>
             </>
           )}
@@ -219,10 +273,10 @@ function PlaylistsPage() {
           <p className="font-display text-xl font-bold">Delete {deleting.name}?</p>
           <p className="text-sm text-muted-foreground">Its favourites and watch history on this playlist will be removed.</p>
           <div className="flex gap-2">
-            <Button variant="destructive" data-tv-focus disabled={removeMutation.isPending} onClick={() => removeMutation.mutate(deleting.id)}>
+            <Button variant="destructive" data-tv-focus data-pl-item disabled={removeMutation.isPending} onClick={() => removeMutation.mutate(deleting.id)}>
               {removeMutation.isPending && <Loader2 className="size-4 animate-spin" />} Delete
             </Button>
-            <Button variant="ghost" data-tv-focus data-step-entry onClick={() => setStep("list")}>Cancel</Button>
+            <Button variant="ghost" data-tv-focus data-pl-item data-step-entry onClick={() => setStep("list")}>Cancel</Button>
           </div>
         </div>
       )}
@@ -240,7 +294,7 @@ function describe(summary: ConnectionSummary) {
 
 function TypeCard({ icon, title, description, onClick, entry }: { icon: React.ReactNode; title: string; description: string; onClick: () => void; entry?: boolean }) {
   return (
-    <button type="button" data-tv-focus data-step-entry={entry ? true : undefined} onClick={onClick} className="flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-5 text-left transition hover:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <button type="button" data-tv-focus data-pl-item data-step-entry={entry ? true : undefined} onClick={onClick} className="flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-5 text-left transition hover:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
       <span className="text-primary">{icon}</span>
       <span className="font-display text-lg font-semibold">{title}</span>
       <span className="text-sm text-muted-foreground">{description}</span>
@@ -252,7 +306,7 @@ function Field({ label, value, onChange, placeholder, type = "text", entry }: { 
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Input data-tv-focus data-step-entry={entry ? true : undefined} type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
+      <Input data-tv-focus data-pl-item data-step-entry={entry ? true : undefined} type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
     </div>
   );
 }
