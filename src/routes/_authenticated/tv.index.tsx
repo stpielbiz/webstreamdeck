@@ -14,6 +14,7 @@ import { useFavorites, useProgress } from "@/lib/library-hooks";
 import { SectionMenu } from "@/components/layered-navigation";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/lib/use-admin";
+import { useLibraryOverview, type LibrarySectionStatus } from "@/lib/library-sync";
 
 export const Route = createFileRoute("/_authenticated/tv/")({
   head: () => ({
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/tv/")({
 function TvHome() {
   const navigate = useNavigate();
   const { activeId, sync } = usePlaylists();
+  const library = useLibraryOverview(activeId);
   const { data: progress } = useProgress();
   const { data: favorites } = useFavorites();
   const { isAdmin } = useIsAdmin();
@@ -129,7 +131,7 @@ function TvHome() {
               </HomeShelf>
             </div>
           ) : (
-            <SectionPreview section={focusedSection} resumeCount={resume.length} favouriteCount={favouriteChannels.length + favouriteTitles.length} isAdmin={isAdmin} />
+            <SectionPreview section={focusedSection} resumeCount={resume.length} favouriteCount={favouriteChannels.length + favouriteTitles.length} isAdmin={isAdmin} library={library} hasPlaylist={!!activeId} sync={sync} />
           )}
         </main>
       </div>
@@ -230,7 +232,7 @@ const PREVIEWS = {
   Admin: { icon: ShieldCheck, title: "Admin", body: "Manage organisation tools and connection logs.", to: "/admin", action: "Open admin" },
 } as const;
 
-function SectionPreview({ section, resumeCount, favouriteCount, isAdmin }: { section: string; resumeCount: number; favouriteCount: number; isAdmin: boolean }) {
+function SectionPreview({ section, resumeCount, favouriteCount, isAdmin, library, hasPlaylist, sync }: { section: string; resumeCount: number; favouriteCount: number; isAdmin: boolean; library: ReturnType<typeof useLibraryOverview>; hasPlaylist: boolean; sync: { running: boolean; done: number; total: number } }) {
   const preview = PREVIEWS[section as keyof typeof PREVIEWS];
   if (!preview || (section === "Admin" && !isAdmin)) return null;
   const Icon = preview.icon;
@@ -241,7 +243,10 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin }: { sec
         <p className="mt-5 text-xs font-semibold uppercase text-primary">Focused section</p>
         <h2 className="mt-1 font-display text-4xl font-bold">{preview.title}</h2>
         <p className="mt-3 max-w-xl text-lg text-muted-foreground">{preview.body}</p>
-        {(section === "Favourites" || section === "Movies" || section === "Shows") && (
+        {section === "Live TV" && <LibraryStatus status={library.live} kind="live" hasPlaylist={hasPlaylist} syncing={sync.running} />}
+        {section === "Movies" && <LibraryStatus status={library.movie} kind="movie" hasPlaylist={hasPlaylist} />}
+        {section === "Shows" && <LibraryStatus status={library.series} kind="series" hasPlaylist={hasPlaylist} />}
+        {section === "Favourites" && (
           <p className="mt-4 text-sm text-muted-foreground">{resumeCount} waiting to resume · {favouriteCount} favourites</p>
         )}
         <Button asChild size="lg" className="mt-7">
@@ -249,6 +254,35 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin }: { sec
         </Button>
         <p className="mt-3 text-sm text-muted-foreground">Press OK on the menu to open, or press Right to use this button.</p>
       </section>
+    </div>
+  );
+}
+
+function LibraryStatus({ status, kind, hasPlaylist, syncing = false }: { status: LibrarySectionStatus; kind: "live" | "movie" | "series"; hasPlaylist: boolean; syncing?: boolean }) {
+  if (!hasPlaylist) return <p className="mt-5 text-sm text-muted-foreground">Add a playlist to see library status.</p>;
+  if (!status.loaded) return <p className="mt-5 text-sm text-muted-foreground">Preparing saved library…</p>;
+  const label = kind === "live" ? "TV guide" : "Title details";
+  const noun = kind === "live" ? "channels" : kind === "movie" ? "movies" : "shows";
+  const lastUpdated = status.updatedAt ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(status.updatedAt) : "Not updated yet";
+  return (
+    <div className="mt-6 max-w-2xl border-y border-border py-5" aria-live="polite">
+      <div className="flex items-end justify-between gap-6">
+        <div>
+          <p className="text-xs font-semibold uppercase text-muted-foreground">Saved library</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums">{status.total.toLocaleString()} <span className="text-base font-medium text-muted-foreground">{noun}</span></p>
+        </div>
+        <p className="text-right text-sm font-semibold tabular-nums text-primary">{status.percent}%</p>
+      </div>
+      <div className="mt-4 h-2 overflow-hidden rounded bg-muted" role="progressbar" aria-label={`${label} coverage`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={status.percent}>
+        <div className="h-full bg-primary transition-[width] motion-reduce:transition-none" style={{ width: `${status.percent}%` }} />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-sm text-muted-foreground">
+        <p>{syncing ? "Updating TV guide… " : ""}{label}: {status.updated.toLocaleString()} of {status.total.toLocaleString()}</p>
+        <p>Last updated: {lastUpdated}</p>
+      </div>
+      {kind !== "live" && status.topGenres.length > 0 && (
+        <p className="mt-4 text-sm"><span className="text-muted-foreground">Top genres:</span> {status.topGenres.join(" · ")}</p>
+      )}
     </div>
   );
 }
