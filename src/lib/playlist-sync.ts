@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
-import { normTitle } from "@/components/top10-rows";
+import { mediaMatchKey as normTitle } from "@/lib/title-variants";
 import type { ProgressRow } from "./iptv.functions";
 import type { CatalogItem } from "./iptv-types";
 import { getSettings, saveSettings, type UserSettings } from "./settings.functions";

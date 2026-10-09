@@ -11,6 +11,9 @@ import { SectionMenu } from "@/components/layered-navigation";
 import { TitleDetailsDialog } from "@/components/title-details-dialog";
 import type { FavoriteRow } from "@/lib/iptv.functions";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { CatalogItem } from "@/lib/iptv-types";
+import { variantsForItem } from "@/lib/title-variants";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -32,6 +35,10 @@ function Dashboard() {
   const progress = useProgress();
   const favorites = useFavorites();
   const [openFavourite, setOpenFavourite] = useState<FavoriteRow | null>(null);
+  const queryClient = useQueryClient();
+  const favouriteVariants = openFavourite && activeId && (openFavourite.itemKind === "movie" || openFavourite.itemKind === "series")
+    ? variantsForItem(queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, openFavourite.itemKind]) ?? [], openFavourite.itemId)
+    : [];
 
   if (isLoading) {
     return (
@@ -201,6 +208,7 @@ function Dashboard() {
         id={openFavourite?.itemId ?? null}
         name={openFavourite?.title}
         image={openFavourite?.logoUrl}
+        variants={favouriteVariants}
         onClose={() => setOpenFavourite(null)}
       />
     </div>

@@ -28,6 +28,7 @@ import { useVoiceSearch } from "@/lib/voice-search";
 import { VoiceButton } from "@/components/voice-button";
 import { LayerHeading } from "@/components/layered-navigation";
 import { TitleDetailsDialog } from "@/components/title-details-dialog";
+import { groupCatalogItems, mediaMatchKey, type TitleGroup, type TitleVariant } from "@/lib/title-variants";
 
 type Kind = "movie" | "series";
 
@@ -58,6 +59,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     document.querySelector<HTMLElement>('[data-focus-key="catalog-search"]')?.focus();
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedVariants, setSelectedVariants] = useState<TitleVariant[]>([]);
   const [seasonIndex, setSeasonIndex] = useState(0);
   const [episode, setEpisode] = useState<EpisodeItem | null>(null);
   const [organising, setOrganising] = useState(false);
@@ -113,9 +115,16 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     gcTime: 60 * 60_000,
   });
 
+  const titleGroups = useMemo(() => groupCatalogItems(catalogue.data ?? [], metadata.data), [catalogue.data, metadata.data]);
+  const groupedItems = useMemo(() => titleGroups.map((group) => group.item), [titleGroups]);
+  const groupByItemId = useMemo(() => {
+    const map = new Map<string, TitleGroup>();
+    for (const group of titleGroups) for (const variant of group.variants) map.set(variant.item.id, group);
+    return map;
+  }, [titleGroups]);
   const groups = useMemo(() => {
     const buckets = new Map<string, CatalogItem[]>();
-    for (const item of catalogue.data ?? []) {
+    for (const item of groupedItems) {
       const label = metadata.data?.[item.name]?.genres?.[0] || "Other";
       const bucket = buckets.get(label);
       if (bucket) bucket.push(item);
@@ -124,7 +133,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     return [...buckets.entries()]
       .map(([label, items]) => ({ label, items }))
       .sort((a, b) => a.label === "Other" ? 1 : b.label === "Other" ? -1 : a.label.localeCompare(b.label));
-  }, [catalogue.data, metadata.data]);
+  }, [groupedItems, metadata.data]);
 
   useEffect(() => {
     setGenre(null);
@@ -141,11 +150,13 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const query = search.trim().toLowerCase();
   const searching = query.length > 0;
   const visibleItems = useMemo(() => {
-    const source = searching || genre === "All" ? (catalogue.data ?? []) : (chosenGroup?.items ?? []);
+    const source = searching || genre === "All" ? groupedItems : (chosenGroup?.items ?? []);
     const filtered = searching
       ? source.filter((item) => {
           const meta = metadata.data?.[item.name];
+          const group = groupByItemId.get(item.id);
           return item.name.toLowerCase().includes(query)
+            || (group?.variants ?? []).some((variant) => variant.item.name.toLowerCase().includes(query))
             || (meta?.title ?? "").toLowerCase().includes(query)
             || (query.length >= 3 && (meta?.cast ?? []).some((actor) => actor.toLowerCase().includes(query)));
         })
@@ -156,7 +167,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         ? (Number(metadata.data?.[b.name]?.year || b.year || 0) - Number(metadata.data?.[a.name]?.year || a.year || 0)) || titleOf(a).localeCompare(titleOf(b))
         : titleOf(a).localeCompare(titleOf(b)),
     );
-  }, [genre, chosenGroup, catalogue.data, query, searching, sort, metadata.data]);
+  }, [genre, chosenGroup, groupedItems, groupByItemId, query, searching, sort, metadata.data]);
   const featuredOrigin = useRef<HTMLElement | null>(null);
   const enterFeatured = (event: ReactKeyboardEvent<HTMLElement>, choice: "popular" | Top10Service) => {
     if (event.key !== "ArrowRight") return;
@@ -202,7 +213,8 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     }
     return [...buckets.entries()].map(([label, items]) => ({ label, items }));
   }, [visibleItems, sort, metadata.data]);
-  const selectedItem = (catalogue.data ?? []).find((item) => item.id === selectedId);
+  const selectedGroup = selectedId ? groupByItemId.get(selectedId) : undefined;
+  const selectedItem = selectedGroup?.item ?? groupedItems.find((item) => item.id === selectedId);
 
   const movie = useQuery({
     queryKey: ["movie", activeId, selectedId],
@@ -240,13 +252,17 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const resumeRow = mediaId ? findResume(progress.data, activeId, { itemId: mediaId, title, season: kind === "movie" ? null : episode?.season, episode: kind === "movie" ? null : episode?.episode }, syncPlaylists) : undefined;
   const resumeAt = resumeRow && !resumeRow.completed ? resumeRow.positionSeconds : 0;
 
-  const selectTitle = (id: string, trigger?: HTMLElement | null) => {
+  const selectTitle = (id: string, trigger?: HTMLElement | null, variants?: TitleVariant[]) => {
     titleTrigger.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-    returnTitle.current = (catalogue.data ?? []).find((item) => item.id === id)?.name ?? null;
-    setSelectedId(id);
+    const group = groupByItemId.get(id);
+    returnTitle.current = group?.title ?? groupedItems.find((item) => item.id === id)?.name ?? null;
+    const available = variants?.length ? variants : group?.variants ?? [];
+    setSelectedVariants(available);
+    setSelectedId(available[0]?.item.id ?? id);
     setSeasonIndex(0);
     setEpisode(null);
     setPlaying(false);
+    setSelectedVariants([]);
   };
   const closeDetails = () => {
     setSelectedId(null);
@@ -388,9 +404,9 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       <div ref={contentRef} data-tv-zone="content" data-tv-zone-order="2" className="scrollbar-thin min-h-0 min-w-0 overflow-y-auto pr-1">
         <div data-featured-row onKeyDown={leaveFeatured}>
         {featured === "popular" ? (
-          <PopularRow kind={kind} tv={tv} onOpen={selectTitle} />
+          <PopularRow kind={kind} tv={tv} items={catalogue.data ?? []} metadata={metadata.data} onOpen={selectTitle} />
         ) : (
-          <Top10Row kind={kind} tv={tv} items={catalogue.data ?? []} metadata={metadata.data} service={featured} onOpen={selectTitle} />
+            <Top10Row kind={kind} tv={tv} items={catalogue.data ?? []} metadata={metadata.data} service={featured} onOpen={selectTitle} />
         )}
         </div>
         <div ref={categoryContentRef} className="min-w-0 scroll-mt-2">
@@ -412,7 +428,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         {catalogue.isLoading && !catalogue.data ? <CatalogGridLoading title={kind === "movie" ? "Movies" : "Shows"} /> : catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 ? <EmptyState title="Nothing here" description={searching ? `No titles match “${search.trim()}”.` : "No titles match this system category."} /> : sections.map((section, sectionIndex) => (
           <div key={section.label} className="mb-5">
             <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3>
-            <PosterGrid>{section.items.slice(0, limitFor(section.label)).map((item, index) => <PosterTile key={item.id} zoneEntry={sectionIndex === 0 && index === 0} title={metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(metadata.data?.[item.name]?.year || item.year || "")} progress={progressFor(progress.data, activeId, item.id)} favorite={isFavorite(favorites.data, activeId, kind, item.id)} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: item.id, title: item.name, logoUrl: item.image })} />)}{section.items.length > limitFor(section.label) && <button type="button" data-tv-focus data-focus-key={`show-more-${section.label}`} onClick={(event) => { const label = section.label; const at = limitFor(label); setLimits((prev) => ({ ...prev, [label]: at + 180 })); const grid = event.currentTarget.parentElement; window.requestAnimationFrame(() => (grid?.children[at] as HTMLElement | undefined)?.querySelector<HTMLElement>("[data-tv-focus]")?.focus()); }} className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/60 p-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">Show more<span className="mt-1 text-xs font-normal">{(section.items.length - limitFor(section.label)).toLocaleString()} left</span></button>}</PosterGrid>
+            <PosterGrid>{section.items.slice(0, limitFor(section.label)).map((item, index) => { const titleGroup = groupByItemId.get(item.id); const variants = titleGroup?.variants ?? []; const favouriteVariant = variants.find((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id)); return <PosterTile key={item.id} zoneEntry={sectionIndex === 0 && index === 0} title={titleGroup?.title || metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(titleGroup?.year || metadata.data?.[item.name]?.year || item.year || "")} progress={progressForVariants(progress.data, activeId, variants, titleGroup?.title)} favorite={!!favouriteVariant} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: favouriteVariant?.item.id ?? item.id, title: titleGroup?.title ?? item.name, logoUrl: item.image })} />; })}{section.items.length > limitFor(section.label) && <button type="button" data-tv-focus data-focus-key={`show-more-${section.label}`} onClick={(event) => { const label = section.label; const at = limitFor(label); setLimits((prev) => ({ ...prev, [label]: at + 180 })); const grid = event.currentTarget.parentElement; window.requestAnimationFrame(() => (grid?.children[at] as HTMLElement | undefined)?.querySelector<HTMLElement>("[data-tv-focus]")?.focus()); }} className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/60 p-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">Show more<span className="mt-1 text-xs font-normal">{(section.items.length - limitFor(section.label)).toLocaleString()} left</span></button>}</PosterGrid>
           </div>
         ))}
         </div>
@@ -421,10 +437,11 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       <TitleDetailsDialog
         kind={kind}
         id={selectedId}
-        name={selectedItem?.name}
+        name={selectedGroup?.title ?? selectedItem?.name}
         image={selectedItem?.image}
-        year={selectedItem?.year}
+        year={selectedGroup?.year ?? selectedItem?.year}
         metadata={selectedMetadata}
+        variants={selectedVariants}
         onClose={closeDetails}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
@@ -445,8 +462,9 @@ function formatResume(seconds: number) {
   return hours > 0 ? `${hours}h ${minutes}m` : `${Math.max(1, minutes)}m`;
 }
 
-function progressFor(rows: ReturnType<typeof useProgress>["data"], playlistId: string | null, itemId: string) {
-  const row = (rows ?? []).find((entry) => entry.playlistId === playlistId && (entry.itemId === itemId || entry.seriesId === itemId) && !entry.completed);
+function progressForVariants(rows: ReturnType<typeof useProgress>["data"], playlistId: string | null, variants: TitleVariant[], title?: string) {
+  const ids = new Set(variants.map((variant) => variant.item.id));
+  const row = (rows ?? []).find((entry) => entry.playlistId === playlistId && (ids.has(entry.itemId) || (entry.seriesId ? ids.has(entry.seriesId) : false) || (!!title && mediaMatchKey(entry.title) === mediaMatchKey(title))) && !entry.completed);
   if (!row) return null;
   return row.durationSeconds ? row.positionSeconds / row.durationSeconds : 0.05;
 }

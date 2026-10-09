@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Play, Search, Star, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { TitleDetailsDialog } from "@/components/title-details-dialog";
 
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import type { CatalogItem } from "@/lib/iptv-types";
 import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
 import { cn } from "@/lib/utils";
 import { useVoiceSearch } from "@/lib/voice-search";
+import { groupCatalogItems, type TitleGroup } from "@/lib/title-variants";
 
 const LIMIT = 30;
 const STORAGE_KEY = "streamdeck-home-search";
@@ -26,6 +28,7 @@ export function GlobalSearch() {
   const favorites = useFavorites();
   const toggleFavorite = useToggleFavorite();
   const [search, setSearchState] = useState("");
+  const [openGroup, setOpenGroup] = useState<{ kind: "movie" | "series"; group: TitleGroup } | null>(null);
   const setSearch = (value: string) => {
     setSearchState(value);
     try { sessionStorage.setItem(STORAGE_KEY, value); } catch { /* ignore */ }
@@ -60,21 +63,21 @@ export function GlobalSearch() {
     }
     return out;
   };
-  const match = (items?: CatalogItem[], cast?: Record<string, string[]>) => (items ?? []).filter((item) =>
-    item.name.toLowerCase().includes(query)
-    || (query.length >= 3 && (cast?.[item.name] ?? []).some((actor) => actor.toLowerCase().includes(query))),
+  const match = (items?: CatalogItem[], cast?: Record<string, string[]>, grouped = false) => (grouped ? groupCatalogItems(items ?? []) : (items ?? []).map((item) => ({ key: item.id, item, variants: [], title: item.name, year: item.year ?? null }))).filter((group) =>
+    group.title.toLowerCase().includes(query)
+    || group.variants.some((variant) => variant.item.name.toLowerCase().includes(query))
+    || (query.length >= 3 && (cast?.[group.item.name] ?? []).some((actor) => actor.toLowerCase().includes(query))),
   ).slice(0, LIMIT);
   const groups = useMemo(() => [
-    { kind: "series" as const, title: "Shows", items: match(shows.data, castFor("series")), loading: shows.isFetching },
-    { kind: "movie" as const, title: "Movies", items: match(movies.data, castFor("movie")), loading: movies.isFetching },
+    { kind: "series" as const, title: "Shows", items: match(shows.data, castFor("series"), true), loading: shows.isFetching },
+    { kind: "movie" as const, title: "Movies", items: match(movies.data, castFor("movie"), true), loading: movies.isFetching },
     { kind: "live" as const, title: "Channels", items: match(live.data), loading: live.isFetching },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [query, live.data, movies.data, shows.data, live.isFetching, movies.isFetching, shows.isFetching]);
 
-  const open = (kind: Kind, id: string) => {
-    if (kind === "live") void navigate({ to: "/tv/live", search: { channel: id } });
-    else if (kind === "movie") void navigate({ to: "/tv/watch/movie/$id", params: { id }, search: { from: "home" } });
-    else void navigate({ to: "/tv/show/$id", params: { id } });
+  const open = (kind: Kind, group: TitleGroup) => {
+    if (kind === "live") void navigate({ to: "/tv/live", search: { channel: group.item.id } });
+    else setOpenGroup({ kind, group });
   };
   const firstResult = groups.find((group) => group.items.length > 0);
   const backToSearch = () => document.querySelector<HTMLElement>('[data-focus-key="global-search"]')?.focus();
@@ -115,9 +118,11 @@ export function GlobalSearch() {
               <h3 className="mb-1 font-display text-sm font-semibold text-primary">{group.title} <span className="text-xs font-normal text-muted-foreground">· {group.loading && group.items.length === 0 ? "searching…" : group.items.length}</span></h3>
               {group.items.length > 0 ? (
                 <ul className="divide-y divide-border rounded border border-border bg-card">
-                  {group.items.map((item, index) => {
-                    const fav = isFavorite(favorites.data, activeId, group.kind, item.id);
-                    const detail = group.kind === "live" ? (item.number ? `Ch ${item.number}` : "") : item.year ?? "";
+                  {group.items.map((titleGroup, index) => {
+                    const item = titleGroup.item;
+                    const favouriteVariant = titleGroup.variants.find((variant) => isFavorite(favorites.data, activeId, group.kind, variant.item.id));
+                    const fav = !!favouriteVariant || isFavorite(favorites.data, activeId, group.kind, item.id);
+                    const detail = group.kind === "live" ? (item.number ? `Ch ${item.number}` : "") : titleGroup.year ?? "";
                     return (
                       <li key={item.id} className="flex items-center gap-2 px-2 py-1">
                         <button
@@ -125,18 +130,18 @@ export function GlobalSearch() {
                           data-tv-focus
                           data-zone-edge-left="true"
                           data-focus-key={group === firstResult && index === 0 ? "global-result-first" : undefined}
-                          onClick={() => open(group.kind, item.id)}
+                           onClick={() => open(group.kind, titleGroup)}
                           className="flex min-w-0 flex-1 items-center gap-3 rounded px-1 py-1 text-left outline-none focus:bg-secondary focus:ring-2 focus:ring-primary"
                         >
                           <span className={cn("grid shrink-0 place-items-center overflow-hidden rounded bg-muted", group.kind === "live" ? "size-9" : "h-12 w-8")}>
                             {item.image && <img src={item.image} alt="" loading="lazy" className={cn("size-full", group.kind === "live" ? "object-contain p-1" : "object-cover")} onError={(event) => { event.currentTarget.style.display = "none"; }} />}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-semibold">{item.name}</span>
+                             <span className="block truncate text-sm font-semibold">{titleGroup.title}</span>
                             {detail && <span className="block text-xs text-muted-foreground">{detail}</span>}
                           </span>
                         </button>
-                        <Button type="button" size="sm" variant="secondary" data-tv-focus className="h-8 focus:ring-2 focus:ring-primary" onClick={() => open(group.kind, item.id)}>
+                         <Button type="button" size="sm" variant="secondary" data-tv-focus className="h-8 focus:ring-2 focus:ring-primary" onClick={() => open(group.kind, titleGroup)}>
                           <Play className="size-3.5 fill-current" /> {group.kind === "series" ? "Open" : "Play"}
                         </Button>
                         <Button
@@ -146,7 +151,7 @@ export function GlobalSearch() {
                           data-tv-focus
                           aria-label={fav ? "Remove from favourites" : "Add to favourites"}
                           className="size-8 focus:ring-2 focus:ring-primary"
-                          onClick={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: group.kind, itemId: item.id, title: item.name, logoUrl: item.image })}
+                           onClick={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: group.kind, itemId: favouriteVariant?.item.id ?? item.id, title: titleGroup.title, logoUrl: item.image })}
                         >
                           <Star className={cn("size-4", fav && "fill-primary text-primary")} />
                         </Button>
@@ -159,6 +164,7 @@ export function GlobalSearch() {
           ))}
         </div>
       )}
+      <TitleDetailsDialog kind={openGroup?.kind ?? "movie"} id={openGroup?.group.item.id ?? null} name={openGroup?.group.title} image={openGroup?.group.item.image} year={openGroup?.group.year} variants={openGroup?.group.variants} onClose={() => setOpenGroup(null)} />
     </section>
   );
 }

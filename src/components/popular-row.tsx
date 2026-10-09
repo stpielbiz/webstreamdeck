@@ -1,30 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useMemo } from "react";
 import { Flame } from "lucide-react";
 import { toast } from "sonner";
 
 import { getPopular } from "@/lib/popular.functions";
-import { getItems } from "@/lib/iptv.functions";
-import { usePlaylists } from "@/components/playlist-context";
 import { cn } from "@/lib/utils";
+import type { CatalogItem } from "@/lib/iptv-types";
+import { groupCatalogItems, mediaMatchKey, type TitleVariant } from "@/lib/title-variants";
 
-const norm = (s: string) => s.toLowerCase().replace(/\(\d{4}\)|[^a-z0-9]+/g, " ").trim();
+const norm = mediaMatchKey;
 
 /** "Popular on Stream Deck" top 10 row; resolves a pick against the user's own playlist. */
 export function PopularRow({
   kind,
   tv = false,
+  items,
+  metadata,
   onOpen,
 }: {
   kind: "movie" | "series";
   tv?: boolean;
-  onOpen: (id: string, trigger?: HTMLElement | null) => void;
+  items: CatalogItem[];
+  metadata?: Record<string, { title?: string | null; year?: string | number | null } | undefined> | undefined;
+  onOpen: (id: string, trigger?: HTMLElement | null, variants?: TitleVariant[]) => void;
 }) {
-  const { activeId } = usePlaylists();
   const fetchPopular = useServerFn(getPopular);
-  const fetchItems = useServerFn(getItems);
-  const [busy, setBusy] = useState<string | null>(null);
+  const groups = useMemo(() => groupCatalogItems(items, metadata), [items, metadata]);
 
   const popular = useQuery({
     queryKey: ["popular", kind],
@@ -35,23 +37,12 @@ export function PopularRow({
   const rows = popular.data ?? [];
   if (rows.length < 3) return null;
 
-  const pick = async (title: string) => {
-    if (!activeId) return;
+  const pick = (title: string) => {
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setBusy(title);
-    try {
-      const found = await fetchItems({ data: { playlistId: activeId, kind, search: title } });
-      const target = norm(title);
-      const match = found.find((i) => norm(i.name) === target) ?? found.find((i) => norm(i.name).includes(target)) ?? found[0];
-      if (match) {
-        onOpen(match.id, trigger);
-      }
-      else toast("Not in your playlist", { description: title });
-    } catch {
-      toast.error("Your provider did not answer. Try again shortly.");
-    } finally {
-      setBusy(null);
-    }
+    const target = norm(title);
+    const match = groups.find((group) => norm(group.title) === target) ?? groups.find((group) => norm(group.title).includes(target));
+    if (match) onOpen(match.item.id, trigger, match.variants);
+    else toast("Not in your playlist", { description: title });
   };
 
   return (
@@ -66,12 +57,10 @@ export function PopularRow({
             data-tv-focus
             data-focus-key={`popular-${index}`}
             type="button"
-            disabled={busy !== null}
-            onClick={() => void pick(row.title)}
+            onClick={() => pick(row.title)}
             className={cn(
               "group relative shrink-0 overflow-hidden rounded-lg bg-secondary text-left outline-none ring-primary focus-visible:ring-2 focus:ring-2",
               tv ? "w-24" : "w-28",
-              busy === row.title && "opacity-60",
             )}
           >
             <div className="aspect-[2/3] w-full bg-muted">
