@@ -15,6 +15,7 @@ import { SectionMenu } from "@/components/layered-navigation";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/lib/use-admin";
 import { useLibraryOverview, type LibrarySectionStatus } from "@/lib/library-sync";
+import { variantsForItem } from "@/lib/title-variants";
 
 export const Route = createFileRoute("/_authenticated/tv/")({
   head: () => ({
@@ -66,6 +67,9 @@ function TvHome() {
     (row) => row.playlistId === activeId && row.itemKind !== "live",
   );
   const [openFavourite, setOpenFavourite] = useState<(typeof favouriteTitles)[number] | null>(null);
+  const favouriteVariants = openFavourite && activeId && (openFavourite.itemKind === "movie" || openFavourite.itemKind === "series")
+    ? variantsForItem(queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, openFavourite.itemKind]) ?? [], openFavourite.itemId)
+    : [];
   const favouriteTrigger = useRef<HTMLElement | null>(null);
   const openTitle = (row: (typeof favouriteTitles)[number]) => {
     favouriteTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -140,6 +144,7 @@ function TvHome() {
         id={openFavourite?.itemId ?? null}
         name={openFavourite?.title}
         image={openFavourite?.logoUrl}
+        variants={favouriteVariants}
         onClose={() => setOpenFavourite(null)}
         onCloseAutoFocus={(event) => {
           event.preventDefault();

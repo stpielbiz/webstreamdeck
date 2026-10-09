@@ -24,3 +24,4 @@
 - TV section links show an immediate opening overlay until navigation unmounts the menu — remote clicks receive feedback without depending on router pending-state timing.
 - Title details (genres, artwork, cast) are backfilled slowly in the background by `useTitleBackfill` into the shared `title_metadata` store — every user contributes, each title is resolved once, and browsing never waits on it.
 - Cross-playlist resume is opt-in per account (`user_settings.sync_playlists`) and matches titles by normalised name (+ season/episode) through `src/lib/playlist-sync.ts` — provider item IDs differ between playlists.
+- Movie/show catalogues keep raw provider entries cached but derive grouped title views with selectable stream variants — this hides duplicate quality copies without losing playable provider IDs.

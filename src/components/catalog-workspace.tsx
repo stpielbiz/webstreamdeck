@@ -437,9 +437,9 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       <TitleDetailsDialog
         kind={kind}
         id={selectedId}
-        name={selectedItem?.name}
+        name={selectedGroup?.title ?? selectedItem?.name}
         image={selectedItem?.image}
-        year={selectedItem?.year}
+        year={selectedGroup?.year ?? selectedItem?.year}
         metadata={selectedMetadata}
         variants={selectedVariants}
         onClose={closeDetails}
