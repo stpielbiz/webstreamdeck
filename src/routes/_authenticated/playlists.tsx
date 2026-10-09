@@ -53,10 +53,64 @@ function PlaylistsPage() {
 
   // Focus the first control of each step so the remote always lands somewhere useful.
   useEffect(() => {
-    const id = window.requestAnimationFrame(() => {
-      root.current?.querySelector<HTMLElement>("[data-step-entry]")?.focus();
-    });
+    let tries = 0;
+    let id = 0;
+    const attempt = () => {
+      const target = step === "list"
+        ? root.current?.querySelector<HTMLElement>("[data-pl-row='0'][data-pl-col='1']")
+          ?? root.current?.querySelector<HTMLElement>("[data-pl-add]")
+        : root.current?.querySelector<HTMLElement>("[data-step-entry]");
+      if (target) target.focus();
+      else if (tries++ < 30) id = window.requestAnimationFrame(attempt);
+    };
+    id = window.requestAnimationFrame(attempt);
     return () => window.cancelAnimationFrame(id);
+  }, [step, playlists.length]);
+
+  // Own arrow-key handling: predictable grid on the list, linear order on other steps.
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const dir = ({ ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as const)[event.key as "ArrowUp"];
+      if (!dir || !root.current) return;
+      const active = document.activeElement as HTMLElement | null;
+      const typing = active?.tagName === "INPUT" || active?.tagName === "TEXTAREA";
+      if (typing && (dir === "left" || dir === "right")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const scope = root.current;
+      if (step === "list") {
+        const buttons = Array.from(scope.querySelectorAll<HTMLElement>("[data-pl-row]"));
+        if (!buttons.length) return;
+        const pos = (el: HTMLElement) => ({ row: Number(el.dataset['plRow']), col: Number(el.dataset['plCol']) });
+        const cur = active && buttons.includes(active) ? pos(active) : null;
+        let next: HTMLElement | undefined;
+        if (!cur) next = buttons[0];
+        else if (dir === "left" || dir === "right") {
+          const same = buttons.filter((b) => pos(b).row === cur.row).sort((a, b) => pos(a).col - pos(b).col);
+          const i = same.indexOf(active!);
+          next = same[i + (dir === "right" ? 1 : -1)];
+        } else {
+          const rows = Array.from(new Set(buttons.map((b) => pos(b).row))).sort((a, b) => a - b);
+          const targetRow = rows[rows.indexOf(cur.row) + (dir === "down" ? 1 : -1)];
+          if (targetRow !== undefined) {
+            const inRow = buttons.filter((b) => pos(b).row === targetRow);
+            next = inRow.find((b) => pos(b).col === cur.col)
+              ?? inRow.sort((a, b) => Math.abs(pos(a).col - cur.col) - Math.abs(pos(b).col - cur.col))[0];
+          }
+        }
+        next?.focus();
+        next?.scrollIntoView({ block: "nearest" });
+        return;
+      }
+      const items = Array.from(scope.querySelectorAll<HTMLElement>("[data-pl-item]:not([disabled])"));
+      if (!items.length) return;
+      const i = active ? items.indexOf(active) : -1;
+      const next = i < 0 ? items[0] : items[i + (dir === "down" || dir === "right" ? 1 : -1)];
+      next?.focus();
+      next?.scrollIntoView({ block: "nearest" });
+    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
   }, [step]);
 
   const set = (key: keyof Form) => (value: string) => setForm((prev) => ({ ...prev, [key]: value }));
