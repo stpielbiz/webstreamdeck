@@ -19,6 +19,7 @@ import { adminRefreshTitles } from "@/lib/metadata.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { variantsForItem } from "@/lib/title-variants";
 import { SubscriptionBanner } from "@/components/subscription-banner";
+import { useAccountAccess } from "@/lib/account-access";
 
 export const Route = createFileRoute("/_authenticated/tv/")({
   head: () => ({
@@ -45,6 +46,7 @@ function TvHome() {
   const { data: favorites } = useFavorites();
   const { isAdmin } = useIsAdmin();
   const [focusedSection, setFocusedSection] = useState("Home");
+  const expired = useAccountAccess().data?.expired === true;
   const checkForUpdates = () => {
     const native = window.StreamDeckNative;
     if (typeof native?.checkForUpdates === "function") {
@@ -105,7 +107,8 @@ function TvHome() {
           {focusedSection === "Home" ? (
             <div className="space-y-5 pb-6">
               <SubscriptionBanner />
-              {activeId && <div className="sticky top-0 z-20 bg-background pb-3"><GlobalSearch /></div>}
+              {!expired && activeId && <div className="sticky top-0 z-20 bg-background pb-3"><GlobalSearch /></div>}
+              {!expired && <>
               <div className="pb-1">
                 <p className="text-xs font-semibold uppercase text-primary">Your library</p>
                 <h2 className="font-display text-2xl font-bold">Welcome back</h2>
@@ -138,6 +141,7 @@ function TvHome() {
                   <HomeTile key={row.id} kind="poster" title={row.title} image={row.logoUrl} zoneEntry={resume.length === 0 && favouriteChannels.length === 0 && index === 0} edgeLeft={index === 0} onSelect={() => openTitle(row)} />
                 ))}
               </HomeShelf>
+              </>}
             </div>
           ) : (
             <SectionPreview section={focusedSection} resumeCount={resume.length} favouriteCount={favouriteChannels.length + favouriteTitles.length} isAdmin={isAdmin} library={library} hasPlaylist={!!activeId} sync={sync} />
