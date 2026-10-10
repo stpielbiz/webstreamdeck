@@ -20,7 +20,9 @@ export interface TitleMetadata {
   cast: string[];
 }
 
-export { normalizeTitle, lookupKeyFor } from "./title-key";
+import { lookupKeyFor, normalizeTitle } from "./title-key";
+
+export { lookupKeyFor, normalizeTitle };
 
 const TMDB_IMAGE = "https://image.tmdb.org/t/p/w500";
 const TMDB_BACKDROP = "https://image.tmdb.org/t/p/w1280";
