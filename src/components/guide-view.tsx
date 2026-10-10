@@ -53,7 +53,7 @@ export function GuideView({ tv = false }: { tv?: boolean }) {
 
   return (
     <div data-tv-zone="content" className="space-y-6 p-3 sm:p-6">
-      <Button data-layer-back data-tv-focus variant="ghost" onClick={() => void navigate({ to: tv ? "/tv" : "/dashboard" })}><ArrowLeft className="size-4" /> Sections</Button>
+      <Button data-layer-back data-tv-focus variant="ghost" onClick={() => void navigate({ to: tv ? "/tv" : "/dashboard" })}><ArrowLeft className="size-4" /> Home</Button>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><h1 className="font-display text-2xl font-bold">TV guide</h1><p className="mt-1 text-sm text-muted-foreground">{active?.kind === "m3u" ? "Plain M3U links usually carry no listings, so this page may stay empty." : "Now and next for the first 40 channels in a category."}</p></div>
         <Select value={categoryId ?? "all"} onValueChange={(value) => setCategoryId(value === "all" ? undefined : value)}><SelectTrigger className="w-64"><SelectValue placeholder="All channels" /></SelectTrigger><SelectContent><SelectItem value="all">All channels</SelectItem>{(categories.data ?? []).map((category) => <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>)}</SelectContent></Select>

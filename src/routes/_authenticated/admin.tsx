@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ArrowLeft, ShieldCheck, ShieldOff, Trash2, KeyRound, RefreshCw } from "lucide-react";
+import { ArrowLeft, ShieldCheck, ShieldOff, Trash2, KeyRound, RefreshCw, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -11,13 +11,16 @@ import {
   deleteAccount,
   listAccounts,
   sendAccountLink,
+  setAccountAccess,
   setAdminRole,
+  type AdminUser,
 } from "@/lib/admin.functions";
 import { useIsAdmin } from "@/lib/use-admin";
 import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/search-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { setDebugEnabled, useDebugLog } from "@/lib/debug-log";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -70,6 +73,7 @@ function AdminPage() {
   const roleFn = useServerFn(setAdminRole);
   const removeFn = useServerFn(deleteAccount);
   const linkFn = useServerFn(sendAccountLink);
+  const accessFn = useServerFn(setAccountAccess);
 
   const accounts = useQuery({
     queryKey: ["admin", "accounts"],
@@ -112,6 +116,15 @@ function AdminPage() {
       } else {
         toast.success("Reset link created");
       }
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const access = useMutation({
+    mutationFn: (input: { userId: string; neverExpires: boolean; expiresAt: string | null }) => accessFn({ data: input }),
+    onSuccess: () => {
+      toast.success("Expiry updated");
+      refresh();
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -227,6 +240,7 @@ function AdminPage() {
                   <th className="px-3 py-2">Favourites</th>
                   <th className="px-3 py-2">Watching</th>
                   <th className="px-3 py-2">Access</th>
+                  <th className="px-3 py-2">Expiry</th>
                   <th className="px-3 py-2 text-right">Actions</th>
                 </tr>
               </thead>
@@ -254,6 +268,9 @@ function AdminPage() {
                       ) : (
                         <span className="text-muted-foreground">Member</span>
                       )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <AccountExpiryControl user={user} pending={access.isPending} onSave={(value) => access.mutate({ userId: user.id, ...value })} />
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex justify-end gap-1">
@@ -302,7 +319,7 @@ function AdminPage() {
                 ))}
                 {rows.length === 0 && (
                   <tr>
-                    <td className="px-3 py-6 text-center text-muted-foreground" colSpan={8}>
+                    <td className="px-3 py-6 text-center text-muted-foreground" colSpan={9}>
                       No accounts match that search.
                     </td>
                   </tr>
@@ -312,6 +329,40 @@ function AdminPage() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function AccountExpiryControl({ user, pending, onSave }: {
+  user: AdminUser;
+  pending: boolean;
+  onSave: (value: { neverExpires: boolean; expiresAt: string | null }) => void;
+}) {
+  const [neverExpires, setNeverExpires] = useState(user.neverExpires);
+  const [date, setDate] = useState(user.expiresAt?.slice(0, 10) ?? "");
+  const save = () => {
+    if (neverExpires) {
+      onSave({ neverExpires: true, expiresAt: null });
+      return;
+    }
+    if (!date) {
+      toast.error("Choose an expiry date");
+      return;
+    }
+    onSave({ neverExpires: false, expiresAt: new Date(`${date}T23:59:59.999Z`).toISOString() });
+  };
+
+  return (
+    <div className="min-w-64 space-y-2">
+      <div className="flex items-center gap-2">
+        <Input type="date" value={date} disabled={neverExpires || pending} onChange={(event) => setDate(event.target.value)} aria-label={`Expiry date for ${user.email ?? "account"}`} />
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={save}><CalendarClock className="size-4" /> Save</Button>
+      </div>
+      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Switch checked={neverExpires} disabled={pending} onCheckedChange={setNeverExpires} aria-label={`Never expires for ${user.email ?? "account"}`} />
+        Never expires
+        {user.expired && !user.neverExpires && <span className="font-semibold text-destructive">Expired</span>}
+      </label>
     </div>
   );
 }

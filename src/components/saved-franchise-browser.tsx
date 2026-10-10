@@ -29,7 +29,7 @@ export function SavedFranchiseBrowser({ tv, onBack }: { tv?: boolean; onBack: ()
   return (
     <section className="mx-auto w-full max-w-5xl space-y-5 p-3 sm:p-6">
       <div className="flex items-center gap-3">
-        <Button data-layer-back data-tv-focus variant="ghost" size="sm" onClick={onBack}><ArrowLeft className="size-4" /> Sections</Button>
+        <Button data-layer-back data-tv-focus variant="ghost" size="sm" onClick={onBack}><ArrowLeft className="size-4" /> Home</Button>
         <div>
           <h1 className="font-display text-2xl font-bold">Franchise</h1>
           <p className="text-sm text-muted-foreground">Your saved movie and show collections.</p>
