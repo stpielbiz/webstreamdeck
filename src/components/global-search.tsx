@@ -75,7 +75,11 @@ export function GlobalSearch() {
     || (query.length >= 3 && (cast?.[group.item.name] ?? []).some((actor) => actor.toLowerCase().includes(query)))
     || (query.length >= 3 && kind !== "live" && (castHits.data?.[kind as "movie" | "series"] ?? []).includes(lookupKeyFor(group.item.name).key)),
   ).slice(0, LIMIT);
-  const groups = useMemo(() => [
+  const groups = useMemo(() => !query ? [
+    { kind: "series" as const, title: "Shows", items: [] as TitleGroup[], loading: false },
+    { kind: "movie" as const, title: "Movies", items: [] as TitleGroup[], loading: false },
+    { kind: "live" as const, title: "Channels", items: [] as TitleGroup[], loading: false },
+  ] : [
     { kind: "series" as const, title: "Shows", items: match("series", shows.data, castFor("series"), true), loading: shows.isFetching },
     { kind: "movie" as const, title: "Movies", items: match("movie", movies.data, castFor("movie"), true), loading: movies.isFetching },
     { kind: "live" as const, title: "Channels", items: match("live", live.data), loading: live.isFetching },
@@ -113,7 +117,7 @@ export function GlobalSearch() {
 
   return (
     <section className="space-y-3">
-      <div className="flex max-w-2xl items-center gap-2">
+      <div data-remote-row className="flex max-w-2xl items-center gap-2">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input

@@ -36,14 +36,15 @@ export function useFranchiseMatches(franchise: Franchise | null | undefined, mov
   }, [franchise, movies, shows]);
 }
 
-export function FranchiseDetails({ title, kind, onSelect }: {
+export function FranchiseDetails({ title, kind, onSelect, initiallyExpanded = false }: {
   title: string; kind: "movie" | "series";
   onSelect: (kind: "movie" | "series", group: TitleGroup) => void;
+  initiallyExpanded?: boolean;
 }) {
   const { activeId } = usePlaylists();
   const lookup = useServerFn(resolveFranchise);
   const fetchItems = useServerFn(getItems);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initiallyExpanded);
   const [order, setOrder] = useState<"year" | "story">("year");
   const saved = useSavedFranchises();
   const save = useSaveFranchise();
@@ -89,14 +90,14 @@ export function FranchiseDetails({ title, kind, onSelect }: {
   };
 
   return (
-    <section className="mt-4 border-t border-border pt-3">
-      <Button data-tv-focus variant="outline" className="h-auto w-full justify-start whitespace-normal py-2 text-left" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
+    <section className="border-t border-border pt-3">
+      <div data-remote-row><Button data-tv-focus variant="outline" className="h-auto w-full justify-start whitespace-normal py-2 text-left" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
         <Layers className="size-4 shrink-0" />
         <span className="min-w-0 flex-1">Part of {resolvedFranchise.name}</span>
         {expanded ? <ChevronUp className="size-4 shrink-0" /> : <ChevronDown className="size-4 shrink-0" />}
-      </Button>
+      </Button></div>
       {expanded && <div className="mt-3 space-y-2">
-        <div className="flex items-center justify-between gap-3 rounded border border-border bg-muted/40 p-2">
+        <div data-remote-row className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2">
           <p className="text-xs text-muted-foreground">{savedList ? "Saved for quick access in the Franchise menu." : "Add this list to the Franchise menu for quick access."}</p>
           <Button data-tv-focus size="sm" variant={savedList ? "secondary" : "default"} disabled={save.isPending || remove.isPending} onClick={() => void toggleSaved()}>
             {savedList ? <BookmarkX className="size-4" /> : <BookmarkPlus className="size-4" />}
@@ -104,14 +105,14 @@ export function FranchiseDetails({ title, kind, onSelect }: {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">{loading ? "Checking your library…" : `${matches.filter(({ group }) => group).length} of ${matches.length} titles in your library`}</p>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Franchise order">
+        <div data-remote-row className="flex flex-wrap gap-2" role="group" aria-label="Franchise order">
           <Button data-tv-focus size="sm" variant={order === "year" ? "default" : "secondary"} aria-pressed={order === "year"} onClick={() => setOrder("year")}>By year</Button>
           {resolvedFranchise.hasStoryOrder && <Button data-tv-focus size="sm" variant={order === "story" ? "default" : "secondary"} aria-pressed={order === "story"} onClick={() => setOrder("story")}>Story order</Button>}
         </div>
         {(movies.isError || shows.isError) && <Button data-tv-focus variant="outline" size="sm" onClick={() => { void movies.refetch(); void shows.refetch(); }}>Retry library check</Button>}
         <ul className="space-y-1 p-1">
-          {sorted.map(({ member, group }, index) => <li key={`${member.kind}-${member.title}-${member.year}`}>
-            <Button data-tv-focus variant="ghost" disabled={!group} onClick={() => group && onSelect(member.kind, group)} className="h-auto w-full justify-start gap-2 whitespace-normal px-2 py-2 text-left">
+          {sorted.map(({ member, group }, index) => <li data-remote-row key={`${member.kind}-${member.title}-${member.year}`}>
+            <Button data-tv-focus data-related-id={group?.item.id} variant="ghost" disabled={!group} onClick={() => group && onSelect(member.kind, group)} className="h-auto w-full justify-start gap-2 whitespace-normal px-2 py-2 text-left">
               <span className="w-5 shrink-0 text-xs text-muted-foreground">{index + 1}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm">{member.title}</span>

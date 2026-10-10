@@ -376,7 +376,7 @@ function TvLive() {
               variant={categoryId === "" ? "default" : "ghost"}
               className="h-9 w-full justify-start truncate px-2 text-xs"
               onFocus={() => previewCategory("")}
-              onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>("[data-guide-cell]")?.focus(); } }}
+              onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); } }}
 
               onClick={() => chooseCategory("")}
             >
@@ -390,7 +390,7 @@ function TvLive() {
                 variant={categoryId === category.id ? "default" : "ghost"}
                 className="h-9 w-full justify-start truncate px-2 text-xs"
                 onFocus={() => previewCategory(category.id)}
-                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>("[data-guide-cell]")?.focus(); } }}
+                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); } }}
 
                 onClick={() => chooseCategory(category.id)}
               >
@@ -401,6 +401,15 @@ function TvLive() {
         </aside>
 
         <section className="flex min-h-0 min-w-0 flex-col">
+          <div data-tv-zone="live-actions" data-tv-zone-order="2" data-remote-row className="mb-2 flex shrink-0 items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search aria-hidden="true" className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
+              <Input type="search" inputMode="search" enterKeyHint="search" autoComplete="off" aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-app-search="true" data-focus-key="live-search" data-zone-entry="true" className="h-9 pl-8 text-sm" onChange={(event) => { setSearch(event.target.value); setPage(0); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
+            </div>
+            <Button data-tv-focus size="sm" variant="secondary" onClick={jumpToNow}>Now</Button>
+            {selected && <Button data-tv-focus variant="secondary" size="sm" onClick={() => setFullscreen(true)}>Full screen</Button>}
+            {search && <Button variant="ghost" size="icon" aria-label="Clear channel search" data-tv-focus onClick={() => { setSearch(""); setPage(0); document.querySelector<HTMLElement>('[data-focus-key="live-search" data-zone-entry="true"]')?.focus(); }}><X className="size-4" /></Button>}
+          </div>
           {selected && !fullscreen && (
             <div className="mb-2 flex shrink-0 items-center gap-3 rounded-lg border border-border bg-card p-2" aria-label={`Preview of ${selected.name}`}>
               <div className="w-64 shrink-0 overflow-hidden rounded bg-muted">
@@ -414,17 +423,9 @@ function TvLive() {
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">Press OK again on this channel for full screen · Back to stop</p>
               </div>
-              <Button variant="secondary" size="sm" onClick={() => setFullscreen(true)}>Full screen</Button>
             </div>
           )}
-          <div data-tv-zone="live-guide" className="mb-2 flex shrink-0 items-center gap-2">
-            <Button data-tv-focus size="sm" variant="secondary" onClick={jumpToNow}>Now</Button>
-            <div className="relative min-w-0 flex-1">
-              <Search aria-hidden="true" className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
-              <Input type="search" inputMode="search" enterKeyHint="search" autoComplete="off" aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-app-search="true" data-focus-key="live-search" className="h-9 pl-8 text-sm" onChange={(event) => { setSearch(event.target.value); setPage(0); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
-            </div>
-            {search && <Button variant="ghost" size="icon" aria-label="Clear channel search" data-tv-focus onClick={() => { setSearch(""); setPage(0); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); }}><X className="size-4" /></Button>}
-          </div>
+
           <div className="mb-1 flex min-h-10 shrink-0 items-center justify-between gap-2 border-b border-border pb-1">
             <div className="min-w-0">
               <p className="break-words font-display text-sm font-bold">{focused?.name ?? "Live TV guide"}</p>
@@ -439,7 +440,7 @@ function TvLive() {
           <div
             ref={guideRef}
             data-tv-zone="live-guide"
-            data-tv-zone-order="2"
+            data-tv-zone-order="3"
             data-horizontal-nav="true"
             onKeyDown={guideKeys}
             className="scrollbar-thin relative min-h-0 flex-1 overflow-auto overscroll-contain rounded border border-border bg-card"

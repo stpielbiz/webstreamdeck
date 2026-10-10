@@ -68,7 +68,16 @@ const emptySection = (): LibrarySectionStatus => ({
 export function useLibraryOverview(playlistId: string | null): LibraryOverview {
   const client = useQueryClient();
   const [revision, setRevision] = useState(0);
-  useEffect(() => client.getQueryCache().subscribe(() => setRevision((value) => value + 1)), [client]);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = client.getQueryCache().subscribe((event) => {
+      const [family, owner] = event.query.queryKey;
+      if (owner !== playlistId || !["system-catalogue", "cached-title-metadata", "tv-live-items", "device-guide"].includes(String(family))) return;
+      if (event.type !== "updated" || event.action.type !== "success" || timer) return;
+      timer = setTimeout(() => { timer = undefined; setRevision((value) => value + 1); }, 500);
+    });
+    return () => { unsubscribe(); if (timer) clearTimeout(timer); };
+  }, [client, playlistId]);
 
   return useMemo(() => {
     if (!playlistId) return { live: emptySection(), movie: emptySection(), series: emptySection() };

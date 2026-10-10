@@ -3,7 +3,7 @@ import { Clapperboard, Download, ListVideo, MonitorPlay, Settings, ShieldCheck, 
 import { useQueryClient } from "@tanstack/react-query";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { syncedResumeRows, useSyncPlaylists } from "@/lib/playlist-sync";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TitleDetailsDialog } from "@/components/title-details-dialog";
 import { toast } from "sonner";
 
@@ -57,11 +57,12 @@ function TvHome() {
 
   const syncPlaylists = useSyncPlaylists();
   const queryClient = useQueryClient();
-  const resume = syncedResumeRows(
+  const movieItems = queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, "movie"]);
+  const showItems = queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, "series"]);
+  const resume = useMemo(() => syncedResumeRows(
     progress, activeId, syncPlaylists,
-    queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, "movie"]),
-    queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, "series"]),
-  ).filter((row) => !row.completed && row.positionSeconds > 30);
+    movieItems, showItems,
+  ).filter((row) => !row.completed && row.positionSeconds > 30), [progress, activeId, syncPlaylists, movieItems, showItems]);
   const favouriteChannels = (favorites ?? []).filter(
     (row) => row.playlistId === activeId && row.itemKind === "live",
   );
@@ -102,13 +103,13 @@ function TvHome() {
         <main data-tv-zone="home-content" data-tv-zone-order="2" data-horizontal-nav="true" className="scrollbar-thin min-h-0 overflow-y-auto overscroll-contain pr-2">
           {focusedSection === "Home" ? (
             <div className="space-y-5 pb-6">
+              {activeId && <div className="sticky top-0 z-20 bg-background pb-3"><GlobalSearch /></div>}
               <div className="pb-1">
                 <p className="text-xs font-semibold uppercase text-primary">Your library</p>
                 <h2 className="font-display text-2xl font-bold">Welcome back</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Pick up where you stopped or jump into a favourite.</p>
               </div>
               {!activeId && <HomeMessage title="No playlist yet" body="Add a playlist to see your channels, movies and shows here." to="/playlists" action="Add playlist" />}
-              {activeId && <GlobalSearch />}
               {sync.running && <p role="status" className="text-xs text-muted-foreground">{sync.total ? `Preparing your library… TV guide ${sync.done}/${sync.total} channels` : "Preparing your library…"}</p>}
               <HomeShelf title="Continue watching" empty="Nothing to resume yet.">
                 {resume.slice(0, 20).map((row, index) => (
@@ -166,7 +167,7 @@ function HomeShelf({ title, empty, children }: { title: string; empty: string; c
   return (
     <section>
       <h3 className="mb-2 font-display text-lg font-semibold">{title}</h3>
-      {hasItems ? <div className="scrollbar-thin flex gap-3 overflow-x-auto overflow-y-hidden px-1 pb-3 pt-1">{children}</div> : <p className="rounded border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">{empty}</p>}
+      {hasItems ? <div data-remote-row className="scrollbar-thin flex gap-3 overflow-x-auto overflow-y-hidden p-1 pb-3">{children}</div> : <p className="rounded border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">{empty}</p>}
     </section>
   );
 }
@@ -244,8 +245,12 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin, library
   if (!preview || (section === "Admin" && !isAdmin)) return null;
   const Icon = preview.icon;
   return (
-    <div className="flex min-h-full items-center justify-center py-8">
-      <section className="w-full max-w-3xl border-y border-border py-10">
+    <div className="py-1">
+      <section className="w-full max-w-3xl">
+        <div data-remote-row className="sticky top-0 z-20 flex flex-wrap gap-2 bg-background pb-2">        <Button asChild size="lg" className="mb-5">
+          <Link to={preview.to} search={section === "Playlists" || section === "Settings" || section === "Get the TV app" || section === "Admin" ? { mode: "tv" } : {}} preload={false} data-tv-focus data-zone-entry="true">{preview.action}</Link>
+        </Button>
+{section === "Movies" && isAdmin && <BulkRefresh kind="movie" />}{section === "Shows" && isAdmin && <BulkRefresh kind="series" />}</div>
         <Icon className="size-10 text-primary" />
         <p className="mt-5 text-xs font-semibold uppercase text-primary">Focused section</p>
         <h2 className="mt-1 font-display text-4xl font-bold">{preview.title}</h2>
@@ -256,9 +261,6 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin, library
         {section === "Favourites" && (
           <p className="mt-4 text-sm text-muted-foreground">{resumeCount} waiting to resume · {favouriteCount} favourites</p>
         )}
-        <Button asChild size="lg" className="mt-7">
-          <Link to={preview.to} search={section === "Playlists" || section === "Settings" || section === "Get the TV app" || section === "Admin" ? { mode: "tv" } : {}} preload="intent" data-tv-focus data-zone-entry="true">{preview.action}</Link>
-        </Button>
         <p className="mt-3 text-sm text-muted-foreground">Press OK on the menu to open, or press Right to use this button.</p>
       </section>
     </div>
@@ -297,7 +299,6 @@ function LibraryStatus({ status, kind, hasPlaylist, syncing = false, isAdmin = f
           </>
         )}
       </ul>
-      {kind !== "live" && isAdmin && <BulkRefresh kind={kind} />}
       {kind !== "live" && status.topGenres.length > 0 && (
         <p className="mt-4 text-sm"><span className="text-muted-foreground">Top genres:</span> {status.topGenres.join(" · ")}</p>
       )}
@@ -313,7 +314,7 @@ function BulkRefresh({ kind }: { kind: "movie" | "series" }) {
   const mine = state.kind === kind;
   const percent = state.total ? Math.round((state.done / state.total) * 100) : 0;
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       {state.running ? (
         <Button variant="secondary" size="sm" data-tv-focus onClick={stopBulkRefresh}>Stop details update</Button>
       ) : (

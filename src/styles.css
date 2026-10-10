@@ -142,6 +142,28 @@
   scrollbar-color: var(--color-muted) transparent;
 }
 
+/* Remote focus uses :focus, not browser-dependent :focus-visible heuristics.
+   Inset borders remain visible inside clipped rails, shelves and TV overscan. */
+[data-tv-focus]:focus,
+[role="dialog"] button:focus,
+[role="dialog"] input:focus {
+  outline: 3px solid var(--ring) !important;
+  outline-offset: -3px !important;
+  box-shadow: inset 0 0 0 5px var(--background) !important;
+  background-color: var(--secondary) !important;
+  color: var(--foreground) !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+[data-tv-zone] [data-tv-focus] {
+  scroll-margin: 8px;
+}
+
+[data-tv-zone="sections"] [data-tv-focus] {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
