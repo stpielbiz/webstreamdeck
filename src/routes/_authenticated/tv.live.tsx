@@ -14,8 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VideoPlayer } from "@/components/video-player";
 import { cn } from "@/lib/utils";
-import { useVoiceSearch } from "@/lib/voice-search";
-import { VoiceButton } from "@/components/voice-button";
+import { useAppSearchFocus } from "@/lib/app-search";
 
 const GUIDE_HOURS = 12;
 const GUIDE_WIDTH = 2880;
@@ -59,11 +58,7 @@ function TvLive() {
   const [clock, setClock] = useState(() => Date.now());
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
-  useVoiceSearch((spoken) => {
-    setSearch(spoken);
-    setPage(0);
-    document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus();
-  });
+  useAppSearchFocus("live-search");
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   const searching = search.trim().length > 0;
   const effectiveCategory = searching ? "" : categoryId;
@@ -423,11 +418,10 @@ function TvLive() {
             </div>
           )}
           <div data-tv-zone="live-guide" className="mb-2 flex shrink-0 items-center gap-2">
-            <VoiceButton focusKey="live-voice" />
             <Button data-tv-focus size="sm" variant="secondary" onClick={jumpToNow}>Now</Button>
             <div className="relative min-w-0 flex-1">
               <Search aria-hidden="true" className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
-              <Input type="search" aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-focus-key="live-search" className="h-9 pl-8 text-sm" onChange={(event) => { setSearch(event.target.value); setPage(0); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
+              <Input type="search" inputMode="search" enterKeyHint="search" autoComplete="off" aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-app-search="true" data-focus-key="live-search" className="h-9 pl-8 text-sm" onChange={(event) => { setSearch(event.target.value); setPage(0); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
             </div>
             {search && <Button variant="ghost" size="icon" aria-label="Clear channel search" data-tv-focus onClick={() => { setSearch(""); setPage(0); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); }}><X className="size-4" /></Button>}
           </div>
