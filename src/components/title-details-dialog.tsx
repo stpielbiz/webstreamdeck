@@ -15,7 +15,7 @@ import type { TitleMetadata } from "@/lib/metadata.server";
 import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { cn } from "@/lib/utils";
 import type { CatalogItem } from "@/lib/iptv-types";
-import { mediaMatchKey, type TitleVariant } from "@/lib/title-variants";
+import { cleanVariantTitle, mediaMatchKey, type TitleVariant } from "@/lib/title-variants";
 import { FranchiseDetails } from "@/components/franchise-details";
 
 export type TitleKind = "movie" | "series";
@@ -195,7 +195,7 @@ function TitleDetailsContent({
                 {activeItemId && <Button data-tv-focus variant="secondary" onClick={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: selectedFavorite ? availableVariants.find((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id))?.item.id ?? activeItemId : activeItemId, title: selectedMetadata?.title ?? name ?? title ?? "", logoUrl: poster ?? null })}><Star className={cn("size-4", selectedFavorite && "fill-primary text-primary")} />{selectedFavorite ? "Remove from favourites" : "Add to favourites"}</Button>}
                 <DialogClose asChild><Button data-dialog-back data-tv-focus variant="outline" className="h-auto whitespace-normal py-2">{parentTitle ? `Back to ${parentTitle}` : "Close"}</Button></DialogClose>
               </div>
-              {id && name && <FranchiseDetails title={selectedMetadata?.title || name} kind={kind} onSelect={onSelectRelated} />}
+              {id && name && <FranchiseDetails title={cleanVariantTitle(name).replace(/[[(]\s*(?:US|UK|CA|AU|EN|FR|DE|ES|IT)\s*[\])]/gi, "").trim()} kind={kind} onSelect={onSelectRelated} />}
             </div>
             <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
               {playing && mediaId ? (

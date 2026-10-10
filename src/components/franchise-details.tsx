@@ -15,7 +15,7 @@ export function useFranchiseMatches(franchise: Franchise | null | undefined, mov
     const index = (items?: CatalogItem[]) => {
       const map = new Map<string, TitleGroup[]>();
       for (const group of groupCatalogItems(items ?? [])) {
-        const key = mediaMatchKey(group.title);
+        const key = mediaMatchKey(group.title.replace(/[[(]\s*(?:US|UK|CA|AU|EN|FR|DE|ES|IT)\s*[\])]/gi, ""));
         map.set(key, [...(map.get(key) ?? []), group]);
       }
       return map;
@@ -24,7 +24,11 @@ export function useFranchiseMatches(franchise: Franchise | null | undefined, mov
     const showsIndex = index(shows);
     return franchise.members.map((member) => {
       const candidates = (member.kind === "movie" ? moviesIndex : showsIndex).get(mediaMatchKey(member.title)) ?? [];
-      const group = candidates.find((candidate) => !member.year || !candidate.year || Math.abs(Number(candidate.year) - member.year) <= 1) ?? null;
+      const group = candidates.find((candidate) => {
+        // Providers may supply a full release date rather than a four-digit year.
+        const year = String(candidate.year ?? "").match(/\b(?:19|20)\d{2}\b/)?.[0];
+        return !member.year || !year || Math.abs(Number(year) - member.year) <= 1;
+      }) ?? null;
       return { member, group };
     });
   }, [franchise, movies, shows]);
