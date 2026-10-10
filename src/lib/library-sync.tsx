@@ -172,12 +172,16 @@ export function useLibrarySync(playlistId: string | null): SyncStatus {
     };
     const refresh = async <T,>(key: readonly unknown[], fn: () => Promise<T>) => {
       if (!force && !stale(key, LIBRARY_TTL)) return client.getQueryData<T>(key);
+      const old = client.getQueryData<T>(key);
       try {
         const data = await fn();
+        // Keep the saved copy if the provider returns nothing (outage/hiccup).
+        if (!force && Array.isArray(old) && old.length > 0 && Array.isArray(data) && data.length === 0) return old;
+        // Structural sharing keeps unchanged entries; only differences are applied.
         client.setQueryData(key, data);
-        return data;
-      } catch {
         return client.getQueryData<T>(key);
+      } catch {
+        return old;
       }
     };
 

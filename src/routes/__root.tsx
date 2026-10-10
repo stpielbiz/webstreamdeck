@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { DebugPanel } from "@/components/debug-panel";
 import { supabase } from "@/integrations/supabase/client";
+import { useWebUpdateWatcher } from "@/lib/web-update";
 
 function NotFoundComponent() {
   return (
@@ -131,6 +132,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  useWebUpdateWatcher();
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
