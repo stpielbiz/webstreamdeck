@@ -1,7 +1,7 @@
 import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowDownAZ, ArrowLeft, CalendarArrowDown, Play, Search, Sparkles, Star } from "lucide-react";
+import { ArrowDownAZ, ArrowLeft, CalendarArrowDown, Play, Sparkles, Star } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ import { VideoPlayer } from "@/components/video-player";
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { SearchField } from "@/components/search-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getItems, getMovie, getPlayback, getSeries } from "@/lib/iptv.functions";
 import type { CatalogItem, EpisodeItem } from "@/lib/iptv-types";
@@ -398,33 +398,18 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
 
       <div ref={contentRef} data-tv-zone="content" data-tv-zone-order="2" className="scrollbar-thin min-h-0 min-w-0 overflow-y-auto pr-1">
         <div className="sticky top-0 z-20 mb-3 flex items-center gap-2 border-b border-border bg-background/95 pb-3 backdrop-blur">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              data-tv-focus
-              data-zone-entry="true"
-              data-app-search="true"
-              data-focus-key="catalog-search"
-              type="search"
-              inputMode="search"
-              autoComplete="off"
-              enterKeyHint="search"
-              onKeyDown={(event) => {
-                if (event.key === "ArrowRight" && event.currentTarget.selectionStart === event.currentTarget.value.length) {
-                  event.preventDefault(); event.stopPropagation();
-                  document.querySelector<HTMLElement>('[data-focus-key="catalog-sort"]')?.focus();
-                }
-                if (event.key === "Enter" || event.key === "ArrowDown") {
-                  event.preventDefault(); event.stopPropagation();
-                  document.querySelector<HTMLElement>('[data-grid-entry="true"] [data-tv-focus]')?.focus();
-                }
-              }}
-              value={search}
-              onChange={(event) => { setSearch(event.target.value); setSelectedId(null); }}
-              placeholder={`Search all ${kind === "movie" ? "movies" : "shows"}`}
-              className="pl-9"
-            />
-          </div>
+          <SearchField
+            containerClassName="min-w-0 flex-1"
+            data-tv-focus data-zone-entry="true" data-app-search="true" data-focus-key="catalog-search"
+            value={search} onValueChange={(value) => { setSearch(value); setSelectedId(null); }}
+            placeholder={`Search all ${kind === "movie" ? "movies" : "shows"}`}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") {
+                event.preventDefault(); event.stopPropagation();
+                document.querySelector<HTMLElement>('[data-grid-entry="true"] [data-tv-focus]')?.focus();
+              }
+            }}
+          />
           <Button
             data-tv-focus
             data-focus-key="catalog-sort"

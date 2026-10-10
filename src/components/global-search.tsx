@@ -1,13 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Play, Search, Star, X } from "lucide-react";
+import { Play, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TitleDetailsDialog } from "@/components/title-details-dialog";
 
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchField } from "@/components/search-field";
 import { getItems } from "@/lib/iptv.functions";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
@@ -118,31 +118,18 @@ export function GlobalSearch() {
   return (
     <section className="space-y-3">
       <div data-remote-row className="flex max-w-2xl items-center gap-2">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            data-tv-focus
-            data-zone-entry="true"
-            data-app-search="true"
-            data-focus-key="global-search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === "ArrowDown") {
-                const first = document.querySelector<HTMLElement>('[data-focus-key="global-result-first"]');
-                if (first) { event.preventDefault(); event.stopPropagation(); first.focus(); }
-              }
-            }}
-            placeholder="Search shows, movies and channels"
-            className="h-9 pl-9 pr-9"
-          />
-          {search && (
-            <Button type="button" variant="ghost" size="icon" aria-label="Clear search" className="absolute right-0 top-0 h-9" onClick={() => setSearch("")}>
-              <X className="size-4" />
-            </Button>
-          )}
-        </div>
+        <SearchField
+          containerClassName="min-w-0 flex-1"
+          data-tv-focus data-zone-entry="true" data-app-search="true" data-focus-key="global-search"
+          value={search} onValueChange={setSearch}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown") {
+              const first = document.querySelector<HTMLElement>('[data-focus-key="global-result-first"]');
+              if (first) { event.preventDefault(); event.stopPropagation(); first.focus(); }
+            }
+          }}
+          placeholder="Search shows, movies and channels" className="h-9"
+        />
       </div>
       {enabled && (
         <div className="max-w-3xl space-y-4" onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); backToSearch(); } }}>

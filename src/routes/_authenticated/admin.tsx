@@ -15,7 +15,7 @@ import {
 } from "@/lib/admin.functions";
 import { useIsAdmin } from "@/lib/use-admin";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchField } from "@/components/search-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { setDebugEnabled, useDebugLog } from "@/lib/debug-log";
@@ -200,11 +200,12 @@ function AdminPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2">
           <h2 className="font-display text-lg font-semibold">Accounts</h2>
-          <Input
+          <SearchField
             value={filter}
-            onChange={(event) => setFilter(event.target.value)}
+            onValueChange={setFilter}
             placeholder="Search by email"
-            className="max-w-xs"
+            containerClassName="max-w-sm"
+            data-tv-focus data-app-search="true"
           />
         </div>
 

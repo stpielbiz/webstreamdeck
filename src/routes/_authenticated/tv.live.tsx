@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GUIDE_TTL, guideKey, mergeGuide, type GuideStore } from "@/lib/library-sync";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Play, Search, Tv, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Play, Tv, X } from "lucide-react";
 import { z } from "zod";
 
 import { getCategories, getItems, getPlayback, getSchedules } from "@/lib/iptv.functions";
@@ -11,7 +11,7 @@ import type { CatalogItem, Programme } from "@/lib/iptv-types";
 import { usePlaylists } from "@/components/playlist-context";
 import { TvShell } from "@/components/tv-shell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchField } from "@/components/search-field";
 import { VideoPlayer } from "@/components/video-player";
 import { cn } from "@/lib/utils";
 import { useAppSearchFocus } from "@/lib/app-search";
@@ -403,12 +403,10 @@ function TvLive() {
         <section className="flex min-h-0 min-w-0 flex-col">
           <div data-tv-zone="live-actions" data-tv-zone-order="2" data-remote-row className="mb-2 flex shrink-0 items-center gap-2">
             <div className="relative min-w-0 flex-1">
-              <Search aria-hidden="true" className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
-              <Input type="search" inputMode="search" enterKeyHint="search" autoComplete="off" aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-app-search="true" data-focus-key="live-search" data-zone-entry="true" className="h-9 pl-8 text-sm" onChange={(event) => { setSearch(event.target.value); setPage(0); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
+              <SearchField aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-app-search="true" data-focus-key="live-search" data-zone-entry="true" className="h-9 text-sm" onValueChange={(value) => { setSearch(value); setPage(0); }} onKeyDown={(event) => { if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
             </div>
             <Button data-tv-focus size="sm" variant="secondary" onClick={jumpToNow}>Now</Button>
             {selected && <Button data-tv-focus variant="secondary" size="sm" onClick={() => setFullscreen(true)}>Full screen</Button>}
-            {search && <Button variant="ghost" size="icon" aria-label="Clear channel search" data-tv-focus onClick={() => { setSearch(""); setPage(0); document.querySelector<HTMLElement>('[data-focus-key="live-search" data-zone-entry="true"]')?.focus(); }}><X className="size-4" /></Button>}
           </div>
           {selected && !fullscreen && (
             <div className="mb-2 flex shrink-0 items-center gap-3 rounded-lg border border-border bg-card p-2" aria-label={`Preview of ${selected.name}`}>
