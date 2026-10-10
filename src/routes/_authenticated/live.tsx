@@ -151,7 +151,7 @@ function LivePage() {
     return (
       <section data-tv-zone="categories" className="min-h-full animate-slide-in-right p-4 motion-reduce:animate-none sm:p-6">
         <div className="mx-auto max-w-3xl">
-          <Button data-layer-back data-tv-focus variant="ghost" className="mb-3" onClick={() => void navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /> Sections</Button>
+          <Button data-layer-back data-tv-focus variant="ghost" className="mb-3" onClick={() => void navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /> Home</Button>
           <h1 className="font-display text-2xl font-bold">Live TV</h1>
           <p className="mt-1 text-sm text-muted-foreground">Choose a channel category</p>
           <div className="mt-5 flex flex-col gap-1">

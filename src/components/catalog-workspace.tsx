@@ -264,7 +264,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     setEpisode(null);
     setPlaying(false);
   };
-  const returnToSections = () => void navigate({ to: tv ? "/tv" : "/dashboard" });
+  const returnToHome = () => void navigate({ to: tv ? "/tv" : "/dashboard" });
   const chooseGenre = (label: string) => {
     if (label === genre) return;
     previousGenre.current = genre;
@@ -336,7 +336,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       )}
     >
       <aside data-tv-zone="categories" data-tv-zone-order="1" className="flex min-h-0 min-w-0 flex-col overflow-hidden border-b border-border pb-3 md:border-b-0 md:border-r md:pb-0 md:pr-3">
-        <Button data-layer-back data-tv-focus variant="ghost" className="mb-2 shrink-0 justify-start px-2" onClick={returnToSections}><ArrowLeft className="size-4" /> Sections</Button>
+        <Button data-layer-back data-tv-focus variant="ghost" className="mb-2 shrink-0 justify-start px-2" onClick={returnToHome}><ArrowLeft className="size-4" /> Home</Button>
         <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
           <LayerHeading title={kind === "movie" ? "Movies" : "Shows"} subtitle="System categories" />
           {isAdmin && <Button data-tv-focus size="icon" variant="ghost" title="Organise missing titles" disabled={organising} onClick={() => void organiseMissing()}><Sparkles className={cn("size-4", organising && "animate-pulse")} /></Button>}

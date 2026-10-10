@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useSpatialNav } from "@/lib/use-spatial-nav";
 import { useSavedFranchises } from "@/lib/saved-franchises";
 import { useTvScreenSize } from "@/lib/playlist-sync";
+import { useAccountAccess } from "@/lib/account-access";
 import {
   Select,
   SelectContent,
@@ -57,6 +58,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tvRoute = pathname === "/tv" || pathname.startsWith("/tv/");
   const tvMode = tvRoute || tvContext;
   const tvScreenSize = useTvScreenSize();
+  const accountAccess = useAccountAccess();
+  const expired = accountAccess.data?.expired === true;
+  const allowedWhileExpired = pathname === "/dashboard" || pathname === "/tv" || pathname === "/settings";
+  useEffect(() => {
+    if (expired && !allowedWhileExpired) {
+      void navigate({ to: tvMode ? "/tv" : "/dashboard", replace: true });
+    }
+  }, [allowedWhileExpired, expired, navigate, tvMode]);
   useEffect(() => {
     if (tvMode) document.documentElement.dataset['tvScreenSize'] = tvScreenSize;
     else delete document.documentElement.dataset['tvScreenSize'];
@@ -121,21 +130,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="flex flex-col gap-1">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/75 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              activeProps={{
-                className:
-                  "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary",
-              }}
-              activeOptions={{ exact: to === "/dashboard" }}
-            >
-              <Icon className="size-4" />
-              {label}
-            </Link>
-          ))}
+          {navItems.map(({ to, label, icon: Icon }) => {
+            const disabled = expired && to !== "/dashboard" && to !== "/settings";
+            return disabled ? (
+              <span key={to} aria-disabled="true" className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground/45">
+                <Icon className="size-4" />{label}
+              </span>
+            ) : (
+              <Link key={to} to={to} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/75 transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary" }} activeOptions={{ exact: to === "/dashboard" }}>
+                <Icon className="size-4" />{label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="mt-auto space-y-3 px-1">
@@ -166,17 +172,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-2 overflow-x-auto border-b border-border bg-sidebar px-3 py-2 md:hidden">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              className="flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/75"
-              activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
-            >
-              <Icon className="size-3.5" />
-              {label}
-            </Link>
-          ))}
+          {navItems.map(({ to, label, icon: Icon }) => {
+            const disabled = expired && to !== "/dashboard" && to !== "/settings";
+            return disabled ? <span key={to} aria-disabled="true" className="flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground/45"><Icon className="size-3.5" />{label}</span> : <Link key={to} to={to} className="flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/75" activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}><Icon className="size-3.5" />{label}</Link>;
+          })}
         </header>
         <main className="min-w-0 flex-1">{children}</main>
       </div>

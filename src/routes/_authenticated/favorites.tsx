@@ -77,7 +77,7 @@ function FavoritesPage() {
 
   return (
     <div data-tv-zone="content" className="space-y-10 p-6">
-      <Button data-layer-back data-tv-focus variant="ghost" onClick={() => void navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /> Sections</Button>
+      <Button data-layer-back data-tv-focus variant="ghost" onClick={() => void navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /> Home</Button>
       <h1 className="font-display text-2xl font-bold">Favourites</h1>
 
       {channels.length > 0 && (

@@ -14,6 +14,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { variantsForItem } from "@/lib/title-variants";
+import { useAccountAccess } from "@/lib/account-access";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -36,6 +37,7 @@ function Dashboard() {
   const favorites = useFavorites();
   const [openFavourite, setOpenFavourite] = useState<FavoriteRow | null>(null);
   const queryClient = useQueryClient();
+  const expired = useAccountAccess().data?.expired === true;
   const favouriteVariants = openFavourite && activeId && (openFavourite.itemKind === "movie" || openFavourite.itemKind === "series")
     ? variantsForItem(queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, openFavourite.itemKind]) ?? [], openFavourite.itemId)
     : [];
@@ -84,6 +86,7 @@ function Dashboard() {
     <div className="space-y-10 p-6">
       <SectionMenu current="Home" />
       <SubscriptionBanner />
+      {expired ? null : <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Welcome back</h1>
@@ -211,6 +214,7 @@ function Dashboard() {
         variants={favouriteVariants}
         onClose={() => setOpenFavourite(null)}
       />
+      </>}
     </div>
   );
 }

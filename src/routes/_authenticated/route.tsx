@@ -3,6 +3,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { PlaylistProvider } from "@/components/playlist-context";
+import { AccountAccessProvider } from "@/lib/account-access";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -16,10 +17,12 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   return (
-    <PlaylistProvider>
-      <AppShell>
-        <Outlet />
-      </AppShell>
-    </PlaylistProvider>
+    <AccountAccessProvider>
+      <PlaylistProvider>
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      </PlaylistProvider>
+    </AccountAccessProvider>
   );
 }
