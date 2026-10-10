@@ -91,6 +91,31 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
   });
 
 /**
+ * Search the shared metadata store by actor name. Returns lookup keys of
+ * titles whose saved cast matches, so search works before local backfill.
+ */
+export const searchTitlesByCast = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ query: z.string().min(2).max(100) }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ movie: string[]; series: string[] }> => {
+    const pattern = `%${data.query.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+    const fetch = async (kind: "movie" | "series") => {
+      const { data: rows, error } = await context.supabase
+        .from("title_metadata")
+        .select("lookup_key")
+        .eq("item_kind", kind)
+        .filter("cast_names::text", "ilike", pattern)
+        .limit(500);
+      if (error) throw new Error(error.message);
+      return (rows ?? []).map((row) => row.lookup_key as string);
+    };
+    const [movie, series] = await Promise.all([fetch("movie"), fetch("series")]);
+    return { movie, series };
+  });
+
+/**
  * Resolve genre/year/artwork for a batch of provider titles.
  * Cached lookups return without touching TMDB or the AI.
  */

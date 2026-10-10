@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils";
 import { useVoiceSearch } from "@/lib/voice-search";
 import { groupCatalogItems, type TitleGroup } from "@/lib/title-variants";
 import { resolveFranchise } from "@/lib/franchise.functions";
+import { searchTitlesByCast } from "@/lib/metadata.functions";
+import { lookupKeyFor } from "@/lib/title-key";
 import { FranchiseCard, FranchiseList, useFranchiseMatches } from "@/components/franchise-list";
 
 const LIMIT = 30;
@@ -58,6 +60,15 @@ export function GlobalSearch() {
   const movies = useQuery(opts("movie", "system-catalogue"));
   const shows = useQuery(opts("series", "system-catalogue"));
   const client = useQueryClient();
+  const castSearch = useServerFn(searchTitlesByCast);
+  // Ask the shared details store for actor matches, so search works even
+  // before this device has downloaded every title's details.
+  const castHits = useQuery({
+    queryKey: ["cast-search", query],
+    queryFn: () => castSearch({ data: { query } }),
+    enabled: enabled && query.length >= 3,
+    staleTime: 30 * 60_000,
+  });
   const castFor = (kind: "movie" | "series") => {
     const out: Record<string, string[]> = {};
     for (const [, data] of client.getQueriesData<Record<string, { cast?: string[] }>>({ queryKey: ["cached-title-metadata", activeId, kind] })) {
@@ -65,17 +76,18 @@ export function GlobalSearch() {
     }
     return out;
   };
-  const match = (items?: CatalogItem[], cast?: Record<string, string[]>, grouped = false) => (grouped ? groupCatalogItems(items ?? []) : (items ?? []).map((item) => ({ key: item.id, item, variants: [], title: item.name, year: item.year ?? null }))).filter((group) =>
+  const match = (kind: "movie" | "series" | "live", items?: CatalogItem[], cast?: Record<string, string[]>, grouped = false) => (grouped ? groupCatalogItems(items ?? []) : (items ?? []).map((item) => ({ key: item.id, item, variants: [], title: item.name, year: item.year ?? null }))).filter((group) =>
     group.title.toLowerCase().includes(query)
     || group.variants.some((variant) => variant.item.name.toLowerCase().includes(query))
-    || (query.length >= 3 && (cast?.[group.item.name] ?? []).some((actor) => actor.toLowerCase().includes(query))),
+    || (query.length >= 3 && (cast?.[group.item.name] ?? []).some((actor) => actor.toLowerCase().includes(query)))
+    || (query.length >= 3 && kind !== "live" && (castHits.data?.[kind as "movie" | "series"] ?? []).includes(lookupKeyFor(group.item.name).key)),
   ).slice(0, LIMIT);
   const groups = useMemo(() => [
-    { kind: "series" as const, title: "Shows", items: match(shows.data, castFor("series"), true), loading: shows.isFetching },
-    { kind: "movie" as const, title: "Movies", items: match(movies.data, castFor("movie"), true), loading: movies.isFetching },
-    { kind: "live" as const, title: "Channels", items: match(live.data), loading: live.isFetching },
+    { kind: "series" as const, title: "Shows", items: match("series", shows.data, castFor("series"), true), loading: shows.isFetching },
+    { kind: "movie" as const, title: "Movies", items: match("movie", movies.data, castFor("movie"), true), loading: movies.isFetching },
+    { kind: "live" as const, title: "Channels", items: match("live", live.data), loading: live.isFetching },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [query, live.data, movies.data, shows.data, live.isFetching, movies.isFetching, shows.isFetching]);
+  ], [query, live.data, movies.data, shows.data, live.isFetching, movies.isFetching, shows.isFetching, castHits.data]);
 
   const open = (kind: Kind, group: TitleGroup) => {
     if (kind === "live") void navigate({ to: "/tv/live", search: { channel: group.item.id } });
