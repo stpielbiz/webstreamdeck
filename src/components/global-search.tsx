@@ -15,6 +15,8 @@ import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks
 import { cn } from "@/lib/utils";
 import { useVoiceSearch } from "@/lib/voice-search";
 import { groupCatalogItems, type TitleGroup } from "@/lib/title-variants";
+import { resolveFranchise } from "@/lib/franchise.functions";
+import { FranchiseCard, FranchiseList, useFranchiseMatches } from "@/components/franchise-list";
 
 const LIMIT = 30;
 const STORAGE_KEY = "streamdeck-home-search";
@@ -79,7 +81,26 @@ export function GlobalSearch() {
     if (kind === "live") void navigate({ to: "/tv/live", search: { channel: group.item.id } });
     else setOpenGroup({ kind, group });
   };
-  const firstResult = groups.find((group) => group.items.length > 0);
+  // Franchise of the best movie/show match, resolved after typing settles.
+  const topMatch = groups.slice(0, 2).map((g) => ({ kind: g.kind, first: g.items[0] }))
+    .find((g) => g.first && g.first.title.toLowerCase().startsWith(query)) ?? groups.slice(0, 2).map((g) => ({ kind: g.kind, first: g.items[0] })).find((g) => g.first);
+  const [settled, setSettled] = useState<{ title: string; kind: "movie" | "series" } | null>(null);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSettled(query.length >= 3 && topMatch?.first ? { title: topMatch.first.title, kind: topMatch.kind as "movie" | "series" } : null), 700);
+    return () => window.clearTimeout(t);
+  }, [query, topMatch?.first?.title, topMatch?.kind]);
+  const lookup = useServerFn(resolveFranchise);
+  const franchise = useQuery({
+    queryKey: ["franchise", settled?.title, settled?.kind],
+    queryFn: () => lookup({ data: settled! }),
+    enabled: !!settled,
+    staleTime: Infinity,
+  });
+  const [franchiseOpen, setFranchiseOpen] = useState(false);
+  const franchiseMatches = useFranchiseMatches(franchise.data, movies.data, shows.data);
+  const owned = franchiseMatches.filter((m) => m.group).length;
+  const showFranchise = enabled && !!franchise.data && owned > 0;
+  const firstResult = showFranchise ? undefined : groups.find((group) => group.items.length > 0);
   const backToSearch = () => document.querySelector<HTMLElement>('[data-focus-key="global-search"]')?.focus();
 
   return (
@@ -113,6 +134,7 @@ export function GlobalSearch() {
       </div>
       {enabled && (
         <div className="max-w-3xl space-y-4" onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); backToSearch(); } }}>
+          {showFranchise && franchise.data && <FranchiseCard franchise={franchise.data} owned={owned} onOpen={() => setFranchiseOpen(true)} />}
           {groups.map((group) => (
             <div key={group.kind}>
               <h3 className="mb-1 font-display text-sm font-semibold text-primary">{group.title} <span className="text-xs font-normal text-muted-foreground">· {group.loading && group.items.length === 0 ? "searching…" : group.items.length}</span></h3>
@@ -165,6 +187,7 @@ export function GlobalSearch() {
         </div>
       )}
       <TitleDetailsDialog kind={openGroup?.kind ?? "movie"} id={openGroup?.group.item.id ?? null} name={openGroup?.group.title} image={openGroup?.group.item.image} year={openGroup?.group.year} variants={openGroup?.group.variants} onClose={() => setOpenGroup(null)} />
+      <FranchiseList franchise={franchise.data ?? null} movies={movies.data} shows={shows.data} open={franchiseOpen} onClose={() => setFranchiseOpen(false)} />
     </section>
   );
 }
