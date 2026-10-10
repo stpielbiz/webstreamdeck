@@ -91,6 +91,36 @@ export type Database = {
           },
         ]
       }
+      franchise_lookups: {
+        Row: {
+          created_at: string
+          franchise_name: string | null
+          has_story_order: boolean
+          lookup_key: string
+          members: Json
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          franchise_name?: string | null
+          has_story_order?: boolean
+          lookup_key: string
+          members?: Json
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          franchise_name?: string | null
+          has_story_order?: boolean
+          lookup_key?: string
+          members?: Json
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       playlists: {
         Row: {
           created_at: string
