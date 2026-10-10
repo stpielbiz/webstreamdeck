@@ -19,6 +19,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedConnectTvRouteImport } from './routes/_authenticated/connect-tv'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFavoritesRouteImport } from './routes/_authenticated/favorites'
+import { Route as AuthenticatedFranchisesRouteImport } from './routes/_authenticated/franchises'
 import { Route as AuthenticatedGuideRouteImport } from './routes/_authenticated/guide'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedPlaylistsRouteImport } from './routes/_authenticated/playlists'
@@ -30,6 +31,7 @@ import { Route as AuthenticatedSeriesIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSeriesIdRouteImport } from './routes/_authenticated/series.$id'
 import { Route as AuthenticatedTvIndexRouteImport } from './routes/_authenticated/tv.index'
 import { Route as AuthenticatedTvFavoritesRouteImport } from './routes/_authenticated/tv.favorites'
+import { Route as AuthenticatedTvFranchisesRouteImport } from './routes/_authenticated/tv.franchises'
 import { Route as AuthenticatedTvGuideRouteImport } from './routes/_authenticated/tv.guide'
 import { Route as AuthenticatedTvLiveRouteImport } from './routes/_authenticated/tv.live'
 import { Route as AuthenticatedTvMoviesRouteImport } from './routes/_authenticated/tv.movies'
@@ -86,6 +88,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedFavoritesRoute = AuthenticatedFavoritesRouteImport.update({
   id: '/favorites',
   path: '/favorites',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFranchisesRoute = AuthenticatedFranchisesRouteImport.update({
+  id: '/franchises',
+  path: '/franchises',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedGuideRoute = AuthenticatedGuideRouteImport.update({
@@ -146,6 +153,12 @@ const AuthenticatedTvFavoritesRoute =
     path: '/tv/favorites',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTvFranchisesRoute =
+  AuthenticatedTvFranchisesRouteImport.update({
+    id: '/tv/franchises',
+    path: '/tv/franchises',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTvGuideRoute = AuthenticatedTvGuideRouteImport.update({
   id: '/tv/guide',
   path: '/tv/guide',
@@ -199,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/connect-tv': typeof AuthenticatedConnectTvRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/favorites': typeof AuthenticatedFavoritesRoute
+  '/franchises': typeof AuthenticatedFranchisesRoute
   '/guide': typeof AuthenticatedGuideRoute
   '/live': typeof AuthenticatedLiveRoute
   '/playlists': typeof AuthenticatedPlaylistsRoute
@@ -207,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/movies/$id': typeof AuthenticatedMoviesIdRoute
   '/series/$id': typeof AuthenticatedSeriesIdRoute
   '/tv/favorites': typeof AuthenticatedTvFavoritesRoute
+  '/tv/franchises': typeof AuthenticatedTvFranchisesRoute
   '/tv/guide': typeof AuthenticatedTvGuideRoute
   '/tv/live': typeof AuthenticatedTvLiveRoute
   '/tv/movies': typeof AuthenticatedTvMoviesRoute
@@ -229,6 +244,7 @@ export interface FileRoutesByTo {
   '/connect-tv': typeof AuthenticatedConnectTvRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/favorites': typeof AuthenticatedFavoritesRoute
+  '/franchises': typeof AuthenticatedFranchisesRoute
   '/guide': typeof AuthenticatedGuideRoute
   '/live': typeof AuthenticatedLiveRoute
   '/playlists': typeof AuthenticatedPlaylistsRoute
@@ -237,6 +253,7 @@ export interface FileRoutesByTo {
   '/movies/$id': typeof AuthenticatedMoviesIdRoute
   '/series/$id': typeof AuthenticatedSeriesIdRoute
   '/tv/favorites': typeof AuthenticatedTvFavoritesRoute
+  '/tv/franchises': typeof AuthenticatedTvFranchisesRoute
   '/tv/guide': typeof AuthenticatedTvGuideRoute
   '/tv/live': typeof AuthenticatedTvLiveRoute
   '/tv/movies': typeof AuthenticatedTvMoviesRoute
@@ -261,6 +278,7 @@ export interface FileRoutesById {
   '/_authenticated/connect-tv': typeof AuthenticatedConnectTvRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/favorites': typeof AuthenticatedFavoritesRoute
+  '/_authenticated/franchises': typeof AuthenticatedFranchisesRoute
   '/_authenticated/guide': typeof AuthenticatedGuideRoute
   '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/_authenticated/playlists': typeof AuthenticatedPlaylistsRoute
@@ -269,6 +287,7 @@ export interface FileRoutesById {
   '/_authenticated/movies/$id': typeof AuthenticatedMoviesIdRoute
   '/_authenticated/series/$id': typeof AuthenticatedSeriesIdRoute
   '/_authenticated/tv/favorites': typeof AuthenticatedTvFavoritesRoute
+  '/_authenticated/tv/franchises': typeof AuthenticatedTvFranchisesRoute
   '/_authenticated/tv/guide': typeof AuthenticatedTvGuideRoute
   '/_authenticated/tv/live': typeof AuthenticatedTvLiveRoute
   '/_authenticated/tv/movies': typeof AuthenticatedTvMoviesRoute
@@ -293,6 +312,7 @@ export interface FileRouteTypes {
     | '/connect-tv'
     | '/dashboard'
     | '/favorites'
+    | '/franchises'
     | '/guide'
     | '/live'
     | '/playlists'
@@ -301,6 +321,7 @@ export interface FileRouteTypes {
     | '/movies/$id'
     | '/series/$id'
     | '/tv/favorites'
+    | '/tv/franchises'
     | '/tv/guide'
     | '/tv/live'
     | '/tv/movies'
@@ -323,6 +344,7 @@ export interface FileRouteTypes {
     | '/connect-tv'
     | '/dashboard'
     | '/favorites'
+    | '/franchises'
     | '/guide'
     | '/live'
     | '/playlists'
@@ -331,6 +353,7 @@ export interface FileRouteTypes {
     | '/movies/$id'
     | '/series/$id'
     | '/tv/favorites'
+    | '/tv/franchises'
     | '/tv/guide'
     | '/tv/live'
     | '/tv/movies'
@@ -354,6 +377,7 @@ export interface FileRouteTypes {
     | '/_authenticated/connect-tv'
     | '/_authenticated/dashboard'
     | '/_authenticated/favorites'
+    | '/_authenticated/franchises'
     | '/_authenticated/guide'
     | '/_authenticated/live'
     | '/_authenticated/playlists'
@@ -362,6 +386,7 @@ export interface FileRouteTypes {
     | '/_authenticated/movies/$id'
     | '/_authenticated/series/$id'
     | '/_authenticated/tv/favorites'
+    | '/_authenticated/tv/franchises'
     | '/_authenticated/tv/guide'
     | '/_authenticated/tv/live'
     | '/_authenticated/tv/movies'
@@ -458,6 +483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFavoritesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/franchises': {
+      id: '/_authenticated/franchises'
+      path: '/franchises'
+      fullPath: '/franchises'
+      preLoaderRoute: typeof AuthenticatedFranchisesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/guide': {
       id: '/_authenticated/guide'
       path: '/guide'
@@ -535,6 +567,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTvFavoritesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tv/franchises': {
+      id: '/_authenticated/tv/franchises'
+      path: '/tv/franchises'
+      fullPath: '/tv/franchises'
+      preLoaderRoute: typeof AuthenticatedTvFranchisesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tv/guide': {
       id: '/_authenticated/tv/guide'
       path: '/tv/guide'
@@ -599,6 +638,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConnectTvRoute: typeof AuthenticatedConnectTvRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFavoritesRoute: typeof AuthenticatedFavoritesRoute
+  AuthenticatedFranchisesRoute: typeof AuthenticatedFranchisesRoute
   AuthenticatedGuideRoute: typeof AuthenticatedGuideRoute
   AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
   AuthenticatedPlaylistsRoute: typeof AuthenticatedPlaylistsRoute
@@ -606,6 +646,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMoviesIdRoute: typeof AuthenticatedMoviesIdRoute
   AuthenticatedSeriesIdRoute: typeof AuthenticatedSeriesIdRoute
   AuthenticatedTvFavoritesRoute: typeof AuthenticatedTvFavoritesRoute
+  AuthenticatedTvFranchisesRoute: typeof AuthenticatedTvFranchisesRoute
   AuthenticatedTvGuideRoute: typeof AuthenticatedTvGuideRoute
   AuthenticatedTvLiveRoute: typeof AuthenticatedTvLiveRoute
   AuthenticatedTvMoviesRoute: typeof AuthenticatedTvMoviesRoute
@@ -623,6 +664,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConnectTvRoute: AuthenticatedConnectTvRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFavoritesRoute: AuthenticatedFavoritesRoute,
+  AuthenticatedFranchisesRoute: AuthenticatedFranchisesRoute,
   AuthenticatedGuideRoute: AuthenticatedGuideRoute,
   AuthenticatedLiveRoute: AuthenticatedLiveRoute,
   AuthenticatedPlaylistsRoute: AuthenticatedPlaylistsRoute,
@@ -630,6 +672,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMoviesIdRoute: AuthenticatedMoviesIdRoute,
   AuthenticatedSeriesIdRoute: AuthenticatedSeriesIdRoute,
   AuthenticatedTvFavoritesRoute: AuthenticatedTvFavoritesRoute,
+  AuthenticatedTvFranchisesRoute: AuthenticatedTvFranchisesRoute,
   AuthenticatedTvGuideRoute: AuthenticatedTvGuideRoute,
   AuthenticatedTvLiveRoute: AuthenticatedTvLiveRoute,
   AuthenticatedTvMoviesRoute: AuthenticatedTvMoviesRoute,
