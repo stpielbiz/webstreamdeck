@@ -152,8 +152,8 @@ export const backfillTitles = createServerFn({ method: "POST" })
   });
 
 /**
- * Admin-only bulk refresh: re-resolves larger batches of titles (forcing a
- * fresh lookup even when cast is already saved) as fast as the caller drives it.
+ * Admin-only bulk refresh: resolves larger batches of titles missing details
+ * as fast as the caller drives it (already-checked titles return from cache).
  */
 export const adminRefreshTitles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
