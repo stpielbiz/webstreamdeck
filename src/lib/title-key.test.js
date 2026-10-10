@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 
-import type { CatalogItem } from "./iptv-types";
 import { lookupKeyFor, normalizeTitle } from "./title-key";
 import { cleanVariantTitle, groupCatalogItems, mediaMatchKey } from "./title-variants";
 
@@ -22,12 +21,12 @@ describe("provider title cleanup", () => {
 
   test("removes empty parentheses from provider and saved titles", () => {
     expect(cleanVariantTitle("Yellowstone ()")).toBe("Yellowstone");
-    const item: CatalogItem = { id: "show-1", name: "Yellowstone ()", image: null, categoryId: null, year: "2018" };
+    const item = { id: "show-1", name: "Yellowstone ()", image: null, categoryId: null, year: "2018" };
     expect(groupCatalogItems([item], { "Yellowstone ()": { title: "Yellowstone ()", year: 2018 } })[0]).toMatchObject({ title: "Yellowstone", year: 2018 });
   });
 
   test("groups an episode-formatted entry under its franchise title", () => {
-    const item: CatalogItem = { id: "1923-episode", name: "EN - 1923 (2022) - S01-E01 - 1923", image: null, categoryId: null };
+    const item = { id: "1923-episode", name: "EN - 1923 (2022) - S01-E01 - 1923", image: null, categoryId: null };
     const group = groupCatalogItems([item])[0];
     expect(group).toMatchObject({ title: "1923", year: 2022 });
     expect(mediaMatchKey(group?.title ?? "")).toBe(mediaMatchKey("1923"));
