@@ -14,7 +14,9 @@ import { useFavorites, useProgress } from "@/lib/library-hooks";
 import { SectionMenu } from "@/components/layered-navigation";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/lib/use-admin";
-import { useLibraryOverview, type LibrarySectionStatus } from "@/lib/library-sync";
+import { useLibraryOverview, useBulkRefreshState, runBulkRefresh, stopBulkRefresh, type LibrarySectionStatus } from "@/lib/library-sync";
+import { adminRefreshTitles } from "@/lib/metadata.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { variantsForItem } from "@/lib/title-variants";
 
 export const Route = createFileRoute("/_authenticated/tv/")({
@@ -249,8 +251,8 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin, library
         <h2 className="mt-1 font-display text-4xl font-bold">{preview.title}</h2>
         <p className="mt-3 max-w-xl text-lg text-muted-foreground">{preview.body}</p>
         {section === "Live TV" && <LibraryStatus status={library.live} kind="live" hasPlaylist={hasPlaylist} syncing={sync.running} />}
-        {section === "Movies" && <LibraryStatus status={library.movie} kind="movie" hasPlaylist={hasPlaylist} />}
-        {section === "Shows" && <LibraryStatus status={library.series} kind="series" hasPlaylist={hasPlaylist} />}
+        {section === "Movies" && <LibraryStatus status={library.movie} kind="movie" hasPlaylist={hasPlaylist} isAdmin={isAdmin} />}
+        {section === "Shows" && <LibraryStatus status={library.series} kind="series" hasPlaylist={hasPlaylist} isAdmin={isAdmin} />}
         {section === "Favourites" && (
           <p className="mt-4 text-sm text-muted-foreground">{resumeCount} waiting to resume · {favouriteCount} favourites</p>
         )}
@@ -263,7 +265,7 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin, library
   );
 }
 
-function LibraryStatus({ status, kind, hasPlaylist, syncing = false }: { status: LibrarySectionStatus; kind: "live" | "movie" | "series"; hasPlaylist: boolean; syncing?: boolean }) {
+function LibraryStatus({ status, kind, hasPlaylist, syncing = false, isAdmin = false }: { status: LibrarySectionStatus; kind: "live" | "movie" | "series"; hasPlaylist: boolean; syncing?: boolean; isAdmin?: boolean }) {
   if (!hasPlaylist) return <p className="mt-5 text-sm text-muted-foreground">Add a playlist to see library status.</p>;
   if (!status.loaded) return <p className="mt-5 text-sm text-muted-foreground">Preparing saved library…</p>;
   const label = kind === "live" ? "TV guide" : "Title details";
@@ -285,8 +287,43 @@ function LibraryStatus({ status, kind, hasPlaylist, syncing = false }: { status:
         <p>{syncing ? "Updating TV guide… " : ""}{label}: {status.updated.toLocaleString()} of {status.total.toLocaleString()}</p>
         <p>Last updated: {lastUpdated}</p>
       </div>
+      <ul className="mt-4 space-y-1 text-sm">
+        {kind === "live" ? (
+          <li>{status.withOverview.toLocaleString()} of {status.total.toLocaleString()} channels have programme descriptions in the TV guide.</li>
+        ) : (
+          <>
+            <li>{status.updated.toLocaleString()} of {status.total.toLocaleString()} {noun} matched with the movie database (category, year, artwork).</li>
+            <li>{status.withOverview.toLocaleString()} have a full description · {status.withCast.toLocaleString()} have actors.</li>
+          </>
+        )}
+      </ul>
+      {kind !== "live" && isAdmin && <BulkRefresh kind={kind} />}
       {kind !== "live" && status.topGenres.length > 0 && (
         <p className="mt-4 text-sm"><span className="text-muted-foreground">Top genres:</span> {status.topGenres.join(" · ")}</p>
+      )}
+    </div>
+  );
+}
+
+function BulkRefresh({ kind }: { kind: "movie" | "series" }) {
+  const state = useBulkRefreshState();
+  const client = useQueryClient();
+  const refresh = useServerFn(adminRefreshTitles);
+  const { activeId } = usePlaylists();
+  const mine = state.kind === kind;
+  const percent = state.total ? Math.round((state.done / state.total) * 100) : 0;
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-3">
+      {state.running ? (
+        <Button variant="secondary" size="sm" data-tv-focus onClick={stopBulkRefresh}>Stop details update</Button>
+      ) : (
+        <Button variant="secondary" size="sm" data-tv-focus disabled={!activeId} onClick={() => activeId && void runBulkRefresh(client, activeId, kind, refresh)}>Update all details now (admin)</Button>
+      )}
+      {state.running && (
+        <p className="text-sm text-muted-foreground tabular-nums">
+          {mine ? `Updating ${state.done.toLocaleString()} of ${state.total.toLocaleString()} (${percent}%)` : `Updating ${state.kind === "movie" ? "movies" : "shows"}…`}
+          {state.failed ? ` · ${state.failed.toLocaleString()} failed` : ""}
+        </p>
       )}
     </div>
   );
