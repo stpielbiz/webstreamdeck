@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Add franchise information and related titles inside the shared movie/show details window; verify selection and Back.
+
 - [x] Rework Fire TV live browsing into a wide, guide-style layout.
 - [x] Make every channel reachable with the remote and keep the focused row visible.
 - [x] Verify the guide at TV and compact screen sizes.

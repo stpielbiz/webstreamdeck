@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Layers } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6,29 +6,10 @@ import { Button } from "@/components/ui/button";
 import { TitleDetailsDialog } from "@/components/title-details-dialog";
 import type { CatalogItem } from "@/lib/iptv-types";
 import type { Franchise } from "@/lib/franchise.functions";
-import { groupCatalogItems, mediaMatchKey, type TitleGroup } from "@/lib/title-variants";
+import type { TitleGroup } from "@/lib/title-variants";
+import { useFranchiseMatches } from "@/components/franchise-details";
+export { useFranchiseMatches } from "@/components/franchise-details";
 import { cn } from "@/lib/utils";
-
-export function useFranchiseMatches(franchise: Franchise | null | undefined, movies?: CatalogItem[], shows?: CatalogItem[]) {
-  return useMemo(() => {
-    if (!franchise) return [];
-    const index = (items?: CatalogItem[]) => {
-      const map = new Map<string, TitleGroup[]>();
-      for (const g of groupCatalogItems(items ?? [])) {
-        const k = mediaMatchKey(g.title);
-        map.set(k, [...(map.get(k) ?? []), g]);
-      }
-      return map;
-    };
-    const mi = index(movies);
-    const si = index(shows);
-    return franchise.members.map((member) => {
-      const candidates = (member.kind === "movie" ? mi : si).get(mediaMatchKey(member.title)) ?? [];
-      const group = candidates.find((g) => !member.year || !g.year || Math.abs(Number(g.year) - member.year) <= 1) ?? null;
-      return { member, group };
-    });
-  }, [franchise, movies, shows]);
-}
 
 export function FranchiseCard({ franchise, owned, onOpen }: { franchise: Franchise; owned: number; onOpen: () => void }) {
   return (

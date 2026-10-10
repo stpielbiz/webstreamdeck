@@ -16,11 +16,27 @@ import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { cn } from "@/lib/utils";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { mediaMatchKey, type TitleVariant } from "@/lib/title-variants";
+import { FranchiseDetails } from "@/components/franchise-details";
 
 export type TitleKind = "movie" | "series";
 
 /** Shared movie/show details window used by Movies, Shows and Home favourites. */
-export function TitleDetailsDialog({
+export function TitleDetailsDialog(props: Omit<Parameters<typeof TitleDetailsContent>[0], "onSelectRelated" | "parentTitle">) {
+  const [history, setHistory] = useState<Array<{ kind: TitleKind; group: import("@/lib/title-variants").TitleGroup }>>([]);
+  useEffect(() => { setHistory([]); }, [props.id, props.kind]);
+  const selected = history.at(-1);
+  const previous = history.at(-2);
+  return <TitleDetailsContent
+    {...props}
+    {...(selected ? { kind: selected.kind, id: selected.group.item.id, name: selected.group.title, image: selected.group.item.image, year: selected.group.year, variants: selected.group.variants, metadata: undefined } : {})}
+    key={`${props.id}-${history.length}-${selected?.group.item.id ?? "original"}`}
+    parentTitle={selected ? previous?.group.title ?? props.name ?? "title" : undefined}
+    onClose={() => selected ? setHistory((items) => items.slice(0, -1)) : props.onClose()}
+    onSelectRelated={(kind, group) => setHistory((items) => [...items, { kind, group }])}
+  />;
+}
+
+function TitleDetailsContent({
   kind,
   id,
   name,
@@ -30,6 +46,8 @@ export function TitleDetailsDialog({
   variants,
   onClose,
   onCloseAutoFocus,
+  onSelectRelated,
+  parentTitle,
 }: {
   kind: TitleKind;
   id: string | null;
@@ -40,6 +58,8 @@ export function TitleDetailsDialog({
   variants?: TitleVariant[] | undefined;
   onClose: () => void;
   onCloseAutoFocus?: ((event: Event) => void) | undefined;
+  onSelectRelated: (kind: TitleKind, group: import("@/lib/title-variants").TitleGroup) => void;
+  parentTitle?: string | undefined;
 }) {
   const { activeId } = usePlaylists();
   const fetchMovie = useServerFn(getMovie);
@@ -159,7 +179,7 @@ export function TitleDetailsDialog({
                 </DialogDescription>
               </DialogHeader>
               {overview && <p className="mt-4 line-clamp-5 text-sm leading-relaxed text-muted-foreground">{overview}</p>}
-              {(selectedMetadata?.cast?.length ?? 0) > 0 && <p className="mt-3 line-clamp-2 text-xs text-muted-foreground"><span className="font-semibold text-foreground">Cast:</span> {selectedMetadata!.cast.join(", ")}</p>}
+              {(selectedMetadata?.cast?.length ?? 0) > 0 && <p className="mt-3 line-clamp-2 text-xs text-muted-foreground"><span className="font-semibold text-foreground">Cast:</span> {selectedMetadata?.cast.join(", ")}</p>}
               {availableVariants.length > 1 && (
                 <div className="mt-4">
                   <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Version</p>
@@ -173,8 +193,9 @@ export function TitleDetailsDialog({
                   <Button data-tv-focus data-zone-entry="true" onClick={() => setPlaying(true)}><Play className="size-4" />{resumeAt > 0 ? "Resume" : "Play"}</Button>
                 )}
                 {activeItemId && <Button data-tv-focus variant="secondary" onClick={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: selectedFavorite ? availableVariants.find((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id))?.item.id ?? activeItemId : activeItemId, title: selectedMetadata?.title ?? name ?? title ?? "", logoUrl: poster ?? null })}><Star className={cn("size-4", selectedFavorite && "fill-primary text-primary")} />{selectedFavorite ? "Remove from favourites" : "Add to favourites"}</Button>}
-                <DialogClose asChild><Button data-dialog-back data-tv-focus variant="outline">Close</Button></DialogClose>
+                <DialogClose asChild><Button data-dialog-back data-tv-focus variant="outline" className="h-auto whitespace-normal py-2">{parentTitle ? `Back to ${parentTitle}` : "Close"}</Button></DialogClose>
               </div>
+              {id && name && <FranchiseDetails title={selectedMetadata?.title || name} kind={kind} onSelect={onSelectRelated} />}
             </div>
             <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
               {playing && mediaId ? (
