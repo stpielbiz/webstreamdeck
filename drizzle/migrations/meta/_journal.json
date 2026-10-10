@@ -43,6 +43,13 @@
       "when": 1791642366338,
       "tag": "0005_add_tv_screen_size",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791642807901,
+      "tag": "0006_create_account_access",
+      "breakpoints": true
     }
   ]
 }
