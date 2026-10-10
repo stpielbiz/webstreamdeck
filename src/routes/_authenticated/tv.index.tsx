@@ -103,13 +103,13 @@ function TvHome() {
         <main data-tv-zone="home-content" data-tv-zone-order="2" data-horizontal-nav="true" className="scrollbar-thin min-h-0 overflow-y-auto overscroll-contain pr-2">
           {focusedSection === "Home" ? (
             <div className="space-y-5 pb-6">
+              {activeId && <div data-remote-row className="sticky top-0 z-20 bg-background pb-3"><GlobalSearch /></div>}
               <div className="pb-1">
                 <p className="text-xs font-semibold uppercase text-primary">Your library</p>
                 <h2 className="font-display text-2xl font-bold">Welcome back</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Pick up where you stopped or jump into a favourite.</p>
               </div>
               {!activeId && <HomeMessage title="No playlist yet" body="Add a playlist to see your channels, movies and shows here." to="/playlists" action="Add playlist" />}
-              {activeId && <GlobalSearch />}
               {sync.running && <p role="status" className="text-xs text-muted-foreground">{sync.total ? `Preparing your library… TV guide ${sync.done}/${sync.total} channels` : "Preparing your library…"}</p>}
               <HomeShelf title="Continue watching" empty="Nothing to resume yet.">
                 {resume.slice(0, 20).map((row, index) => (
@@ -299,7 +299,6 @@ function LibraryStatus({ status, kind, hasPlaylist, syncing = false, isAdmin = f
           </>
         )}
       </ul>
-      {kind !== "live" && isAdmin && <BulkRefresh kind={kind} />}
       {kind !== "live" && status.topGenres.length > 0 && (
         <p className="mt-4 text-sm"><span className="text-muted-foreground">Top genres:</span> {status.topGenres.join(" · ")}</p>
       )}

@@ -210,10 +210,13 @@ function TitleDetailsContent({
               )}
             </div>
           </div>
+          <div className="px-4 pb-4 md:px-5">
+            {id && name && <FranchiseDetails title={cleanVariantTitle(name).replace(/[[(]\s*(?:US|UK|CA|AU|EN|FR|DE|ES|IT)\s*[\])]/gi, "").trim()} kind={kind} onSelect={onSelectRelated} />}
+          </div>
           {kind === "series" && show && (
             <section className="border-t border-border p-4 md:p-5">
               <div data-remote-row className="mb-3 flex gap-2 overflow-x-auto p-1">{seasons.map((entry, index) => <Button key={entry.season} data-tv-focus size="sm" variant={index === seasonIndex ? "default" : "secondary"} onClick={() => { setSeasonIndex(index); setEpisode(null); setPlaying(false); }}>Season {entry.season}</Button>)}</div>
-              <div data-remote-row className="grid gap-2">{(season?.episodes ?? []).map((item) => <Button key={item.id} data-tv-focus variant={episode?.id === item.id && playing ? "default" : "outline"} className="h-auto min-h-12 justify-start whitespace-normal px-3 py-2 text-left" onClick={() => { setEpisode(item); setPlaying(true); }}><Play className="size-4 shrink-0" /><span className="truncate">E{item.episode} · {item.title}</span></Button>)}</div>
+              <div className="grid gap-2">{(season?.episodes ?? []).map((item) => <div data-remote-row key={item.id}><Button data-tv-focus variant={episode?.id === item.id && playing ? "default" : "outline"} className="h-auto min-h-12 w-full justify-start whitespace-normal px-3 py-2 text-left" onClick={() => { setEpisode(item); setPlaying(true); }}><Play className="size-4 shrink-0" /><span className="truncate">E{item.episode} · {item.title}</span></Button></div>)}</div>
             </section>
           )}
         </div>

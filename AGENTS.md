@@ -14,6 +14,7 @@
 - Selecting a Movie or Show opens a compact modal with details and preview playback; remote Back closes it before leaving the section.
 - Device pairing uses the public `/device-login` entry screen and returns there after authentication; legacy Firestick and TV-specific links redirect to it.
 - The TV home uses a persistent menu/details workspace: focus previews a section, OK opens it, and content rows remain independently remote-navigable.
+- Remote focus uses a shared inset :focus indicator and action-only targets; menus and annotated rows navigate by order, while dialogs isolate focus from the underlying workspace — this avoids clipped selection and repeated layout measurement on Fire TV.
 - TV Home library content uses compact horizontal shelves with distinct landscape, channel-logo, and portrait tile formats — this maximizes content density while preserving remote navigation.
 - The native Fire TV app checks GitHub release metadata at launch and on request through the JS bridge; manual checks report results and updates use Android's user-approved installer — this preserves device security while enabling in-app upgrades.
 - Navigation preserves device mode: TV routes and TV-opened shared screens return to `/tv`, while regular browser screens return to `/dashboard` — this prevents remote users from falling into the desktop shell.
