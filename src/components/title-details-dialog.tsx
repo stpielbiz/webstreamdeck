@@ -185,6 +185,9 @@ function TitleDetailsContent({
               )}
 
           </div>
+          <div className="px-4 pb-4 md:px-5">
+            {id && name && <FranchiseDetails title={cleanVariantTitle(name).replace(/[[(]\s*(?:US|UK|CA|AU|EN|FR|DE|ES|IT)\s*[\])]/gi, "").trim()} kind={kind} onSelect={onSelectRelated} />}
+          </div>
           <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_minmax(18rem,46%)] md:p-5">
             <div className="min-w-0">
               <DialogHeader className="pr-8 text-left">
@@ -209,9 +212,6 @@ function TitleDetailsContent({
                  </div>
               )}
             </div>
-          </div>
-          <div className="px-4 pb-4 md:px-5">
-            {id && name && <FranchiseDetails title={cleanVariantTitle(name).replace(/[[(]\s*(?:US|UK|CA|AU|EN|FR|DE|ES|IT)\s*[\])]/gi, "").trim()} kind={kind} onSelect={onSelectRelated} />}
           </div>
           {kind === "series" && show && (
             <section className="border-t border-border p-4 md:p-5">
