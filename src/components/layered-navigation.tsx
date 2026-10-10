@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FocusEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useSavedFranchises } from "@/lib/saved-franchises";
+import { useAccountAccess } from "@/lib/account-access";
 
 export type BrowseLayer = "sections" | "categories" | "content";
 
@@ -52,6 +53,7 @@ export function SectionMenu({
 }) {
   const { isAdmin } = useIsAdmin();
   const savedFranchises = useSavedFranchises();
+  const expired = useAccountAccess().data?.expired === true;
   const [opening, setOpening] = useState<string | null>(null);
   const extras = [
     { to: "/playlists" as const, label: "Playlists", icon: ListVideo },
@@ -79,19 +81,20 @@ export function SectionMenu({
       <div className="flex flex-col gap-1">
         {[...SECTIONS, ...(savedFranchises.data?.length ? [{ to: "/franchises" as const, tvTo: "/tv/franchises" as const, label: "Franchise", icon: Layers }] : [])].map(({ to, tvTo, label, icon: Icon }) => {
           const destination = tv ? tvTo : to;
+          const disabled = expired && label !== "Home";
           return (
-            <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
-            <Link to={destination} preload={tv ? false : "intent"} onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
+            <Button key={label} asChild={!disabled} disabled={disabled} variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
+            {disabled ? <span aria-disabled="true"><Icon className="size-5 shrink-0" /> {label}</span> : <Link to={destination} preload={tv ? false : "intent"} onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
                 <Icon className="size-5 shrink-0" /> {label}
-              </Link>
+              </Link>}
             </Button>
           );
         })}
         {extras.map(({ to, label, icon: Icon }) => (
-          <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
-            <Link to={to} search={tv ? { mode: "tv" } : {}} preload={tv ? false : "intent"} onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
+          <Button key={label} asChild={!(expired && label !== "Settings")} disabled={expired && label !== "Settings"} variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
+            {expired && label !== "Settings" ? <span aria-disabled="true"><Icon className="size-5 shrink-0" /> {label}</span> : <Link to={to} search={tv ? { mode: "tv" } : {}} preload={tv ? false : "intent"} onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
               <Icon className="size-5 shrink-0" /> {label}
-            </Link>
+            </Link>}
           </Button>
         ))}
         {onCheckUpdates && (
