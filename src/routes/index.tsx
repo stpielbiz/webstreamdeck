@@ -15,6 +15,8 @@ export const Route = createFileRoute("/")({
           "Add your Xtream Codes login or M3U link and watch live TV, movies and series in the browser. Favourites, TV guide and resume where you left off.",
       },
       { property: "og:title", content: "Stream Deck — Your IPTV playlists in one player" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         property: "og:description",
         content:

@@ -13,6 +13,8 @@ export const Route = createFileRoute("/_authenticated/tv/series")({
       },
       { property: "og:title", content: "Series on your TV — Stream Deck" },
       { property: "og:description", content: "Big-screen series library." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   pendingMs: 0,

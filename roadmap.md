@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Review TV action placement, consistent visible focus, related-title navigation and Home performance; verify remote flows.
+- [x] Review TV action placement, consistent visible focus, related-title navigation and Home performance; verified signed-in remote flows at 1280×720 and desktop, including related-title Back restoration.
 
 - [x] Add account-saved franchise lists and show Franchise navigation only when lists exist.
 - [x] Replace unavailable Fire TV voice search with direct text-search focus.
