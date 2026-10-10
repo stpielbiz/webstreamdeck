@@ -72,15 +72,16 @@ export function FranchiseDetails({ title, kind, onSelect }: {
   if (franchise.isPending) return <p role="status" className="mt-4 text-xs text-muted-foreground">Finding related movies and shows…</p>;
   if (franchise.isError) return <Button data-tv-focus variant="outline" size="sm" className="mt-4" onClick={() => void franchise.refetch()}>Retry related titles</Button>;
   if (!franchise.data) return null;
-  const savedList = saved.data?.find((item) => item.name.toLowerCase() === franchise.data.name.toLowerCase());
+  const resolvedFranchise = franchise.data;
+  const savedList = saved.data?.find((item) => item.name.toLowerCase() === resolvedFranchise.name.toLowerCase());
   const toggleSaved = async () => {
     try {
       if (savedList) {
         await remove.mutateAsync(savedList.id);
-        toast.success(`${franchise.data.name} removed from Franchise`);
+        toast.success(`${resolvedFranchise.name} removed from Franchise`);
       } else {
-        await save.mutateAsync(franchise.data);
-        toast.success(`${franchise.data.name} added to the Franchise menu`);
+        await save.mutateAsync(resolvedFranchise);
+        toast.success(`${resolvedFranchise.name} added to the Franchise menu`);
       }
     } catch {
       toast.error("The franchise list could not be updated");
@@ -91,7 +92,7 @@ export function FranchiseDetails({ title, kind, onSelect }: {
     <section className="mt-4 border-t border-border pt-3">
       <Button data-tv-focus variant="outline" className="h-auto w-full justify-start whitespace-normal py-2 text-left" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
         <Layers className="size-4 shrink-0" />
-        <span className="min-w-0 flex-1">Part of {franchise.data.name}</span>
+        <span className="min-w-0 flex-1">Part of {resolvedFranchise.name}</span>
         {expanded ? <ChevronUp className="size-4 shrink-0" /> : <ChevronDown className="size-4 shrink-0" />}
       </Button>
       {expanded && <div className="mt-3 space-y-2">
@@ -105,7 +106,7 @@ export function FranchiseDetails({ title, kind, onSelect }: {
         <p className="text-xs text-muted-foreground">{loading ? "Checking your library…" : `${matches.filter(({ group }) => group).length} of ${matches.length} titles in your library`}</p>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Franchise order">
           <Button data-tv-focus size="sm" variant={order === "year" ? "default" : "secondary"} aria-pressed={order === "year"} onClick={() => setOrder("year")}>By year</Button>
-          {franchise.data.hasStoryOrder && <Button data-tv-focus size="sm" variant={order === "story" ? "default" : "secondary"} aria-pressed={order === "story"} onClick={() => setOrder("story")}>Story order</Button>}
+          {resolvedFranchise.hasStoryOrder && <Button data-tv-focus size="sm" variant={order === "story" ? "default" : "secondary"} aria-pressed={order === "story"} onClick={() => setOrder("story")}>Story order</Button>}
         </div>
         {(movies.isError || shows.isError) && <Button data-tv-focus variant="outline" size="sm" onClick={() => { void movies.refetch(); void shows.refetch(); }}>Retry library check</Button>}
         <ul className="space-y-1 p-1">
