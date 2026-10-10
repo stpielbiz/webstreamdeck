@@ -150,3 +150,31 @@ export const backfillTitles = createServerFn({ method: "POST" })
       },
     );
   });
+
+/**
+ * Admin-only bulk refresh: re-resolves larger batches of titles (forcing a
+ * fresh lookup even when cast is already saved) as fast as the caller drives it.
+ */
+export const adminRefreshTitles = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      kind: z.enum(["movie", "series"]),
+      names: z.array(z.string().min(1).max(300)).min(1).max(50),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<Record<string, TitleMetadata>> => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { resolveTitles } = await import("./metadata.server");
+    return resolveTitles(
+      supabaseAdmin as unknown as Parameters<typeof resolveTitles>[0],
+      data.names,
+      data.kind,
+      {
+        tmdb: process.env["TMDB_API_KEY"] || undefined,
+        lovable: process.env["LOVABLE_API_KEY"] || undefined,
+      },
+    );
+  });

@@ -294,3 +294,57 @@ export function useTitleBackfill(playlistId: string | null) {
     return () => { cancelled = true; window.clearTimeout(timer); };
   }, [playlistId, client, backfill, fetchCached]);
 }
+
+/* ---------- Admin bulk title refresh (survives navigation) ---------- */
+
+export interface BulkRefreshState { running: boolean; kind: "movie" | "series" | null; done: number; total: number; failed: number }
+let bulkState: BulkRefreshState = { running: false, kind: null, done: 0, total: 0, failed: 0 };
+let bulkCancel = false;
+const bulkListeners = new Set<() => void>();
+const setBulk = (next: Partial<BulkRefreshState>) => { bulkState = { ...bulkState, ...next }; bulkListeners.forEach((fn) => fn()); };
+
+export function useBulkRefreshState() {
+  return useSyncExternalStore(
+    (fn) => { bulkListeners.add(fn); return () => bulkListeners.delete(fn); },
+    () => bulkState,
+    () => bulkState,
+  );
+}
+
+export function stopBulkRefresh() { bulkCancel = true; }
+
+/** Re-resolves every title missing a description or cast, in parallel batches. */
+export async function runBulkRefresh(
+  client: QueryClient,
+  playlistId: string,
+  kind: "movie" | "series",
+  refresh: (input: { data: { kind: "movie" | "series"; names: string[] } }) => Promise<Record<string, TitleMetadata>>,
+) {
+  if (bulkState.running) return;
+  const items = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
+  const known: Record<string, TitleMetadata> = {};
+  for (const [, data] of client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) Object.assign(known, data ?? {});
+  const names = [...new Set(items.map((item) => item.name))].filter((name) => !known[name]?.overview || !known[name]?.cast?.length);
+  bulkCancel = false;
+  setBulk({ running: true, kind, done: 0, total: names.length, failed: 0 });
+  const BATCH = 40;
+  const PARALLEL = 3;
+  let cursor = 0;
+  const worker = async () => {
+    while (!bulkCancel && cursor < names.length) {
+      const batch = names.slice(cursor, cursor + BATCH);
+      cursor += BATCH;
+      try {
+        const result = await refresh({ data: { kind, names: batch } });
+        client.setQueriesData<Record<string, unknown>>({ queryKey: ["cached-title-metadata", playlistId, kind] }, (old) => ({ ...(old ?? {}), ...result }));
+        setBulk({ done: bulkState.done + batch.length });
+      } catch {
+        setBulk({ done: bulkState.done + batch.length, failed: bulkState.failed + batch.length });
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: PARALLEL }, worker));
+  setBulk({ running: false });
+  toast.success(bulkCancel ? "Details update stopped" : `Details update finished${bulkState.failed ? ` (${bulkState.failed.toLocaleString()} could not be updated)` : ""}`);
+}
