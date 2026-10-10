@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Make every search apply only on Next or finishing keyboard input, including remote Back, with a right-side Clear button; verify typing and confirmation.
+
 - [x] Review TV action placement, consistent visible focus, related-title navigation and Home performance; verified signed-in remote flows at 1280×720 and desktop, including related-title Back restoration.
 
 - [x] Add account-saved franchise lists and show Franchise navigation only when lists exist.
