@@ -36,6 +36,13 @@
       "when": 1791597972626,
       "tag": "0004_create_saved_franchises",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791642366338,
+      "tag": "0005_add_tv_screen_size",
+      "breakpoints": true
     }
   ]
 }

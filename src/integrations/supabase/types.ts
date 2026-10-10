@@ -333,16 +333,19 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          screen_size: string
           sync_playlists: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
+          screen_size?: string
           sync_playlists?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
+          screen_size?: string
           sync_playlists?: boolean
           updated_at?: string
           user_id?: string
