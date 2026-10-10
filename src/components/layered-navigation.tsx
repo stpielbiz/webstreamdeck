@@ -67,6 +67,7 @@ export function SectionMenu({
   return (
     <>
       <section
+      data-tv-section-menu
       data-tv-zone="sections"
       data-tv-zone-order={zoneOrder}
       onFocus={handleFocus}

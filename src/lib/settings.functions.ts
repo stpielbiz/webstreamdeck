@@ -5,28 +5,37 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export interface UserSettings {
   syncPlaylists: boolean;
+  screenSize: "large" | "medium" | "small";
 }
+
+const settingsInput = z.object({
+  syncPlaylists: z.boolean(),
+  screenSize: z.enum(["large", "medium", "small"]),
+});
 
 export const getSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<UserSettings> => {
     const { data, error } = await context.supabase
       .from("user_settings")
-      .select("sync_playlists")
+      .select("sync_playlists, screen_size")
       .eq("user_id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return { syncPlaylists: data?.sync_playlists ?? false };
+    return {
+      syncPlaylists: data?.sync_playlists ?? false,
+      screenSize: data?.screen_size ?? "large",
+    };
   });
 
 export const saveSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ syncPlaylists: z.boolean() }).parse(input))
+  .inputValidator((input: unknown) => settingsInput.parse(input))
   .handler(async ({ data, context }): Promise<UserSettings> => {
     const { error } = await context.supabase.from("user_settings").upsert(
-      { user_id: context.userId, sync_playlists: data.syncPlaylists, updated_at: new Date().toISOString() },
+      { user_id: context.userId, sync_playlists: data.syncPlaylists, screen_size: data.screenSize, updated_at: new Date().toISOString() },
       { onConflict: "user_id" },
     );
     if (error) throw new Error(error.message);
-    return { syncPlaylists: data.syncPlaylists };
+    return data;
   });

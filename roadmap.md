@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Add account-saved Large, Medium, and Small Fire TV display sizes for menus, cards, Live TV, and title popups; Large remains the default and browser screens are unchanged.
+
 - [x] Clean episode-formatted and malformed provider titles so numeric shows such as 1923 match franchise lists and empty `()` never appears in search results.
 
 - [x] Make every search apply only on Next or finishing keyboard input, including remote Back, with a right-side Clear button; verified signed-in Home, Movies and Shows typing, Enter, Clear and native Back without page navigation. Physical keyboard dismissal remains part of the device test below.

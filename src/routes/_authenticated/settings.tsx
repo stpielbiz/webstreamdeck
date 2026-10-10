@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, Monitor, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -29,13 +29,19 @@ function SettingsPage() {
   const settings = useSettings();
   const save = useSaveSettings();
   const enabled = settings.data?.syncPlaylists ?? false;
+  const screenSize = settings.data?.screenSize ?? "large";
   const { activeId, active } = usePlaylists();
   const refresh = useLibraryRefreshStatus();
 
   const toggle = (value: boolean) =>
-    save.mutate({ syncPlaylists: value }, {
+    save.mutate({ syncPlaylists: value, screenSize }, {
       onSuccess: () => toast.success(value ? "Playlist sync is on" : "Playlist sync is off"),
       onError: () => toast.error("Could not save the setting. Try again."),
+    });
+  const chooseScreenSize = (value: "large" | "medium" | "small") =>
+    save.mutate({ syncPlaylists: enabled, screenSize: value }, {
+      onSuccess: () => toast.success(`TV display size set to ${value}`),
+      onError: () => toast.error("Could not save the display size. Try again."),
     });
 
   return (
@@ -45,6 +51,32 @@ function SettingsPage() {
           <Link to={mode === "tv" ? "/tv" : "/dashboard"}><ArrowLeft className="size-4" /> {mode === "tv" ? "Back to TV Home" : "Back"}</Link>
         </Button>
         <h1 className="font-display text-2xl font-semibold">Settings</h1>
+      </div>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-6 rounded-xl border border-border bg-card p-5">
+        <span className="min-w-0">
+          <span className="flex items-center gap-2 font-semibold"><Monitor className="size-4 text-primary" /> TV display size</span>
+          <span className="mt-1 block text-sm text-muted-foreground">
+            Large uses bigger menus and cards. Medium and Small fit more titles on Fire TV screens.
+          </span>
+        </span>
+        <div data-remote-row className="flex shrink-0 gap-2" role="group" aria-label="TV display size">
+          {(["large", "medium", "small"] as const).map((value) => (
+            <Button
+              key={value}
+              type="button"
+              data-tv-focus
+              data-zone-entry={value === screenSize ? "true" : undefined}
+              data-focus-key={`setting-screen-${value}`}
+              size="sm"
+              variant={screenSize === value ? "default" : "outline"}
+              aria-pressed={screenSize === value}
+              disabled={settings.isLoading || save.isPending}
+              onClick={() => chooseScreenSize(value)}
+            >
+              {value[0]?.toUpperCase()}{value.slice(1)}
+            </Button>
+          ))}
+        </div>
       </div>
       <label className="flex cursor-pointer items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
         <span>

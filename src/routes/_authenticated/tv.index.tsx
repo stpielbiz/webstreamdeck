@@ -195,6 +195,7 @@ function HomeTile({
   const imageClass = kind === "continue" ? "aspect-video" : kind === "channel" ? "aspect-square" : "aspect-[2/3]";
   return (
     <Button
+      data-tv-home-tile={kind}
       type="button"
       variant="ghost"
       data-tv-focus

@@ -27,6 +27,10 @@ export function useSyncPlaylists() {
   return useSettings().data?.syncPlaylists ?? false;
 }
 
+export function useTvScreenSize() {
+  return useSettings().data?.screenSize ?? "large";
+}
+
 /** Show name of an episode progress title ("Show — S1E2 …" → "Show"). */
 const showName = (title: string) => title.replace(/\s+[—-]\s+S\d+.*$/i, "");
 

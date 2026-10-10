@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { usePlaylists } from "@/components/playlist-context";
 import { useSpatialNav } from "@/lib/use-spatial-nav";
+import { useTvScreenSize } from "@/lib/playlist-sync";
 
 export function TvShell({
   title,
@@ -17,6 +18,7 @@ export function TvShell({
   onBack?: (() => void) | undefined;
 }) {
   const { active } = usePlaylists();
+  const screenSize = useTvScreenSize();
   const navigate = useNavigate();
   useSpatialNav({
     onBack:
@@ -35,6 +37,8 @@ export function TvShell({
 
   return (
     <div
+      data-tv-display-root
+      data-tv-screen-size={screenSize}
       className={
         immersive
           ? "flex h-dvh min-h-0 flex-col overflow-hidden bg-background text-foreground"
@@ -121,6 +125,6 @@ export function TvTile({
 
 export function TvGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">{children}</div>
+    <div data-tv-poster-grid className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">{children}</div>
   );
 }
