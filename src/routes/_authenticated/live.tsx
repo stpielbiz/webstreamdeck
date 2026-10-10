@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronUp, Search, Star, Tv } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Star, Tv } from "lucide-react";
 import { z } from "zod";
 
 import { getCategories, getItems, getNowNext, getPlayback } from "@/lib/iptv.functions";
@@ -11,7 +11,7 @@ import { usePlaylists } from "@/components/playlist-context";
 import { VideoPlayer } from "@/components/video-player";
 import { EmptyState } from "@/components/media";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchField } from "@/components/search-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
@@ -174,12 +174,11 @@ function LivePage() {
           <Button data-layer-back data-tv-focus variant="ghost" size="sm" onClick={() => { setSelected(null); setCategoryId(null); }}><ArrowLeft className="size-4" /> Categories</Button>
         </div>
         <div className="relative border-b border-border p-3">
-          <Search className="pointer-events-none absolute left-5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <SearchField
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onValueChange={setSearch}
             placeholder="Search channels"
-            className="pl-9"
+            data-tv-focus data-app-search="true"
           />
         </div>
         <div className="scrollbar-thin flex-1 overflow-y-auto">
