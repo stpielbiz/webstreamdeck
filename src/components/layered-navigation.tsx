@@ -71,7 +71,7 @@ export function SectionMenu({
       data-tv-zone-order={zoneOrder}
       onFocus={handleFocus}
       className={compact
-        ? "scrollbar-thin h-full min-h-0 w-full overflow-y-auto overscroll-contain py-2"
+        ? "scrollbar-thin h-full min-h-0 w-full overflow-y-auto overscroll-contain p-1"
         : "mx-auto h-full w-full max-w-3xl animate-slide-in-right overflow-y-auto py-3 motion-reduce:animate-none"}
     >
       <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Browse</p>
@@ -80,7 +80,7 @@ export function SectionMenu({
           const destination = tv ? tvTo : to;
           return (
             <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
-            <Link to={destination} preload="intent" onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
+            <Link to={destination} preload={tv ? false : "intent"} onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
                 <Icon className="size-5 shrink-0" /> {label}
               </Link>
             </Button>
@@ -88,7 +88,7 @@ export function SectionMenu({
         })}
         {extras.map(({ to, label, icon: Icon }) => (
           <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
-            <Link to={to} search={tv ? { mode: "tv" } : {}} preload="intent" onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
+            <Link to={to} search={tv ? { mode: "tv" } : {}} preload={tv ? false : "intent"} onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
               <Icon className="size-5 shrink-0" /> {label}
             </Link>
           </Button>
