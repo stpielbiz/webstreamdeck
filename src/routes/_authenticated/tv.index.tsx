@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/lib/use-admin";
 import { useLibraryOverview, useBulkRefreshState, runBulkRefresh, stopBulkRefresh, type LibrarySectionStatus } from "@/lib/library-sync";
 import { adminRefreshTitles } from "@/lib/metadata.functions";
-import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { variantsForItem } from "@/lib/title-variants";
 
