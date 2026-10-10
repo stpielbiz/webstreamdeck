@@ -163,6 +163,39 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_franchises: {
+        Row: {
+          created_at: string
+          franchise_key: string
+          franchise_name: string
+          has_story_order: boolean
+          id: string
+          members: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          franchise_key: string
+          franchise_name: string
+          has_story_order?: boolean
+          id?: string
+          members?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          franchise_key?: string
+          franchise_name?: string
+          has_story_order?: boolean
+          id?: string
+          members?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       stream_logs: {
         Row: {
           code: string
