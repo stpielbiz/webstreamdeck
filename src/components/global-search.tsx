@@ -76,16 +76,16 @@ export function GlobalSearch() {
     }
     return out;
   };
-  const match = (items?: CatalogItem[], cast?: Record<string, string[]>, grouped = false) => (grouped ? groupCatalogItems(items ?? []) : (items ?? []).map((item) => ({ key: item.id, item, variants: [], title: item.name, year: item.year ?? null }))).filter((group) =>
+  const match = (kind: "movie" | "series" | "live", items?: CatalogItem[], cast?: Record<string, string[]>, grouped = false) => (grouped ? groupCatalogItems(items ?? []) : (items ?? []).map((item) => ({ key: item.id, item, variants: [], title: item.name, year: item.year ?? null }))).filter((group) =>
     group.title.toLowerCase().includes(query)
     || group.variants.some((variant) => variant.item.name.toLowerCase().includes(query))
     || (query.length >= 3 && (cast?.[group.item.name] ?? []).some((actor) => actor.toLowerCase().includes(query)))
-    || (query.length >= 3 && group.kind !== "live" && (castHits.data?.[group.kind as "movie" | "series"] ?? []).includes(lookupKeyFor(group.item.name).key)),
+    || (query.length >= 3 && kind !== "live" && (castHits.data?.[kind as "movie" | "series"] ?? []).includes(lookupKeyFor(group.item.name).key)),
   ).slice(0, LIMIT);
   const groups = useMemo(() => [
-    { kind: "series" as const, title: "Shows", items: match(shows.data, castFor("series"), true), loading: shows.isFetching },
-    { kind: "movie" as const, title: "Movies", items: match(movies.data, castFor("movie"), true), loading: movies.isFetching },
-    { kind: "live" as const, title: "Channels", items: match(live.data), loading: live.isFetching },
+    { kind: "series" as const, title: "Shows", items: match("series", shows.data, castFor("series"), true), loading: shows.isFetching },
+    { kind: "movie" as const, title: "Movies", items: match("movie", movies.data, castFor("movie"), true), loading: movies.isFetching },
+    { kind: "live" as const, title: "Channels", items: match("live", live.data), loading: live.isFetching },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [query, live.data, movies.data, shows.data, live.isFetching, movies.isFetching, shows.isFetching, castHits.data]);
 
