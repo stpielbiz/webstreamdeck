@@ -97,7 +97,10 @@ export function GlobalSearch() {
   const lookup = useServerFn(resolveFranchise);
   const franchise = useQuery({
     queryKey: ["franchise", settled?.title, settled?.kind],
-    queryFn: () => lookup({ data: settled! }),
+    queryFn: () => {
+      if (!settled) return null;
+      return lookup({ data: settled });
+    },
     enabled: !!settled,
     staleTime: Infinity,
   });

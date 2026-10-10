@@ -1,8 +1,8 @@
 # Roadmap
 
-- [ ] Add account-saved franchise lists and show Franchise navigation only when lists exist.
-- [ ] Replace unavailable Fire TV voice search with direct text-search focus.
-- [ ] Put Movies/Shows Search then Sort first in the remote content flow.
+- [x] Add account-saved franchise lists and show Franchise navigation only when lists exist.
+- [x] Replace unavailable Fire TV voice search with direct text-search focus.
+- [x] Put Movies/Shows Search then Sort first in the remote content flow.
 
 - [x] Add franchise information and related titles inside the shared movie/show details window; verified against saved favourites with related-title selection and Back.
 
