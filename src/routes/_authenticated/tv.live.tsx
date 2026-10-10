@@ -444,7 +444,7 @@ function TvLive() {
             className="scrollbar-thin relative min-h-0 flex-1 overflow-auto overscroll-contain rounded border border-border bg-card"
             aria-label="Programme guide"
           >
-            <div className="sticky top-0 z-30 flex h-9 min-w-max border-b border-border bg-background">
+            <div data-tv-guide-header className="sticky top-0 z-30 flex h-9 min-w-max border-b border-border bg-background">
               <div className="sticky left-0 z-40 flex w-[300px] shrink-0 items-center border-r border-border bg-background px-2 text-xs font-semibold uppercase text-muted-foreground">Channels</div>
               <div className="grid w-[2880px] shrink-0 grid-cols-24">
                 {Array.from({ length: 24 }).map((_, index) => (
@@ -458,7 +458,7 @@ function TvLive() {
             {items.isLoading && <p className="sticky left-0 p-6 text-muted-foreground">Loading channels…</p>}
             {!items.isLoading && channels.length === 0 && <p className="sticky left-0 p-4 text-sm text-muted-foreground">{searching ? `No channels match “${search.trim()}”.` : "No channels in this category."}</p>}
             {!items.isLoading && page > 0 && (
-              <div className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
+              <div data-guide-pagination className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
                 <Button variant="ghost" data-tv-focus data-zone-edge-left="true" onClick={() => setPage((value) => Math.max(0, value - 1))} className="sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start rounded-none border-r border-border bg-card px-2 text-xs">
                   <ChevronLeft className="size-5" /> Previous channels
                 </Button>
@@ -525,7 +525,7 @@ function TvLive() {
               );
             })}
             {!items.isLoading && page < pageCount - 1 && (
-              <div className="flex min-w-max" style={{ height: ROW_HEIGHT }}>
+              <div data-guide-pagination className="flex min-w-max" style={{ height: ROW_HEIGHT }}>
                 <Button variant="ghost" data-tv-focus data-guide-next data-zone-edge-left="true" onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))} className="sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start rounded-none border-r border-border bg-card px-2 text-xs">
                   <ChevronRight className="size-5" /> Next channels
                 </Button>

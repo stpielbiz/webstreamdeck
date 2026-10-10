@@ -164,6 +164,46 @@
   transition: none;
 }
 
+/* Fire TV display density. Component dimensions change directly so remote
+   focus geometry and scrolling stay deterministic; browser pages are untouched. */
+html[data-tv-screen-size="medium"] {
+  font-size: 14px;
+}
+
+html[data-tv-screen-size="small"] {
+  font-size: 12px;
+}
+
+html[data-tv-screen-size="medium"] [data-tv-poster-grid] {
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+html[data-tv-screen-size="small"] [data-tv-poster-grid] {
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+html[data-tv-screen-size="medium"] [data-tv-home-tile="continue"] { width: 10.5rem; }
+html[data-tv-screen-size="medium"] [data-tv-home-tile="channel"],
+html[data-tv-screen-size="medium"] [data-tv-home-tile="poster"] { width: 6.25rem; }
+html[data-tv-screen-size="small"] [data-tv-home-tile="continue"] { width: 9rem; }
+html[data-tv-screen-size="small"] [data-tv-home-tile="channel"],
+html[data-tv-screen-size="small"] [data-tv-home-tile="poster"] { width: 5.25rem; }
+
+html[data-tv-screen-size="medium"] [data-tv-section-menu] [data-tv-focus] { min-height: 2.5rem; }
+html[data-tv-screen-size="small"] [data-tv-section-menu] [data-tv-focus] { min-height: 2.25rem; }
+
+html[data-tv-screen-size="medium"] [data-tv-guide-header] { height: 2rem; }
+html[data-tv-screen-size="medium"] [data-guide-row],
+html[data-tv-screen-size="medium"] [data-guide-pagination] { height: 42px !important; }
+html[data-tv-screen-size="small"] [data-tv-guide-header] { height: 1.75rem; }
+html[data-tv-screen-size="small"] [data-guide-row],
+html[data-tv-screen-size="small"] [data-guide-pagination] { height: 36px !important; }
+
+html[data-tv-screen-size="medium"] [data-tv-title-dialog] { width: min(90vw, 52rem); }
+html[data-tv-screen-size="small"] [data-tv-title-dialog] { width: min(88vw, 48rem); }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

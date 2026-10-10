@@ -13,7 +13,7 @@ import {
   Star,
   Tv,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { usePlaylists } from "@/components/playlist-context";
@@ -21,6 +21,7 @@ import { useIsAdmin } from "@/lib/use-admin";
 import { Button } from "@/components/ui/button";
 import { useSpatialNav } from "@/lib/use-spatial-nav";
 import { useSavedFranchises } from "@/lib/saved-franchises";
+import { useTvScreenSize } from "@/lib/playlist-sync";
 import {
   Select,
   SelectContent,
@@ -55,6 +56,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tvContext = useRouterState({ select: (state) => state.location.search['mode'] === "tv" });
   const tvRoute = pathname === "/tv" || pathname.startsWith("/tv/");
   const tvMode = tvRoute || tvContext;
+  const tvScreenSize = useTvScreenSize();
+  useEffect(() => {
+    if (tvMode) document.documentElement.dataset['tvScreenSize'] = tvScreenSize;
+    else delete document.documentElement.dataset['tvScreenSize'];
+    return () => { delete document.documentElement.dataset['tvScreenSize']; };
+  }, [tvMode, tvScreenSize]);
   useSpatialNav({
     enabled: !tvRoute,
     onBack: () => {

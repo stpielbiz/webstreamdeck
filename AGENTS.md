@@ -30,3 +30,4 @@
 - All title details entry points use the shared inline franchise panel and a title history within one dialog — related titles keep variant selection and Back returns to the previous title without stacking dialogs.
 - Saved franchise collections are account-owned and the Franchise navigation is conditional on at least one saved collection — empty accounts are not given a dead-end menu.
 - All search inputs use the shared SearchField with local draft state and confirmation on Enter, blur or keyboard dismissal; native Back is consumed before page navigation — prevents per-letter requests and keeps remote typing on the current screen.
+- Fire TV display density is an account setting applied through the shared TV shell and root sizing selectors, never browser zoom — this keeps focus geometry deterministic while leaving browser screens unchanged.

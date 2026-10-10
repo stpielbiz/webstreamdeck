@@ -179,7 +179,7 @@ function TitleDetailsContent({
 
   return (
     <Dialog open={id !== null} onOpenChange={(open) => { if (!open) close(); }}>
-      <DialogContent onOpenAutoFocus={(event) => { event.preventDefault(); window.requestAnimationFrame(() => { const related = returnFocusId ? document.querySelector<HTMLElement>(`[data-related-id="${CSS.escape(returnFocusId)}"]`) : null; const entry = related ?? document.querySelector<HTMLElement>('[role="dialog"] [data-details-entry]'); entry?.focus({ preventScroll: true }); if (related) related.scrollIntoView({ block: "nearest" }); }); }} onCloseAutoFocus={onCloseAutoFocus} data-tv-zone="details" className="max-h-[86dvh] w-[min(92vw,56rem)] max-w-none gap-0 overflow-hidden p-0 sm:rounded-lg">
+      <DialogContent onOpenAutoFocus={(event) => { event.preventDefault(); window.requestAnimationFrame(() => { const related = returnFocusId ? document.querySelector<HTMLElement>(`[data-related-id="${CSS.escape(returnFocusId)}"]`) : null; const entry = related ?? document.querySelector<HTMLElement>('[role="dialog"] [data-details-entry]'); entry?.focus({ preventScroll: true }); if (related) related.scrollIntoView({ block: "nearest" }); }); }} onCloseAutoFocus={onCloseAutoFocus} data-tv-zone="details" data-tv-title-dialog className="max-h-[86dvh] w-[min(92vw,56rem)] max-w-none gap-0 overflow-hidden p-0 sm:rounded-lg">
         <div className="scrollbar-thin max-h-[86dvh] overflow-y-auto">
           <div className="sticky top-0 z-20 space-y-2 border-b border-border bg-background p-4 pr-12">
               <div data-remote-row className="flex flex-wrap gap-2">
