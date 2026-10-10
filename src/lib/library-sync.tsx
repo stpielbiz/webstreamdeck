@@ -38,6 +38,10 @@ export interface LibrarySectionStatus {
   total: number;
   updated: number;
   percent: number;
+  /** Titles with a real description / channels with programme descriptions. */
+  withOverview: number;
+  /** Titles with known actors. */
+  withCast: number;
   topGenres: string[];
   updatedAt: number;
   loaded: boolean;
@@ -53,6 +57,8 @@ const emptySection = (): LibrarySectionStatus => ({
   total: 0,
   updated: 0,
   percent: 0,
+  withOverview: 0,
+  withCast: 0,
   topGenres: [],
   updatedAt: 0,
   loaded: false,
@@ -86,6 +92,8 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
         total,
         updated: enriched.length,
         percent: total ? Math.round((enriched.length / total) * 100) : 0,
+        withOverview: enriched.filter((name) => metadata[name]?.overview).length,
+        withCast: enriched.filter((name) => metadata[name]?.cast?.length).length,
         topGenres: [...genres].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3).map(([genre]) => genre),
         updatedAt: Math.max(client.getQueryState(key)?.dataUpdatedAt ?? 0, metadataUpdatedAt),
         loaded: items !== undefined,
@@ -102,6 +110,8 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
         total,
         updated: covered,
         percent: total ? Math.round((covered / total) * 100) : 0,
+        withOverview: channels ? channels.filter((channel) => guide?.[channel.id]?.p.some((programme) => programme.description)).length : 0,
+        withCast: 0,
         topGenres: [],
         updatedAt: Math.max(client.getQueryState(liveKey)?.dataUpdatedAt ?? 0, guideUpdatedAt),
         loaded: channels !== undefined,
