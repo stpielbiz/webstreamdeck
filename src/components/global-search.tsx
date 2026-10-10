@@ -8,12 +8,11 @@ import { TitleDetailsDialog } from "@/components/title-details-dialog";
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { VoiceButton } from "@/components/voice-button";
 import { getItems } from "@/lib/iptv.functions";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
 import { cn } from "@/lib/utils";
-import { useVoiceSearch } from "@/lib/voice-search";
+import { useAppSearchFocus } from "@/lib/app-search";
 import { groupCatalogItems, type TitleGroup } from "@/lib/title-variants";
 import { resolveFranchise } from "@/lib/franchise.functions";
 import { searchTitlesByCast } from "@/lib/metadata.functions";
@@ -40,13 +39,7 @@ export function GlobalSearch() {
   useEffect(() => {
     try { const saved = sessionStorage.getItem(STORAGE_KEY); if (saved) setSearchState(saved); } catch { /* ignore */ }
   }, []);
-  useVoiceSearch((spoken) => {
-    setSearch(spoken);
-    window.setTimeout(() => {
-      const first = document.querySelector<HTMLElement>('[data-focus-key="global-result-first"]');
-      (first ?? document.querySelector<HTMLElement>('[data-focus-key="global-search"]'))?.focus();
-    }, 600);
-  });
+  useAppSearchFocus("global-search");
   const query = search.trim().toLowerCase();
   const enabled = !!activeId && query.length > 0;
   const opts = (kind: Kind, key: string) => ({
@@ -104,7 +97,10 @@ export function GlobalSearch() {
   const lookup = useServerFn(resolveFranchise);
   const franchise = useQuery({
     queryKey: ["franchise", settled?.title, settled?.kind],
-    queryFn: () => lookup({ data: settled! }),
+    queryFn: () => {
+      if (!settled) return null;
+      return lookup({ data: settled });
+    },
     enabled: !!settled,
     staleTime: Infinity,
   });
@@ -118,13 +114,13 @@ export function GlobalSearch() {
   return (
     <section className="space-y-3">
       <div className="flex max-w-2xl items-center gap-2">
-        <VoiceButton zoneEntry focusKey="global-voice" />
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             data-tv-focus
             data-zone-entry="true"
+            data-app-search="true"
             data-focus-key="global-search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}

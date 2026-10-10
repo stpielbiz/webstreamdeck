@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Clapperboard, Download, Home, ListVideo, Loader2, MonitorPlay, RefreshCw, Settings, ShieldCheck, Star, Tv } from "lucide-react";
+import { Clapperboard, Download, Home, Layers, ListVideo, Loader2, MonitorPlay, RefreshCw, Settings, ShieldCheck, Star, Tv } from "lucide-react";
 import { useIsAdmin } from "@/lib/use-admin";
 import { useEffect, useRef, useState, type FocusEvent } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useSavedFranchises } from "@/lib/saved-franchises";
 
 export type BrowseLayer = "sections" | "categories" | "content";
 
@@ -50,6 +51,7 @@ export function SectionMenu({
   onCheckUpdates?: () => void;
 }) {
   const { isAdmin } = useIsAdmin();
+  const savedFranchises = useSavedFranchises();
   const [opening, setOpening] = useState<string | null>(null);
   const extras = [
     { to: "/playlists" as const, label: "Playlists", icon: ListVideo },
@@ -74,7 +76,7 @@ export function SectionMenu({
     >
       <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Browse</p>
       <div className="flex flex-col gap-1">
-        {SECTIONS.map(({ to, tvTo, label, icon: Icon }) => {
+        {[...SECTIONS, ...(savedFranchises.data?.length ? [{ to: "/franchises" as const, tvTo: "/tv/franchises" as const, label: "Franchise", icon: Layers }] : [])].map(({ to, tvTo, label, icon: Icon }) => {
           const destination = tv ? tvTo : to;
           return (
             <Button key={label} asChild variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>

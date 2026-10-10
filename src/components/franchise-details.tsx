@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, ChevronUp, Layers } from "lucide-react";
+import { BookmarkPlus, BookmarkX, ChevronDown, ChevronUp, Layers } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { usePlaylists } from "@/components/playlist-context";
 import { resolveFranchise, type Franchise } from "@/lib/franchise.functions";
 import { getItems } from "@/lib/iptv.functions";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { groupCatalogItems, mediaMatchKey, type TitleGroup } from "@/lib/title-variants";
+import { useRemoveSavedFranchise, useSaveFranchise, useSavedFranchises } from "@/lib/saved-franchises";
 
 export function useFranchiseMatches(franchise: Franchise | null | undefined, movies?: CatalogItem[], shows?: CatalogItem[]) {
   return useMemo(() => {
@@ -43,6 +45,9 @@ export function FranchiseDetails({ title, kind, onSelect }: {
   const fetchItems = useServerFn(getItems);
   const [expanded, setExpanded] = useState(false);
   const [order, setOrder] = useState<"year" | "story">("year");
+  const saved = useSavedFranchises();
+  const save = useSaveFranchise();
+  const remove = useRemoveSavedFranchise();
   const franchise = useQuery({
     queryKey: ["franchise", title, kind],
     queryFn: () => lookup({ data: { title, kind } }),
@@ -67,19 +72,41 @@ export function FranchiseDetails({ title, kind, onSelect }: {
   if (franchise.isPending) return <p role="status" className="mt-4 text-xs text-muted-foreground">Finding related movies and shows…</p>;
   if (franchise.isError) return <Button data-tv-focus variant="outline" size="sm" className="mt-4" onClick={() => void franchise.refetch()}>Retry related titles</Button>;
   if (!franchise.data) return null;
+  const resolvedFranchise = franchise.data;
+  const savedList = saved.data?.find((item) => item.name.toLowerCase() === resolvedFranchise.name.toLowerCase());
+  const toggleSaved = async () => {
+    try {
+      if (savedList) {
+        await remove.mutateAsync(savedList.id);
+        toast.success(`${resolvedFranchise.name} removed from Franchise`);
+      } else {
+        await save.mutateAsync(resolvedFranchise);
+        toast.success(`${resolvedFranchise.name} added to the Franchise menu`);
+      }
+    } catch {
+      toast.error("The franchise list could not be updated");
+    }
+  };
 
   return (
     <section className="mt-4 border-t border-border pt-3">
       <Button data-tv-focus variant="outline" className="h-auto w-full justify-start whitespace-normal py-2 text-left" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
         <Layers className="size-4 shrink-0" />
-        <span className="min-w-0 flex-1">Part of {franchise.data.name}</span>
+        <span className="min-w-0 flex-1">Part of {resolvedFranchise.name}</span>
         {expanded ? <ChevronUp className="size-4 shrink-0" /> : <ChevronDown className="size-4 shrink-0" />}
       </Button>
       {expanded && <div className="mt-3 space-y-2">
+        <div className="flex items-center justify-between gap-3 rounded border border-border bg-muted/40 p-2">
+          <p className="text-xs text-muted-foreground">{savedList ? "Saved for quick access in the Franchise menu." : "Add this list to the Franchise menu for quick access."}</p>
+          <Button data-tv-focus size="sm" variant={savedList ? "secondary" : "default"} disabled={save.isPending || remove.isPending} onClick={() => void toggleSaved()}>
+            {savedList ? <BookmarkX className="size-4" /> : <BookmarkPlus className="size-4" />}
+            {savedList ? "Remove list" : "Create list"}
+          </Button>
+        </div>
         <p className="text-xs text-muted-foreground">{loading ? "Checking your library…" : `${matches.filter(({ group }) => group).length} of ${matches.length} titles in your library`}</p>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Franchise order">
           <Button data-tv-focus size="sm" variant={order === "year" ? "default" : "secondary"} aria-pressed={order === "year"} onClick={() => setOrder("year")}>By year</Button>
-          {franchise.data.hasStoryOrder && <Button data-tv-focus size="sm" variant={order === "story" ? "default" : "secondary"} aria-pressed={order === "story"} onClick={() => setOrder("story")}>Story order</Button>}
+          {resolvedFranchise.hasStoryOrder && <Button data-tv-focus size="sm" variant={order === "story" ? "default" : "secondary"} aria-pressed={order === "story"} onClick={() => setOrder("story")}>Story order</Button>}
         </div>
         {(movies.isError || shows.isError) && <Button data-tv-focus variant="outline" size="sm" onClick={() => { void movies.refetch(); void shows.refetch(); }}>Retry library check</Button>}
         <ul className="space-y-1 p-1">
