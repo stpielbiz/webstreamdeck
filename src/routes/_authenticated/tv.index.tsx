@@ -103,7 +103,7 @@ function TvHome() {
         <main data-tv-zone="home-content" data-tv-zone-order="2" data-horizontal-nav="true" className="scrollbar-thin min-h-0 overflow-y-auto overscroll-contain pr-2">
           {focusedSection === "Home" ? (
             <div className="space-y-5 pb-6">
-              {activeId && <div data-remote-row className="sticky top-0 z-20 bg-background pb-3"><GlobalSearch /></div>}
+              {activeId && <div className="sticky top-0 z-20 bg-background pb-3"><GlobalSearch /></div>}
               <div className="pb-1">
                 <p className="text-xs font-semibold uppercase text-primary">Your library</p>
                 <h2 className="font-display text-2xl font-bold">Welcome back</h2>

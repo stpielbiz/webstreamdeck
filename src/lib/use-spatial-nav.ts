@@ -67,13 +67,13 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
       if ((zone?.dataset['tvZone'] === 'sections' && (direction === 'up' || direction === 'down')) || row) {
         const horizontal = direction === 'left' || direction === 'right';
         const rows = Array.from(scope.querySelectorAll<HTMLElement>('[data-remote-row]'))
-          .filter((entry) => entry.querySelector(SELECTOR));
+          .filter((entry) => Array.from(entry.querySelectorAll<HTMLElement>(SELECTOR)).some((item) => item.offsetParent !== null && item.closest('[data-remote-row]') === entry));
         const inRow = row ? elements.filter((entry) => entry.closest('[data-remote-row]') === row) : elements;
         const index = inRow.findIndex((entry) => entry === active);
         let destination: HTMLElement | undefined;
         if (row && !horizontal) {
           const nextRow = rows[rows.indexOf(row) + (direction === 'down' ? 1 : -1)];
-          const nextItems = nextRow ? Array.from(nextRow.querySelectorAll<HTMLElement>(SELECTOR)).filter((entry) => entry.offsetParent !== null) : [];
+          const nextItems = nextRow ? Array.from(nextRow.querySelectorAll<HTMLElement>(SELECTOR)).filter((entry) => entry.offsetParent !== null && entry.closest('[data-remote-row]') === nextRow) : [];
           destination = nextItems[Math.min(Math.max(0, index), nextItems.length - 1)];
         } else {
           destination = inRow[index + (direction === 'right' || direction === 'down' ? 1 : -1)];
