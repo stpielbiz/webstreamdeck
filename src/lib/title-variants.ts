@@ -1,4 +1,5 @@
 import type { CatalogItem } from "./iptv-types";
+import { normalizeTitle } from "./title-key";
 
 export interface GroupingMetadata {
   title?: string | null;
@@ -56,16 +57,13 @@ function extractYear(raw: string): number | null {
 
 /** Provider-safe title cleanup used only for grouping and display. */
 export function cleanVariantTitle(raw: string): string {
-  return raw
-    .replace(/\.(mp4|mkv|avi|ts)$/i, "")
-    .replace(/^\s*[[(|]?[A-Za-z]{2,4}[\])|]?\s*[-–|:]\s*/, " ")
+  const normalized = normalizeTitle(raw).title
     .replace(DECORATION_WORDS, " ")
     .replace(/[[(]\s*[\])]/g, " ")
-    .replace(/[[(][\s._|:/-]*[\])]/g, " ")
-    .replace(/\b(?:19|20)\d{2}\b/g, " ")
     .replace(/[\s._|:/-]+$/g, " ")
     .replace(/\s{2,}/g, " ")
-    .trim() || raw.trim();
+    .trim();
+  return normalized || raw.replace(/[[(]\s*[\])]/g, " ").trim();
 }
 
 export function titleMatchKey(raw: string): string {
@@ -122,8 +120,10 @@ export function groupCatalogItems(
   const groups = new Map<string, { items: CatalogItem[]; title: string; year: string | number | null }>();
   for (const item of items) {
     const meta = metadata?.[item.name];
-    const title = meta?.title?.trim() || cleanVariantTitle(item.name);
-    const year = meta?.year || item.year || extractYear(item.name);
+    const provider = normalizeTitle(item.name);
+    const metadataTitle = meta?.title ? cleanVariantTitle(meta.title) : "";
+    const title = metadataTitle || provider.title || cleanVariantTitle(item.name);
+    const year = meta?.year || provider.year || (item.year ? extractYear(item.year) : null) || extractYear(item.name);
     const key = `${titleMatchKey(title)}|${year || ""}`;
     const existing = groups.get(key);
     if (existing) existing.items.push(item);
