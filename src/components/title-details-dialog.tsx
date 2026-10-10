@@ -21,8 +21,9 @@ import { FranchiseDetails } from "@/components/franchise-details";
 export type TitleKind = "movie" | "series";
 
 /** Shared movie/show details window used by Movies, Shows and Home favourites. */
-export function TitleDetailsDialog(props: Omit<Parameters<typeof TitleDetailsContent>[0], "onSelectRelated" | "parentTitle">) {
+export function TitleDetailsDialog(props: Omit<Parameters<typeof TitleDetailsContent>[0], "onSelectRelated" | "parentTitle" | "returnFocusId">) {
   const [history, setHistory] = useState<Array<{ kind: TitleKind; group: import("@/lib/title-variants").TitleGroup }>>([]);
+  const [returnFocusId, setReturnFocusId] = useState<string | null>(null);
   useEffect(() => { setHistory([]); }, [props.id, props.kind]);
   const selected = history.at(-1);
   const previous = history.at(-2);
@@ -30,9 +31,10 @@ export function TitleDetailsDialog(props: Omit<Parameters<typeof TitleDetailsCon
     {...props}
     {...(selected ? { kind: selected.kind, id: selected.group.item.id, name: selected.group.title, image: selected.group.item.image, year: selected.group.year, variants: selected.group.variants, metadata: undefined } : {})}
     key={`${props.id}-${history.length}-${selected?.group.item.id ?? "original"}`}
+    returnFocusId={returnFocusId}
     parentTitle={selected ? previous?.group.title ?? props.name ?? "title" : undefined}
-    onClose={() => selected ? setHistory((items) => items.slice(0, -1)) : props.onClose()}
-    onSelectRelated={(kind, group) => setHistory((items) => [...items, { kind, group }])}
+    onClose={() => { if (selected) { setReturnFocusId(selected.group.item.id); setHistory((items) => items.slice(0, -1)); } else { setReturnFocusId(null); props.onClose(); } }}
+    onSelectRelated={(kind, group) => { setReturnFocusId(null); setHistory((items) => [...items, { kind, group }]); }}
   />;
 }
 
@@ -48,6 +50,7 @@ function TitleDetailsContent({
   onCloseAutoFocus,
   onSelectRelated,
   parentTitle,
+  returnFocusId,
 }: {
   kind: TitleKind;
   id: string | null;
@@ -60,6 +63,7 @@ function TitleDetailsContent({
   onCloseAutoFocus?: ((event: Event) => void) | undefined;
   onSelectRelated: (kind: TitleKind, group: import("@/lib/title-variants").TitleGroup) => void;
   parentTitle?: string | undefined;
+  returnFocusId: string | null;
 }) {
   const { activeId } = usePlaylists();
   const fetchMovie = useServerFn(getMovie);
@@ -75,6 +79,16 @@ function TitleDetailsContent({
   const [episode, setEpisode] = useState<EpisodeItem | null>(null);
   const [playing, setPlaying] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(id);
+
+  useEffect(() => {
+    if (!returnFocusId) return;
+    const frame = window.requestAnimationFrame(() => {
+      const related = document.querySelector<HTMLElement>(`[data-related-id="${CSS.escape(returnFocusId)}"]`);
+      related?.focus({ preventScroll: true });
+      related?.scrollIntoView({ block: "nearest" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [returnFocusId]);
 
   useEffect(() => {
     setSeasonIndex(0);
@@ -186,7 +200,7 @@ function TitleDetailsContent({
 
           </div>
           <div className="px-4 pb-4 md:px-5">
-            {id && name && <FranchiseDetails title={cleanVariantTitle(name).replace(/[[(]\s*(?:US|UK|CA|AU|EN|FR|DE|ES|IT)\s*[\])]/gi, "").trim()} kind={kind} onSelect={onSelectRelated} />}
+            {id && name && <FranchiseDetails title={cleanVariantTitle(name).replace(/[[(]\s*(?:US|UK|CA|AU|EN|FR|DE|ES|IT)\s*[\])]/gi, "").trim()} kind={kind} onSelect={onSelectRelated} initiallyExpanded={!!returnFocusId} />}
           </div>
           <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_minmax(18rem,46%)] md:p-5">
             <div className="min-w-0">

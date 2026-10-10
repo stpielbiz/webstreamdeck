@@ -36,14 +36,15 @@ export function useFranchiseMatches(franchise: Franchise | null | undefined, mov
   }, [franchise, movies, shows]);
 }
 
-export function FranchiseDetails({ title, kind, onSelect }: {
+export function FranchiseDetails({ title, kind, onSelect, initiallyExpanded = false }: {
   title: string; kind: "movie" | "series";
   onSelect: (kind: "movie" | "series", group: TitleGroup) => void;
+  initiallyExpanded?: boolean;
 }) {
   const { activeId } = usePlaylists();
   const lookup = useServerFn(resolveFranchise);
   const fetchItems = useServerFn(getItems);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initiallyExpanded);
   const [order, setOrder] = useState<"year" | "story">("year");
   const saved = useSavedFranchises();
   const save = useSaveFranchise();
@@ -111,7 +112,7 @@ export function FranchiseDetails({ title, kind, onSelect }: {
         {(movies.isError || shows.isError) && <Button data-tv-focus variant="outline" size="sm" onClick={() => { void movies.refetch(); void shows.refetch(); }}>Retry library check</Button>}
         <ul className="space-y-1 p-1">
           {sorted.map(({ member, group }, index) => <li data-remote-row key={`${member.kind}-${member.title}-${member.year}`}>
-            <Button data-tv-focus variant="ghost" disabled={!group} onClick={() => group && onSelect(member.kind, group)} className="h-auto w-full justify-start gap-2 whitespace-normal px-2 py-2 text-left">
+            <Button data-tv-focus data-related-id={group?.item.id} variant="ghost" disabled={!group} onClick={() => group && onSelect(member.kind, group)} className="h-auto w-full justify-start gap-2 whitespace-normal px-2 py-2 text-left">
               <span className="w-5 shrink-0 text-xs text-muted-foreground">{index + 1}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm">{member.title}</span>
