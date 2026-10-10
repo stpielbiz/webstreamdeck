@@ -12,6 +12,9 @@ export type AdminUser = {
   playlists: number;
   favorites: number;
   progress: number;
+  expiresAt: string | null;
+  neverExpires: boolean;
+  expired: boolean;
 };
 
 /** True only when the caller holds the admin role. */
@@ -47,11 +50,12 @@ export const listAccounts = createServerFn({ method: "GET" })
     });
     if (error) throw new Error(error.message);
 
-    const [roles, playlists, favorites, progress] = await Promise.all([
+    const [roles, playlists, favorites, progress, access] = await Promise.all([
       supabaseAdmin.from("user_roles").select("user_id, role"),
       supabaseAdmin.from("playlists").select("user_id"),
       supabaseAdmin.from("favorites").select("user_id"),
       supabaseAdmin.from("watch_progress").select("user_id"),
+      supabaseAdmin.from("account_access").select("user_id, expires_at, never_expires"),
     ]);
 
     const admins = new Set(
@@ -65,8 +69,13 @@ export const listAccounts = createServerFn({ method: "GET" })
     const pl = tally(playlists.data as any);
     const fv = tally(favorites.data as any);
     const pg = tally(progress.data as any);
+    const accessByUser = new Map((access.data ?? []).map((row) => [row.user_id, row]));
 
-    return list.users.map((user) => ({
+    return list.users.map((user) => {
+      const accountAccess = accessByUser.get(user.id);
+      const expiresAt = accountAccess?.expires_at ?? null;
+      const neverExpires = accountAccess?.never_expires ?? false;
+      return {
       id: user.id,
       email: user.email ?? null,
       createdAt: user.created_at ?? null,
@@ -76,7 +85,37 @@ export const listAccounts = createServerFn({ method: "GET" })
       playlists: pl.get(user.id) ?? 0,
       favorites: fv.get(user.id) ?? 0,
       progress: pg.get(user.id) ?? 0,
-    }));
+      expiresAt,
+      neverExpires,
+      expired: !neverExpires && (!expiresAt || new Date(expiresAt).getTime() <= Date.now()),
+    };
+    });
+  });
+
+/** Set a dated expiry or permanent access. Admin only. */
+export const setAccountAccess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      userId: z.string().uuid(),
+      neverExpires: z.boolean(),
+      expiresAt: z.string().datetime().nullable(),
+    }).superRefine((value, issue) => {
+      if (value.neverExpires !== (value.expiresAt === null)) {
+        issue.addIssue({ code: "custom", message: "Choose an expiry date or Never expires" });
+      }
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("account_access").upsert({
+      user_id: data.userId,
+      expires_at: data.expiresAt,
+      never_expires: data.neverExpires,
+    }, { onConflict: "user_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 /** Shared metadata cache + catalogue stats. Admin only. */
