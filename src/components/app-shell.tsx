@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Clapperboard,
   LayoutGrid,
+  Layers,
   ListVideo,
   LogOut,
   LogIn,
@@ -19,6 +20,7 @@ import { usePlaylists } from "@/components/playlist-context";
 import { useIsAdmin } from "@/lib/use-admin";
 import { Button } from "@/components/ui/button";
 import { useSpatialNav } from "@/lib/use-spatial-nav";
+import { useSavedFranchises } from "@/lib/saved-franchises";
 import {
   Select,
   SelectContent,
@@ -42,9 +44,11 @@ const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { playlists, activeId, setActiveId } = usePlaylists();
   const { isAdmin } = useIsAdmin();
+  const savedFranchises = useSavedFranchises();
+  const franchiseItem = savedFranchises.data?.length ? [{ to: "/franchises" as const, label: "Franchise", icon: Layers }] : [];
   const navItems = isAdmin
-    ? [...NAV, { to: "/admin" as const, label: "Admin", icon: ShieldCheck }]
-    : [...NAV];
+    ? [...NAV.slice(0, 5), ...franchiseItem, ...NAV.slice(5), { to: "/admin" as const, label: "Admin", icon: ShieldCheck }]
+    : [...NAV.slice(0, 5), ...franchiseItem, ...NAV.slice(5)];
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -74,7 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate({ to: "/auth", replace: true });
   };
 
-  const layeredPath = ["/dashboard", "/live", "/movies", "/series", "/favorites"].some(
+  const layeredPath = ["/dashboard", "/live", "/movies", "/series", "/favorites", "/franchises"].some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   if (layeredPath) {
