@@ -24,8 +24,7 @@ import { enrichTitles, getCachedTitleMetadata } from "@/lib/metadata.functions";
 import type { TitleMetadata } from "@/lib/metadata.server";
 import { useIsAdmin } from "@/lib/use-admin";
 import { cn } from "@/lib/utils";
-import { useVoiceSearch } from "@/lib/voice-search";
-import { VoiceButton } from "@/components/voice-button";
+import { useAppSearchFocus } from "@/lib/app-search";
 import { LayerHeading } from "@/components/layered-navigation";
 import { TitleDetailsDialog } from "@/components/title-details-dialog";
 import { groupCatalogItems, mediaMatchKey, type TitleGroup, type TitleVariant } from "@/lib/title-variants";
@@ -53,11 +52,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const [search, setSearch] = useState("");
   const [limits, setLimits] = useState<Record<string, number>>({});
   const limitFor = (label: string) => limits[label] ?? 180;
-  useVoiceSearch((spoken) => {
-    setSearch(spoken);
-    setSelectedId(null);
-    document.querySelector<HTMLElement>('[data-focus-key="catalog-search"]')?.focus();
-  });
+  useAppSearchFocus("catalog-search");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedVariants, setSelectedVariants] = useState<TitleVariant[]>([]);
   const [seasonIndex, setSeasonIndex] = useState(0);
@@ -402,6 +397,48 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
       </aside>
 
       <div ref={contentRef} data-tv-zone="content" data-tv-zone-order="2" className="scrollbar-thin min-h-0 min-w-0 overflow-y-auto pr-1">
+        <div className="sticky top-0 z-20 mb-3 flex items-center gap-2 border-b border-border bg-background/95 pb-3 backdrop-blur">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              data-tv-focus
+              data-zone-entry="true"
+              data-app-search="true"
+              data-focus-key="catalog-search"
+              type="search"
+              inputMode="search"
+              autoComplete="off"
+              enterKeyHint="search"
+              onKeyDown={(event) => {
+                if (event.key === "ArrowRight" && event.currentTarget.selectionStart === event.currentTarget.value.length) {
+                  event.preventDefault(); event.stopPropagation();
+                  document.querySelector<HTMLElement>('[data-focus-key="catalog-sort"]')?.focus();
+                }
+                if (event.key === "Enter" || event.key === "ArrowDown") {
+                  event.preventDefault(); event.stopPropagation();
+                  document.querySelector<HTMLElement>('[data-grid-entry="true"]')?.focus();
+                }
+              }}
+              value={search}
+              onChange={(event) => { setSearch(event.target.value); setSelectedId(null); }}
+              placeholder={`Search all ${kind === "movie" ? "movies" : "shows"}`}
+              className="pl-9"
+            />
+          </div>
+          <Button
+            data-tv-focus
+            data-focus-key="catalog-sort"
+            variant="outline"
+            onClick={() => setSort((value) => value === "year" ? "az" : "year")}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowLeft") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="catalog-search"]')?.focus(); }
+              if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-grid-entry="true"]')?.focus(); }
+            }}
+          >
+            {sort === "year" ? <CalendarArrowDown className="size-4" /> : <ArrowDownAZ className="size-4" />}
+            {sort === "year" ? "Newest" : "A–Z"}
+          </Button>
+        </div>
         <div data-featured-row onKeyDown={leaveFeatured}>
         {featured === "popular" ? (
           <PopularRow kind={kind} tv={tv} items={catalogue.data ?? []} metadata={metadata.data} onOpen={selectTitle} />
@@ -415,20 +452,13 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         </div>
 
         <div className="mt-4 min-w-0">
-        <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <div className="mb-3 flex items-center gap-3">
           <h2 className="truncate font-display text-lg font-semibold">{searching ? `Results for “${search.trim()}”` : genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
-          <div className="flex items-center gap-2">
-            <div className="flex overflow-hidden rounded-md border border-border">
-              <Button data-tv-focus size="sm" data-focus-key="sort-az" variant={sort === "az" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("az")}><ArrowDownAZ className="size-4" /> A–Z</Button>
-              <Button data-tv-focus size="sm" data-focus-key="sort-year" variant={sort === "year" ? "secondary" : "ghost"} className="rounded-none" onClick={() => setSort("year")}><CalendarArrowDown className="size-4" /> Newest</Button>
-            </div>
-            <VoiceButton focusKey="catalog-voice" /><div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input data-tv-focus data-focus-key="catalog-search" type="search" onKeyDown={(event) => { if (event.key === "Enter" || event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-tv-zone="content"] [data-zone-entry="true"]')?.focus(); } }} value={search} onChange={(event) => { setSearch(event.target.value); setSelectedId(null); }} placeholder={`Search all ${kind === "movie" ? "movies" : "shows"}`} className="pl-9" /></div>
-          </div>
         </div>
         {catalogue.isLoading && !catalogue.data ? <CatalogGridLoading title={kind === "movie" ? "Movies" : "Shows"} /> : catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 ? <EmptyState title="Nothing here" description={searching ? `No titles match “${search.trim()}”.` : "No titles match this system category."} /> : sections.map((section, sectionIndex) => (
           <div key={section.label} className="mb-5">
             <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3>
-            <PosterGrid>{section.items.slice(0, limitFor(section.label)).map((item, index) => { const titleGroup = groupByItemId.get(item.id); const variants = titleGroup?.variants ?? []; const favouriteVariant = variants.find((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id)); return <PosterTile key={item.id} zoneEntry={sectionIndex === 0 && index === 0} title={titleGroup?.title || metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(titleGroup?.year || metadata.data?.[item.name]?.year || item.year || "")} progress={progressForVariants(progress.data, activeId, variants, titleGroup?.title)} favorite={!!favouriteVariant} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: favouriteVariant?.item.id ?? item.id, title: titleGroup?.title ?? item.name, logoUrl: item.image })} />; })}{section.items.length > limitFor(section.label) && <button type="button" data-tv-focus data-focus-key={`show-more-${section.label}`} onClick={(event) => { const label = section.label; const at = limitFor(label); setLimits((prev) => ({ ...prev, [label]: at + 180 })); const grid = event.currentTarget.parentElement; window.requestAnimationFrame(() => (grid?.children[at] as HTMLElement | undefined)?.querySelector<HTMLElement>("[data-tv-focus]")?.focus()); }} className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/60 p-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">Show more<span className="mt-1 text-xs font-normal">{(section.items.length - limitFor(section.label)).toLocaleString()} left</span></button>}</PosterGrid>
+            <div data-grid-entry={sectionIndex === 0 ? "true" : undefined}><PosterGrid>{section.items.slice(0, limitFor(section.label)).map((item) => { const titleGroup = groupByItemId.get(item.id); const variants = titleGroup?.variants ?? []; const favouriteVariant = variants.find((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id)); return <PosterTile key={item.id} title={titleGroup?.title || metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(titleGroup?.year || metadata.data?.[item.name]?.year || item.year || "")} progress={progressForVariants(progress.data, activeId, variants, titleGroup?.title)} favorite={!!favouriteVariant} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: favouriteVariant?.item.id ?? item.id, title: titleGroup?.title ?? item.name, logoUrl: item.image })} />; })}{section.items.length > limitFor(section.label) && <button type="button" data-tv-focus data-focus-key={`show-more-${section.label}`} onClick={(event) => { const label = section.label; const at = limitFor(label); setLimits((prev) => ({ ...prev, [label]: at + 180 })); const grid = event.currentTarget.parentElement; window.requestAnimationFrame(() => (grid?.children[at] as HTMLElement | undefined)?.querySelector<HTMLElement>("[data-tv-focus]")?.focus()); }} className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/60 p-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">Show more<span className="mt-1 text-xs font-normal">{(section.items.length - limitFor(section.label)).toLocaleString()} left</span></button>}</PosterGrid></div>
           </div>
         ))}
         </div>
