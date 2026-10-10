@@ -49,7 +49,7 @@ export function FranchiseCard({ franchise, owned, onOpen }: { franchise: Franchi
 }
 
 export function FranchiseList({ franchise, movies, shows, open, onClose }: {
-  franchise: Franchise | null; movies?: CatalogItem[]; shows?: CatalogItem[]; open: boolean; onClose: () => void;
+  franchise: Franchise | null; movies?: CatalogItem[] | undefined; shows?: CatalogItem[] | undefined; open: boolean; onClose: () => void;
 }) {
   const [order, setOrder] = useState<"year" | "story">("year");
   const [picked, setPicked] = useState<{ kind: "movie" | "series"; group: TitleGroup } | null>(null);
