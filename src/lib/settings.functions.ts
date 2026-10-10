@@ -22,9 +22,10 @@ export const getSettings = createServerFn({ method: "GET" })
       .eq("user_id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
+    const parsedScreenSize = z.enum(["large", "medium", "small"]).catch("large").parse(data?.screen_size);
     return {
       syncPlaylists: data?.sync_playlists ?? false,
-      screenSize: data?.screen_size ?? "large",
+      screenSize: parsedScreenSize,
     };
   });
 
