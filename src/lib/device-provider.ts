@@ -4,7 +4,7 @@
  * device, so when the native bridge can fetch, provider calls run here using
  * the same parsing code the server uses. Browsers keep using the server.
  */
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import * as provider from "./iptv-provider";
@@ -82,9 +82,10 @@ function useDeviceFn<TIn, TOut>(
       try {
         let source = sources.get(playlistId);
         if (!source) {
-          source = loadSource({ data: { playlistId } });
-          sources.set(playlistId, source);
-          source.catch(() => sources.delete(playlistId));
+          const created: Promise<PlaylistRow> = loadSource({ data: { playlistId } });
+          sources.set(playlistId, created);
+          created.catch(() => sources.delete(playlistId));
+          source = created;
         }
         return await local(await source, opts.data);
       } catch (error) {
