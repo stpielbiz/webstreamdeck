@@ -136,7 +136,9 @@ export const createPlaylist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createSchema.parse(input))
   .handler(async ({ data, context }): Promise<{ playlist: PlaylistSummary; summary: ConnectionSummary }> => {
-    const summary = await probeSource(data);
+    const summary = data.force
+      ? { live: 0, movie: 0, series: 0, unit: "categories" as const }
+      : await probeWithRetries(data);
     const { data: row, error } = await context.supabase
       .from("playlists")
       .insert({
