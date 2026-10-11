@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Redesign Home and Favourites into compact separate channels, movies, and shows lists; verified saved titles, popup removal/restoration, channel guide opening, remote focus and mobile layout. Physical Firestick validation remains in the device task below.
+
 - [x] Add admin-controlled account expiry and Never expires, show status on Home, disable expired account destinations except Home and Settings, and rename Sections return links to Home.
 
 - [x] Add account-saved Large, Medium, and Small Fire TV display sizes for menus, cards, Live TV, and title popups; Large remains the default and browser screens are unchanged.

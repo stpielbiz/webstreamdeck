@@ -1,19 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Play, Tv } from "lucide-react";
+import { Tv } from "lucide-react";
 
 import { SubscriptionBanner } from "@/components/subscription-banner";
 import { usePlaylists } from "@/components/playlist-context";
 import { EmptyState, PosterGrid, PosterTile, Shelf } from "@/components/media";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useFavorites, useProgress } from "@/lib/library-hooks";
+import { useProgress } from "@/lib/library-hooks";
 import { SectionMenu } from "@/components/layered-navigation";
-import { TitleDetailsDialog } from "@/components/title-details-dialog";
-import type { FavoriteRow } from "@/lib/iptv.functions";
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import type { CatalogItem } from "@/lib/iptv-types";
-import { variantsForItem } from "@/lib/title-variants";
+import { FavouritesLists } from "@/components/favourites-lists";
 import { useAccountAccess } from "@/lib/account-access";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -26,6 +21,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       },
       { property: "og:title", content: "Home — Stream Deck" },
       { property: "og:description", content: "Pick up where you left off." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Dashboard,
@@ -34,13 +31,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { playlists, activeId, active, isLoading } = usePlaylists();
   const progress = useProgress();
-  const favorites = useFavorites();
-  const [openFavourite, setOpenFavourite] = useState<FavoriteRow | null>(null);
-  const queryClient = useQueryClient();
   const expired = useAccountAccess().data?.expired === true;
-  const favouriteVariants = openFavourite && activeId && (openFavourite.itemKind === "movie" || openFavourite.itemKind === "series")
-    ? variantsForItem(queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, openFavourite.itemKind]) ?? [], openFavourite.itemId)
-    : [];
 
   if (isLoading) {
     return (
@@ -74,12 +65,6 @@ function Dashboard() {
       !row.completed &&
       row.playlistId === activeId &&
       (row.positionSeconds > 30 || row.external),
-  );
-  const favouriteChannels = (favorites.data ?? []).filter(
-    (row) => row.playlistId === activeId && row.itemKind === "live",
-  );
-  const favouriteTitles = (favorites.data ?? []).filter(
-    (row) => row.playlistId === activeId && row.itemKind !== "live",
   );
 
   return (
@@ -144,76 +129,7 @@ function Dashboard() {
         )}
       </Shelf>
 
-      <Shelf
-        title="Favourite channels"
-        action={
-          <Link to="/favorites" className="text-xs font-medium text-primary hover:underline">
-            See all
-          </Link>
-        }
-      >
-        {favouriteChannels.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Star channels in Live TV to keep them one click away.
-          </p>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {favouriteChannels.slice(0, 9).map((row) => (
-              <Link
-                key={row.id}
-                to="/live"
-                search={{ channel: row.itemId }}
-                className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition hover:border-primary/60"
-              >
-                {row.logoUrl ? (
-                  <img src={row.logoUrl} alt="" className="size-9 rounded object-contain" />
-                ) : (
-                  <span className="grid size-9 place-items-center rounded bg-muted">
-                    <Tv className="size-4 text-muted-foreground" />
-                  </span>
-                )}
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">{row.title}</span>
-                <Play className="size-4 text-primary" />
-              </Link>
-            ))}
-          </div>
-        )}
-      </Shelf>
-
-      <Shelf
-        title="Favourite films and shows"
-        action={
-          <Link to="/favorites" className="text-xs font-medium text-primary hover:underline">
-            See all
-          </Link>
-        }
-      >
-        {favouriteTitles.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Star a movie or series and it will show up here.
-          </p>
-        ) : (
-          <PosterGrid>
-            {favouriteTitles.slice(0, 16).map((row) => (
-              <PosterTile
-                key={row.id}
-                title={row.title}
-                image={row.logoUrl}
-                favorite
-                onSelect={() => setOpenFavourite(row)}
-              />
-            ))}
-          </PosterGrid>
-        )}
-      </Shelf>
-      <TitleDetailsDialog
-        kind={openFavourite?.itemKind === "series" ? "series" : "movie"}
-        id={openFavourite?.itemId ?? null}
-        name={openFavourite?.title}
-        image={openFavourite?.logoUrl}
-        variants={favouriteVariants}
-        onClose={() => setOpenFavourite(null)}
-      />
+      <FavouritesLists home />
       </>}
     </div>
   );
