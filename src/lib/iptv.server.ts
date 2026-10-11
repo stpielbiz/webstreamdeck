@@ -25,12 +25,33 @@ export interface PlaylistRow {
 }
 
 const USER_AGENT = "VLC/3.0.20 LibVLC/3.0.20";
+// Some providers only accept known player apps; retry with these when refused.
+const FALLBACK_AGENTS = ["TiviMate/5.1.6 (Android 11)", "okhttp/4.12.0", "IPTVSmartersPro"];
 
-export function providerFetch(url: string, init: RequestInit = {}) {
-  const headers = new Headers(init.headers);
-  if (!headers.has("user-agent")) headers.set("user-agent", USER_AGENT);
-  headers.set("accept", headers.get("accept") ?? "*/*");
-  return fetch(url, { ...init, headers, redirect: "follow" });
+export async function providerFetch(url: string, init: RequestInit = {}) {
+  const custom = new Headers(init.headers).has("user-agent");
+  const agents = custom ? [null] : [USER_AGENT, ...FALLBACK_AGENTS];
+  let response: Response | undefined;
+  for (const agent of agents) {
+    const headers = new Headers(init.headers);
+    if (agent) headers.set("user-agent", agent);
+    headers.set("accept", headers.get("accept") ?? "*/*");
+    response = await fetch(url, { ...init, headers, redirect: "follow" });
+    if (response.status !== 403 && response.status !== 401) return response;
+  }
+  return response!;
+}
+
+/** Plain-language explanation for a provider HTTP error. */
+export function describeProviderStatus(status: number, what = "The provider"): string {
+  if (status === 403) {
+    return `${what} refused the connection (error 403). Your login may be fine — many providers only allow connections from home internet and block cloud servers like ours, which is why it can work in TiviMate but not here. Other causes: the account has reached its device/connection limit (close it on other devices and retry), the account is tied to one IP address or app, or the server address is slightly different (check http vs https and the port number). Your provider can tell you which applies.`;
+  }
+  if (status === 401) return `${what} rejected the username or password (error 401). Check for extra spaces or capital letters.`;
+  if (status === 404) return `${what} could not find that address (error 404). Check the server address and port.`;
+  if (status === 451 || status === 406) return `${what} blocked this connection (error ${status}), usually because it only accepts certain apps or regions.`;
+  if (status >= 500) return `${what} is having problems right now (error ${status}). Try again later.`;
+  return `${what} returned an error (${status}).`;
 }
 
 export function normalizeBase(serverUrl: string): string {
@@ -50,10 +71,13 @@ async function xtream(playlist: PlaylistRow, params: Record<string, string>) {
   url.searchParams.set("password", playlist.password);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
 
-  const response = await providerFetch(url.toString());
-  if (!response.ok) {
-    throw new Error(`The provider returned an error (${response.status}).`);
+  let response: Response;
+  try {
+    response = await providerFetch(url.toString());
+  } catch {
+    throw new Error("Could not reach the provider's server. Check the server address (including http/https and port).");
   }
+  if (!response.ok) throw new Error(describeProviderStatus(response.status));
   const text = await response.text();
   try {
     return JSON.parse(text) as unknown;
