@@ -1,3 +1,4 @@
+import { useGetCategories, useGetItems, useGetNowNext, useGetPlayback } from "@/lib/device-provider";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -44,10 +45,10 @@ function LivePage() {
   const navigate = useNavigate();
   const { channel: channelFromUrl } = Route.useSearch();
   const { activeId, playlists } = usePlaylists();
-  const fetchCategories = useServerFn(getCategories);
-  const fetchItems = useServerFn(getItems);
-  const fetchNowNext = useServerFn(getNowNext);
-  const fetchPlayback = useServerFn(getPlayback);
+  const fetchCategories = useGetCategories();
+  const fetchItems = useGetItems();
+  const fetchNowNext = useGetNowNext();
+  const fetchPlayback = useGetPlayback();
 
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [search, setSearch] = useState("");

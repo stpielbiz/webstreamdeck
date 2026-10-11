@@ -1,3 +1,4 @@
+import { useGetItems } from "@/lib/device-provider";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Layers, Trash2 } from "lucide-react";
@@ -12,7 +13,7 @@ import { useRemoveSavedFranchise, useSavedFranchises } from "@/lib/saved-franchi
 
 export function SavedFranchiseBrowser({ tv, onBack }: { tv?: boolean; onBack: () => void }) {
   const { activeId } = usePlaylists();
-  const fetchItems = useServerFn(getItems);
+  const fetchItems = useGetItems();
   const saved = useSavedFranchises();
   const remove = useRemoveSavedFranchise();
   const [openId, setOpenId] = useState<string | null>(null);

@@ -1,3 +1,4 @@
+import { useGetCategories, useGetItems, useGetSchedule, useGetNowNext } from "@/lib/device-provider";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -21,10 +22,10 @@ function timeLabel(iso: string | null) {
 export function GuideView({ tv = false }: { tv?: boolean }) {
   const navigate = useNavigate();
   const { activeId, active, playlists } = usePlaylists();
-  const fetchCategories = useServerFn(getCategories);
-  const fetchItems = useServerFn(getItems);
-  const fetchNowNext = useServerFn(getNowNext);
-  const fetchSchedule = useServerFn(getSchedule);
+  const fetchCategories = useGetCategories();
+  const fetchItems = useGetItems();
+  const fetchNowNext = useGetNowNext();
+  const fetchSchedule = useGetSchedule();
   const [categoryId, setCategoryId] = useState<string | undefined>();
   const [channelId, setChannelId] = useState<string | null>(null);
 

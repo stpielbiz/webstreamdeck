@@ -1,3 +1,4 @@
+import { useGetCategories, useGetItems, useGetSchedules, useGetPlayback } from "@/lib/device-provider";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GUIDE_TTL, guideKey, mergeGuide, type GuideStore } from "@/lib/library-sync";
@@ -43,10 +44,10 @@ function TvLive() {
   const navigate = useNavigate();
   const { channel } = Route.useSearch();
   const { activeId, playlists } = usePlaylists();
-  const fetchCategories = useServerFn(getCategories);
-  const fetchItems = useServerFn(getItems);
-  const fetchSchedules = useServerFn(getSchedules);
-  const resolve = useServerFn(getPlayback);
+  const fetchCategories = useGetCategories();
+  const fetchItems = useGetItems();
+  const fetchSchedules = useGetSchedules();
+  const resolve = useGetPlayback();
 
   const [categoryId, setCategoryId] = useState("");
   const [selected, setSelected] = useState<CatalogItem | null>(null);

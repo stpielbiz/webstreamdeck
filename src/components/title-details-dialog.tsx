@@ -1,3 +1,4 @@
+import { useGetMovie, useGetSeries, useGetPlayback } from "@/lib/device-provider";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Play, Star } from "lucide-react";
@@ -66,9 +67,9 @@ function TitleDetailsContent({
   returnFocusId: string | null;
 }) {
   const { activeId } = usePlaylists();
-  const fetchMovie = useServerFn(getMovie);
-  const fetchSeries = useServerFn(getSeries);
-  const fetchPlayback = useServerFn(getPlayback);
+  const fetchMovie = useGetMovie();
+  const fetchSeries = useGetSeries();
+  const fetchPlayback = useGetPlayback();
   const fetchMetadata = useServerFn(getCachedTitleMetadata);
   const favorites = useFavorites();
   const progress = useProgress();

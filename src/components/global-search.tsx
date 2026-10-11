@@ -1,3 +1,4 @@
+import { useGetItems } from "@/lib/device-provider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -27,7 +28,7 @@ type Kind = "live" | "movie" | "series";
 export function GlobalSearch() {
   const navigate = useNavigate();
   const { activeId } = usePlaylists();
-  const fetchItems = useServerFn(getItems);
+  const fetchItems = useGetItems();
   const favorites = useFavorites();
   const toggleFavorite = useToggleFavorite();
   const [search, setSearchState] = useState("");

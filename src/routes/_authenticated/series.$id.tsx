@@ -1,3 +1,4 @@
+import { useGetSeries, useGetPlayback } from "@/lib/device-provider";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -41,8 +42,8 @@ function SeriesDetail() {
   const { id } = Route.useParams();
   const { play } = Route.useSearch();
   const { activeId } = usePlaylists();
-  const fetchSeries = useServerFn(getSeries);
-  const fetchPlayback = useServerFn(getPlayback);
+  const fetchSeries = useGetSeries();
+  const fetchPlayback = useGetPlayback();
 
   const [seasonIndex, setSeasonIndex] = useState(0);
   const [current, setCurrent] = useState<EpisodeItem | null>(null);
