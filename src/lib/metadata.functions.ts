@@ -82,7 +82,15 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
     const byKey = new Map(rows.map((row) => [row.lookup_key, row]));
     return Object.fromEntries(
       entries.flatMap((entry) => {
-        const row = byKey.get(entry.key);
+        let row = byKey.get(entry.key);
+        if (!row) {
+          const pipe = entry.key.lastIndexOf("|");
+          if (pipe !== -1) {
+            const bare = byKey.get(entry.key.slice(0, pipe));
+            const wantedYear = Number(entry.key.slice(pipe + 1));
+            if (bare && (bare.year === wantedYear || bare.year === null)) row = bare;
+          }
+        }
         if (!row) return [];
         return [[entry.name, {
           key: entry.key,
