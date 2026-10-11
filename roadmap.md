@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Redesign Home and Favourites into compact, separate channels, movies, and shows lists; verify selection, removal, and remote focus.
+- [x] Redesign Home and Favourites into compact separate channels, movies, and shows lists; verified saved titles, popup removal/restoration, channel guide opening, remote focus and mobile layout. Physical Firestick validation remains in the device task below.
 
 - [x] Add admin-controlled account expiry and Never expires, show status on Home, disable expired account destinations except Home and Settings, and rename Sections return links to Home.
 

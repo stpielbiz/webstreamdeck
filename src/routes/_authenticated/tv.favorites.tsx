@@ -25,7 +25,7 @@ function TvFavorites() {
   const navigate = useNavigate();
   return (
     <TvShell title="Favourites">
-      <div data-remote-row className="mb-4"><Button data-layer-back data-tv-focus variant="ghost" onClick={() => void navigate({ to: "/tv" })}><ArrowLeft className="size-4" /> Home</Button></div>
+      <div className="mb-4"><Button data-layer-back data-tv-focus variant="ghost" onClick={() => void navigate({ to: "/tv" })}><ArrowLeft className="size-4" /> Home</Button></div>
       
       <FavouritesLists tv />
     </TvShell>

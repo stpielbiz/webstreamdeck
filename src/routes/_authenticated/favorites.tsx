@@ -24,7 +24,7 @@ function FavoritesPage() {
   const navigate = useNavigate();
   return (
     <div data-tv-zone="content" className="space-y-4 p-6">
-      <div data-remote-row className="mb-4"><Button data-layer-back data-tv-focus variant="ghost" onClick={() => void navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /> Home</Button></div>
+      <div className="mb-4"><Button data-layer-back data-tv-focus variant="ghost" onClick={() => void navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /> Home</Button></div>
       <h1 className="font-display text-2xl font-bold">Favourites</h1>
       <FavouritesLists />
     </div>
