@@ -335,16 +335,12 @@ export async function resolveTitles(
   // Many rows were saved before the year became part of the lookup key, so
   // "title|2001" misses a row stored as "title" with year 2001. Query the bare
   // title keys too and accept them when the stored year matches.
-  const bareFallback = new Map<string, string[]>();
   const queryKeys = [...allKeys];
   for (const key of allKeys) {
     const pipe = key.lastIndexOf("|");
     if (pipe === -1) continue;
     const bare = key.slice(0, pipe);
     if (!bare || wanted.has(bare)) continue;
-    const list = bareFallback.get(bare) ?? [];
-    list.push(key);
-    bareFallback.set(bare, list);
     queryKeys.push(bare);
   }
 
