@@ -14,6 +14,7 @@ import { TvShell } from "@/components/tv-shell";
 import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/search-field";
 import { VideoPlayer } from "@/components/video-player";
+import { hasNativePlayer } from "@/lib/external-player";
 import { cn } from "@/lib/utils";
 import { useAppSearchFocus } from "@/lib/app-search";
 
@@ -299,7 +300,9 @@ function TvLive() {
     if (selected?.id === item.id) setFullscreen(true);
     else {
       setSelected(item);
-      setFullscreen(false);
+      // The Fire TV app can't preview in-page (the provider only serves the
+      // device player), so OK goes straight to its full-screen player.
+      setFullscreen(hasNativePlayer());
     }
   };
 
