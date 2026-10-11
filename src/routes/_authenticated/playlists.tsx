@@ -124,9 +124,9 @@ function PlaylistsPage() {
       return editing ? update({ data: { ...data, id: editing.id } }) : create({ data });
     },
     onMutate: () => setStep("testing"),
-    onSuccess: ({ playlist, summary }) => {
+    onSuccess: ({ playlist, summary }, force) => {
       debugLog("connect", "Source connected", { id: playlist.id });
-      setResult({ ok: true, name: playlist.name, id: playlist.id, summary });
+      setResult({ ok: true, name: playlist.name, id: playlist.id, summary, forced: !!force });
       setStep("result");
       refetch();
       if (editing) requestLibraryRefresh(playlist.id);
