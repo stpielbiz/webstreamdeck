@@ -241,7 +241,7 @@ function PlaylistsPage() {
         <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-10 text-center">
           <Loader2 className="size-10 animate-spin text-primary" />
           <p className="font-semibold">Connecting to your provider…</p>
-          <p className="text-sm text-muted-foreground">This can take a few seconds.</p>
+          <p className="text-sm text-muted-foreground">Trying up to 5 times — this can take a little while.</p>
         </div>
       )}
 
