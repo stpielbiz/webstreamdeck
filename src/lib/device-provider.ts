@@ -13,6 +13,7 @@ import {
   getCategories,
   getItems,
   getMovie,
+  getSeries,
   getNowNext,
   getPlayback,
   getPlaylistSource,
@@ -91,7 +92,7 @@ function useDeviceFn<TIn, TOut>(
   );
 }
 
-type CatalogInput = { playlistId: string; kind: CatalogKind; categoryId?: string; search?: string };
+type CatalogInput = { playlistId: string; kind: CatalogKind; categoryId?: string | undefined; search?: string | undefined };
 
 export function useGetCategories() {
   return useDeviceFn(useServerFn(getCategories) as Remote<Pick<CatalogInput, "playlistId" | "kind">>, (row, d) =>
@@ -167,7 +168,7 @@ export function useGetSchedules() {
   });
 }
 
-type PlaybackInput = { playlistId: string; kind: "live" | "movie" | "episode"; itemId: string; ext?: string | null };
+type PlaybackInput = { playlistId: string; kind: "live" | "movie" | "episode"; itemId: string; ext?: string | null | undefined };
 
 export function useGetPlayback() {
   return useDeviceFn(useServerFn(getPlayback) as Remote<PlaybackInput>, async (row, d) => {
