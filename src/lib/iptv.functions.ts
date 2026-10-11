@@ -163,7 +163,9 @@ export const updatePlaylist = createServerFn({ method: "POST" })
     const existing = await loadPlaylist(context.supabase, data.id);
     if (data.kind === "xtream" && (!data.serverUrl || !data.username)) throw new Error("Missing playlist details.");
     if (data.kind === "m3u" && !data.m3uUrl) throw new Error("Missing playlist link.");
-    const summary = await probeSource(data, existing.password);
+    const summary = data.force
+      ? { live: 0, movie: 0, series: 0, unit: "categories" as const }
+      : await probeWithRetries(data, existing.password);
     const { data: row, error } = await context.supabase
       .from("playlists")
       .update({
