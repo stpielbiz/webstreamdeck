@@ -71,7 +71,7 @@ function LivePage() {
         data: {
           playlistId: activeId!,
           kind: "live",
-          categoryId: search ? undefined : categoryId,
+          categoryId: search ? undefined : (categoryId ?? undefined),
           search: search || undefined,
         },
       }),
