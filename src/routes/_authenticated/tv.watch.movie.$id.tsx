@@ -1,3 +1,4 @@
+import { useGetMovie, useGetPlayback } from "@/lib/device-provider";
 import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -32,8 +33,8 @@ function TvWatchMovie() {
   const { from } = Route.useSearch();
   const navigate = useNavigate();
   const { activeId } = usePlaylists();
-  const fetchMovie = useServerFn(getMovie);
-  const fetchPlayback = useServerFn(getPlayback);
+  const fetchMovie = useGetMovie();
+  const fetchPlayback = useGetPlayback();
   const progress = useProgress();
   const syncPlaylists = useSyncPlaylists();
   const saveProgress = useSaveProgress();

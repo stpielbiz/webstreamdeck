@@ -1,3 +1,4 @@
+import { useGetItems, useGetMovie, useGetSeries, useGetPlayback } from "@/lib/device-provider";
 import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -34,10 +35,10 @@ type Kind = "movie" | "series";
 export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolean }) {
   const { activeId, playlists } = usePlaylists();
   const navigate = useNavigate();
-  const fetchItems = useServerFn(getItems);
-  const fetchMovie = useServerFn(getMovie);
-  const fetchSeries = useServerFn(getSeries);
-  const fetchPlayback = useServerFn(getPlayback);
+  const fetchItems = useGetItems();
+  const fetchMovie = useGetMovie();
+  const fetchSeries = useGetSeries();
+  const fetchPlayback = useGetPlayback();
   const fetchMetadata = useServerFn(getCachedTitleMetadata);
   const organise = useServerFn(enrichTitles);
   const queryClient = useQueryClient();

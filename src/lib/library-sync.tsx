@@ -1,3 +1,4 @@
+import { useGetCategories, useGetItems, useGetSchedules } from "@/lib/device-provider";
 import { clearPlaylistEntries, isTruncatedCatalogue } from "@/lib/device-cache";
 import { toast } from "sonner";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
@@ -168,9 +169,9 @@ function useRefreshRequest() {
  */
 export function useLibrarySync(playlistId: string | null): SyncStatus {
   const client = useQueryClient();
-  const fetchCategories = useServerFn(getCategories);
-  const fetchItems = useServerFn(getItems);
-  const fetchSchedules = useServerFn(getSchedules);
+  const fetchCategories = useGetCategories();
+  const fetchItems = useGetItems();
+  const fetchSchedules = useGetSchedules();
   const [status, setStatus] = useState<SyncStatus>({ running: false, done: 0, total: 0 });
   const request = useRefreshRequest();
   const force = !!request && request.playlistId === playlistId;

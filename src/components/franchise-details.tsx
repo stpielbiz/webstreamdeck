@@ -1,3 +1,4 @@
+import { useGetItems } from "@/lib/device-provider";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -43,7 +44,7 @@ export function FranchiseDetails({ title, kind, onSelect, initiallyExpanded = fa
 }) {
   const { activeId } = usePlaylists();
   const lookup = useServerFn(resolveFranchise);
-  const fetchItems = useServerFn(getItems);
+  const fetchItems = useGetItems();
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const [order, setOrder] = useState<"year" | "story">("year");
   const saved = useSavedFranchises();

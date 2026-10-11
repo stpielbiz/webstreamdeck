@@ -1,3 +1,4 @@
+import { useGetMovie, useGetPlayback } from "@/lib/device-provider";
 import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -42,8 +43,8 @@ function MovieDetail() {
   const { id } = Route.useParams();
   const { play } = Route.useSearch();
   const { activeId } = usePlaylists();
-  const fetchMovie = useServerFn(getMovie);
-  const fetchPlayback = useServerFn(getPlayback);
+  const fetchMovie = useGetMovie();
+  const fetchPlayback = useGetPlayback();
   const [playing, setPlaying] = useState(play === true);
 
   const favorites = useFavorites();

@@ -15,6 +15,8 @@ export interface NativePlayRequest {
 interface StreamDeckNativeBridge {
   play: (json: string) => void;
   checkForUpdates?: () => void;
+  /** Fetch a URL over the device's own connection; answers via __streamDeckFetchDone. */
+  fetchText?: (requestId: string, url: string, userAgent: string) => void;
 }
 
 declare global {
@@ -23,6 +25,7 @@ declare global {
     __streamDeckProgress?: ((position: number, duration: number) => void) | undefined;
     __streamDeckEnded?: (() => void) | undefined;
     __streamDeckClosed?: (() => void) | undefined;
+    __streamDeckFetchDone?: ((requestId: string, status: number, body: string) => void) | undefined;
   }
 }
 

@@ -134,6 +134,33 @@ class MainActivity : Activity() {
             runOnUiThread { startActivity(intent) }
         }
 
+        /** Fetch provider data over this device's own connection (VPN included). */
+        @JavascriptInterface
+        fun fetchText(requestId: String, url: String, userAgent: String) {
+            if (!url.startsWith("http")) return
+            Thread {
+                var status = 0
+                var body = ""
+                try {
+                    val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                    conn.instanceFollowRedirects = true
+                    conn.connectTimeout = 20_000
+                    conn.readTimeout = 90_000
+                    conn.setRequestProperty("User-Agent", userAgent)
+                    conn.setRequestProperty("Accept", "*/*")
+                    status = conn.responseCode
+                    val stream = if (status >= 400) conn.errorStream else conn.inputStream
+                    body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+                    conn.disconnect()
+                } catch (_: Exception) {
+                    status = 0
+                }
+                val script = "window.__streamDeckFetchDone && window.__streamDeckFetchDone(" +
+                    JSONObject.quote(requestId) + "," + status + "," + JSONObject.quote(body) + ")"
+                runOnUiThread { webView.evaluateJavascript(script, null) }
+            }.start()
+        }
+
         @JavascriptInterface
         fun version(): String = BuildConfig.VERSION_NAME
 

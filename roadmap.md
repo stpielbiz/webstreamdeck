@@ -45,3 +45,4 @@
 - [x] Route one Back through playback closure and restore previous selection; verified channel/movie/show closure with native bridge test doubles. Physical remote validation remains part of the device test above.
 - [x] Show immediate loading feedback and catalogue placeholders when Movies or Shows opens from a cold cache.
 - [x] Speed up movie detail updates: match saved database rows by bare title when the year-key misses, so already-saved movies resolve instantly without TMDB/AI calls.
+- [x] Fire TV loads provider lists on-device (native fetchText bridge)

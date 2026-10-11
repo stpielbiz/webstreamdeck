@@ -215,6 +215,15 @@ async function loadPlaylist(
   };
 }
 
+/**
+ * The signed-in owner's own source details, so the Fire TV app can contact the
+ * provider from the device. Row-level security limits this to the caller's rows.
+ */
+export const getPlaylistSource = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ playlistId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => loadPlaylist(context.supabase, data.playlistId));
+
 const catalogSchema = z.object({
   playlistId: z.string().uuid(),
   kind: z.enum(["live", "movie", "series"]),
