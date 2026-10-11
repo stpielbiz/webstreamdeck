@@ -45,9 +45,9 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
     }> = [];
 
     const chunks: string[][] = [];
-    for (let index = 0; index < keys.length; index += 200) chunks.push(keys.slice(index, index + 200));
-    for (let start = 0; start < chunks.length; start += 8) {
-      const results = await Promise.all(chunks.slice(start, start + 8).map((slice) =>
+    for (let index = 0; index < keys.length; index += 300) chunks.push(keys.slice(index, index + 300));
+    for (let start = 0; start < chunks.length; start += 12) {
+      const results = await Promise.all(chunks.slice(start, start + 12).map((slice) =>
         context.supabase
           .from("title_metadata")
           .select("lookup_key, resolved_title, genres, year, poster_url, backdrop_url, overview, source, cast_names")

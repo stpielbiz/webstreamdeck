@@ -8,6 +8,7 @@ import { getCategories, getItems, getSchedules } from "@/lib/iptv.functions";
 import { backfillTitles, getCachedTitleMetadata } from "@/lib/metadata.functions";
 import type { CatalogItem, Programme } from "@/lib/iptv-types";
 import type { TitleMetadata } from "@/lib/metadata.server";
+import { lookupKeyFor } from "@/lib/title-key";
 
 export const GUIDE_TTL = 4 * 60 * 60_000;
 const LIBRARY_TTL = 12 * 60 * 60_000;
@@ -91,6 +92,9 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
         Object.assign(metadata, data ?? {});
         metadataUpdatedAt = Math.max(metadataUpdatedAt, client.getQueryState(queryKey)?.dataUpdatedAt ?? 0);
       }
+      const byKey = new Map<string, TitleMetadata>();
+      for (const value of Object.values(metadata)) if (value?.key) byKey.set(value.key, value);
+      for (const name of names) if (!metadata[name]) { const hit = byKey.get(lookupKeyFor(name).key); if (hit) metadata[name] = hit; }
       const enriched = [...names].filter((name) => metadata[name]);
       const genres = new Map<string, number>();
       for (const name of enriched) {
@@ -339,7 +343,7 @@ export function useTitleBackfill(playlistId: string | null) {
       }
       timer = window.setTimeout(step, BACKFILL_PAUSE);
     };
-    timer = window.setTimeout(step, 30_000);
+    timer = window.setTimeout(step, 3_000);
     return () => { cancelled = true; window.clearTimeout(timer); };
   }, [playlistId, client, backfill, fetchCached]);
 }

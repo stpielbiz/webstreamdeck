@@ -95,12 +95,19 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   });
   const names = useMemo(() => (catalogue.data ?? []).map((item) => item.name), [catalogue.data]);
   const metadata = useQuery({
-    queryKey: ["cached-title-metadata", activeId, kind, names.length],
+    queryKey: ["cached-title-metadata", activeId, kind],
     queryFn: async () => {
       dropCache(`metadata:${activeId}:${kind}`);
+      // Delta: keep saved links for current titles, look up only titles without details.
+      const previous = queryClient.getQueryData<Awaited<ReturnType<typeof fetchMetadata>>>(["cached-title-metadata", activeId, kind]) ?? {};
       const out: Awaited<ReturnType<typeof fetchMetadata>> = {};
-      for (let i = 0; i < names.length; i += 5000) {
-        Object.assign(out, await fetchMetadata({ data: { playlistId: activeId ?? "", kind, names: names.slice(i, i + 5000) } }));
+      const missing: string[] = [];
+      for (const name of names) { if (previous[name]) out[name] = previous[name]; else missing.push(name); }
+      const chunks: string[][] = [];
+      for (let i = 0; i < missing.length; i += 5000) chunks.push(missing.slice(i, i + 5000));
+      for (let i = 0; i < chunks.length; i += 3) {
+        const results = await Promise.all(chunks.slice(i, i + 3).map((chunk) => fetchMetadata({ data: { playlistId: activeId ?? "", kind, names: chunk } })));
+        for (const result of results) Object.assign(out, result);
       }
       return out;
     },
