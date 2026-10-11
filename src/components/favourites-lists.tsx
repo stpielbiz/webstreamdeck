@@ -8,7 +8,8 @@ import { TitleDetailsDialog } from "@/components/title-details-dialog";
 import { useFavorites, useToggleFavorite } from "@/lib/library-hooks";
 import type { FavoriteRow } from "@/lib/iptv.functions";
 import type { CatalogItem } from "@/lib/iptv-types";
-import { variantsForItem } from "@/lib/title-variants";
+import { mediaMatchKey, variantsForItem } from "@/lib/title-variants";
+import { useSyncPlaylists } from "@/lib/playlist-sync";
 
 const GROUPS = [
   { kind: "live", title: "Channels", icon: Tv },
@@ -24,13 +25,31 @@ export function FavouritesLists({ tv = false, home = false }: { tv?: boolean; ho
   const client = useQueryClient();
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLElement | null>(null);
-  const [selected, setSelected] = useState<FavoriteRow | null>(null);
-  const rows = (favorites.data ?? []).filter((row) => row.playlistId === activeId);
+  const [selected, setSelected] = useState<(FavoriteRow & { openId: string }) | null>(null);
+  const sync = useSyncPlaylists();
+  const all = favorites.data ?? [];
+  const own = all.filter((row) => row.playlistId === activeId).map((row) => ({ ...row, openId: row.itemId }));
+  const rows = [...own];
+  if (sync && activeId) {
+    const seen = new Set(own.map((row) => `${row.itemKind}:${mediaMatchKey(row.title)}`));
+    const index = new Map<string, Map<string, string>>();
+    for (const kind of ["movie", "series"] as const) {
+      index.set(kind, new Map((client.getQueryData<CatalogItem[]>(["system-catalogue", activeId, kind]) ?? []).map((item) => [mediaMatchKey(item.name), item.id])));
+    }
+    for (const row of all) {
+      if (row.playlistId === activeId || row.itemKind === "live") continue;
+      const key = `${row.itemKind}:${mediaMatchKey(row.title)}`;
+      const id = index.get(row.itemKind)?.get(mediaMatchKey(row.title));
+      if (!id || seen.has(key)) continue;
+      seen.add(key);
+      rows.push({ ...row, openId: id });
+    }
+  }
   const variants = selected && activeId && (selected.itemKind === "movie" || selected.itemKind === "series")
-    ? variantsForItem(client.getQueryData<CatalogItem[]>(["system-catalogue", activeId, selected.itemKind]) ?? [], selected.itemId)
+    ? variantsForItem(client.getQueryData<CatalogItem[]>(["system-catalogue", activeId, selected.itemKind]) ?? [], selected.openId)
     : [];
 
-  const open = (row: FavoriteRow) => {
+  const open = (row: FavoriteRow & { openId: string }) => {
     if (row.itemKind === "live") {
       void navigate(tv ? { to: "/tv/live", search: { channel: row.itemId } } : { to: "/live", search: { channel: row.itemId } });
       return;
