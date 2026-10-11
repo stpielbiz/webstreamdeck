@@ -115,7 +115,22 @@ const sourceSchema = z.object({
   username: z.string().trim().max(200).optional(),
   password: z.string().max(200).optional(),
   m3uUrl: z.string().trim().max(2000).optional(),
+  force: z.boolean().optional(),
 });
+
+/** Retries the connection check up to 5 times with a short pause; some providers answer slowly or refuse the first attempts. */
+async function probeWithRetries(data: z.infer<typeof sourceSchema>, existingPassword?: string | null): Promise<ConnectionSummary> {
+  let lastError: Error | undefined;
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      return await probeSource(data, existingPassword);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  }
+  throw lastError ?? new Error("Could not connect to that provider.");
+}
 
 export const createPlaylist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
