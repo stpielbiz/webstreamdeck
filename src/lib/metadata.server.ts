@@ -332,8 +332,21 @@ export async function resolveTitles(
   const resolved = new Map<string, TitleMetadata>();
   const allKeys = [...wanted.keys()];
 
-  for (let index = 0; index < allKeys.length; index += 200) {
-    const slice = allKeys.slice(index, index + 200);
+  // Many rows were saved before the year became part of the lookup key, so
+  // "title|2001" misses a row stored as "title" with year 2001. Query the bare
+  // title keys too and accept them when the stored year matches.
+  const queryKeys = [...allKeys];
+  for (const key of allKeys) {
+    const pipe = key.lastIndexOf("|");
+    if (pipe === -1) continue;
+    const bare = key.slice(0, pipe);
+    if (!bare || wanted.has(bare)) continue;
+    queryKeys.push(bare);
+  }
+
+  const rowsByKey = new Map<string, CachedRow>();
+  for (let index = 0; index < queryKeys.length; index += 200) {
+    const slice = queryKeys.slice(index, index + 200);
     const { data } = await admin
       .from("title_metadata")
       .select("lookup_key, resolved_title, genres, year, poster_url, backdrop_url, overview, source, cast_names, cast_checked")
@@ -342,18 +355,32 @@ export async function resolveTitles(
     for (const row of (data ?? []) as CachedRow[]) {
       // Rows saved before cast existed are looked up again.
       if (!row.cast_checked) continue;
-      resolved.set(row.lookup_key, {
-        key: row.lookup_key,
-        title: row.resolved_title,
-        genres: row.genres ?? [],
-        year: row.year,
-        poster: row.poster_url,
-        backdrop: row.backdrop_url,
-        overview: row.overview,
-        source: row.source,
-        cast: row.cast_names ?? [],
-      });
+      rowsByKey.set(row.lookup_key, row);
     }
+  }
+
+  for (const key of allKeys) {
+    let row = rowsByKey.get(key);
+    if (!row) {
+      const pipe = key.lastIndexOf("|");
+      if (pipe !== -1) {
+        const bare = rowsByKey.get(key.slice(0, pipe));
+        const wantedYear = Number(key.slice(pipe + 1));
+        if (bare && (bare.year === wantedYear || bare.year === null)) row = bare;
+      }
+    }
+    if (!row) continue;
+    resolved.set(key, {
+      key,
+      title: row.resolved_title,
+      genres: row.genres ?? [],
+      year: row.year,
+      poster: row.poster_url,
+      backdrop: row.backdrop_url,
+      overview: row.overview,
+      source: row.source,
+      cast: row.cast_names ?? [],
+    });
   }
 
   const missing = allKeys.filter((key) => !resolved.has(key));

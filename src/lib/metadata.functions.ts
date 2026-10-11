@@ -32,6 +32,15 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
     const { lookupKeyFor } = await import("./metadata.server");
     const entries = data.names.map((name) => ({ name, ...lookupKeyFor(name) }));
     const keys = [...new Set(entries.map((entry) => entry.key).filter(Boolean))];
+    // Rows saved before the year joined the lookup key are stored under the
+    // bare title; query those too and match them by year below.
+    const queryKeys = [...keys];
+    for (const key of keys) {
+      const pipe = key.lastIndexOf("|");
+      if (pipe === -1) continue;
+      const bare = key.slice(0, pipe);
+      if (bare && !keys.includes(bare)) queryKeys.push(bare);
+    }
     const rows: Array<{
       lookup_key: string;
       resolved_title: string | null;
@@ -45,7 +54,7 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
     }> = [];
 
     const chunks: string[][] = [];
-    for (let index = 0; index < keys.length; index += 300) chunks.push(keys.slice(index, index + 300));
+    for (let index = 0; index < queryKeys.length; index += 300) chunks.push(queryKeys.slice(index, index + 300));
     for (let start = 0; start < chunks.length; start += 12) {
       const results = await Promise.all(chunks.slice(start, start + 12).map((slice) =>
         context.supabase
@@ -73,7 +82,15 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
     const byKey = new Map(rows.map((row) => [row.lookup_key, row]));
     return Object.fromEntries(
       entries.flatMap((entry) => {
-        const row = byKey.get(entry.key);
+        let row = byKey.get(entry.key);
+        if (!row) {
+          const pipe = entry.key.lastIndexOf("|");
+          if (pipe !== -1) {
+            const bare = byKey.get(entry.key.slice(0, pipe));
+            const wantedYear = Number(entry.key.slice(pipe + 1));
+            if (bare && (bare.year === wantedYear || bare.year === null)) row = bare;
+          }
+        }
         if (!row) return [];
         return [[entry.name, {
           key: entry.key,
