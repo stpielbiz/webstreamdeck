@@ -380,7 +380,7 @@ async function loadM3u(playlist: PlaylistRow): Promise<ParsedPlaylist> {
   if (!playlist.m3u_url) throw new Error("This playlist has no link saved.");
 
   const response = await providerFetch(playlist.m3u_url);
-  if (!response.ok) throw new Error(`The playlist link returned an error (${response.status}).`);
+  if (!response.ok) throw new Error(describeProviderStatus(response.status, "The playlist link"));
   const entries = parseM3u(await response.text());
 
   const parsed: ParsedPlaylist = {
