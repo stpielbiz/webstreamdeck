@@ -54,7 +54,7 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
     }> = [];
 
     const chunks: string[][] = [];
-    for (let index = 0; index < keys.length; index += 300) chunks.push(keys.slice(index, index + 300));
+    for (let index = 0; index < queryKeys.length; index += 300) chunks.push(queryKeys.slice(index, index + 300));
     for (let start = 0; start < chunks.length; start += 12) {
       const results = await Promise.all(chunks.slice(start, start + 12).map((slice) =>
         context.supabase
