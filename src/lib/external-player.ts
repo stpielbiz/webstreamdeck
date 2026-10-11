@@ -33,8 +33,15 @@ export function hasNativePlayer(): boolean {
   return typeof window !== "undefined" && typeof window.StreamDeckNative?.play === "function";
 }
 
+let lastLaunch: { url: string; at: number } | null = null;
+
 export function playNative(request: NativePlayRequest): boolean {
   if (!hasNativePlayer()) return false;
+  // Safety net: never relaunch the same stream within a few seconds. Repeated
+  // launches each open a provider connection and can lock up the device.
+  const now = Date.now();
+  if (lastLaunch && lastLaunch.url === request.url && now - lastLaunch.at < 8000) return true;
+  lastLaunch = { url: request.url, at: now };
   window.StreamDeckNative!.play(JSON.stringify(request));
   return true;
 }

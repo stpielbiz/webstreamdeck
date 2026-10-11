@@ -40,6 +40,9 @@ class PlayerActivity : Activity() {
 
         @Volatile
         var listener: Listener? = null
+
+        @Volatile
+        var isOpen = false
     }
 
     private lateinit var player: ExoPlayer
@@ -59,6 +62,7 @@ class PlayerActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        isOpen = true
 
         val url = intent.getStringExtra(EXTRA_URL) ?: return finish()
         live = intent.getBooleanExtra(EXTRA_LIVE, false)
@@ -190,6 +194,8 @@ class PlayerActivity : Activity() {
     }
 
     override fun onDestroy() {
+        isOpen = false
+        handler.removeCallbacksAndMessages(null)
         if (::player.isInitialized) player.release()
         if (isFinishing && !ended) listener?.onClosed()
         super.onDestroy()

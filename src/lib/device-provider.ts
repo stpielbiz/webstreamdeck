@@ -4,7 +4,7 @@
  * device, so when the native bridge can fetch, provider calls run here using
  * the same parsing code the server uses. Browsers keep using the server.
  */
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import * as provider from "./iptv-provider";
@@ -41,19 +41,62 @@ function install() {
   provider.setDeviceFetcher(
     (url, userAgent) =>
       new Promise<Response>((resolve, reject) => {
-        const id = `f${++counter}`;
-        const timer = window.setTimeout(() => {
-          pending.delete(id);
-          reject(new Error("timeout"));
-        }, 120_000);
-        pending.set(id, (status, body) => {
-          window.clearTimeout(timer);
-          if (status <= 0) reject(new Error("unreachable"));
-          else resolve(new Response(body, { status }));
+        const low = /action=get_(simple_data_table|short_epg)/.test(url);
+        enqueue(low, () => {
+          const id = `f${++counter}`;
+          const finish = () => {
+            inFlight -= 1;
+            pump();
+          };
+          const timer = window.setTimeout(() => {
+            pending.delete(id);
+            finish();
+            reject(new Error("timeout"));
+          }, 120_000);
+          pending.set(id, (status, body) => {
+            window.clearTimeout(timer);
+            finish();
+            if (status <= 0) reject(new Error("unreachable"));
+            else resolve(new Response(body, { status }));
+          });
+          window.StreamDeckNative!.fetchText!(id, url, userAgent);
         });
-        window.StreamDeckNative!.fetchText!(id, url, userAgent);
       }),
   );
+}
+
+/*
+ * The Firestick is slow: keep only a few provider requests in flight and pace
+ * the background TV-guide requests so browsing and playback stay responsive.
+ */
+const MAX_IN_FLIGHT = 3;
+const LOW_PRIORITY_GAP_MS = 250;
+const highQueue: Array<() => void> = [];
+const lowQueue: Array<() => void> = [];
+let inFlight = 0;
+let lastLowStart = 0;
+let lowTimer: number | null = null;
+
+function enqueue(low: boolean, start: () => void) {
+  (low ? lowQueue : highQueue).push(start);
+  pump();
+}
+
+function pump() {
+  while (inFlight < MAX_IN_FLIGHT && highQueue.length) {
+    inFlight += 1;
+    highQueue.shift()!();
+  }
+  if (inFlight >= MAX_IN_FLIGHT - 1 || !lowQueue.length || lowTimer !== null) return;
+  const wait = Math.max(0, lastLowStart + LOW_PRIORITY_GAP_MS - Date.now());
+  lowTimer = window.setTimeout(() => {
+    lowTimer = null;
+    if (inFlight >= MAX_IN_FLIGHT - 1 || !lowQueue.length) return pump();
+    inFlight += 1;
+    lastLowStart = Date.now();
+    lowQueue.shift()!();
+    pump();
+  }, wait);
 }
 
 const sources = new Map<string, Promise<PlaylistRow>>();
@@ -69,27 +112,31 @@ function useDeviceFn<TIn, TOut>(
   local: (row: PlaylistRow, data: TIn) => Promise<TOut>,
 ): (opts: { data: TIn }) => Promise<TOut> {
   const loadSource = useServerFn(getPlaylistSource);
-  return useCallback(
-    async (opts: { data: TIn }) => {
-      install();
-      const playlistId = (opts.data as { playlistId?: string }).playlistId;
-      if (hasDeviceFetch() && playlistId) {
-        try {
-          let source = sources.get(playlistId);
-          if (!source) {
-            source = loadSource({ data: { playlistId } });
-            sources.set(playlistId, source);
-            source.catch(() => sources.delete(playlistId));
-          }
-          return await local(await source, opts.data);
-        } catch (error) {
-          console.warn("[device-provider] on-device request failed, using server", error);
+  // Callers list the returned function in effect dependencies, so it must keep
+  // the same identity across renders; otherwise effects re-run every render
+  // (re-resolving streams and relaunching the native player in a loop).
+  const latest = useRef({ remote, local, loadSource });
+  latest.current = { remote, local, loadSource };
+  return useCallback(async (opts: { data: TIn }) => {
+    const { remote, local, loadSource } = latest.current;
+    install();
+    const playlistId = (opts.data as { playlistId?: string }).playlistId;
+    if (hasDeviceFetch() && playlistId) {
+      try {
+        let source = sources.get(playlistId);
+        if (!source) {
+          const created: Promise<PlaylistRow> = loadSource({ data: { playlistId } });
+          sources.set(playlistId, created);
+          created.catch(() => sources.delete(playlistId));
+          source = created;
         }
+        return await local(await source, opts.data);
+      } catch (error) {
+        console.warn("[device-provider] on-device request failed, using server", error);
       }
-      return remote(opts) as Promise<TOut>;
-    },
-    [remote, local, loadSource],
-  );
+    }
+    return remote(opts) as Promise<TOut>;
+  }, []);
 }
 
 type CatalogInput = { playlistId: string; kind: CatalogKind; categoryId?: string | undefined; search?: string | undefined };
