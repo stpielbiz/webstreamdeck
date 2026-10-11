@@ -69,27 +69,30 @@ function useDeviceFn<TIn, TOut>(
   local: (row: PlaylistRow, data: TIn) => Promise<TOut>,
 ): (opts: { data: TIn }) => Promise<TOut> {
   const loadSource = useServerFn(getPlaylistSource);
-  return useCallback(
-    async (opts: { data: TIn }) => {
-      install();
-      const playlistId = (opts.data as { playlistId?: string }).playlistId;
-      if (hasDeviceFetch() && playlistId) {
-        try {
-          let source = sources.get(playlistId);
-          if (!source) {
-            source = loadSource({ data: { playlistId } });
-            sources.set(playlistId, source);
-            source.catch(() => sources.delete(playlistId));
-          }
-          return await local(await source, opts.data);
-        } catch (error) {
-          console.warn("[device-provider] on-device request failed, using server", error);
+  // Callers list the returned function in effect dependencies, so it must keep
+  // the same identity across renders; otherwise effects re-run every render
+  // (re-resolving streams and relaunching the native player in a loop).
+  const latest = useRef({ remote, local, loadSource });
+  latest.current = { remote, local, loadSource };
+  return useCallback(async (opts: { data: TIn }) => {
+    const { remote, local, loadSource } = latest.current;
+    install();
+    const playlistId = (opts.data as { playlistId?: string }).playlistId;
+    if (hasDeviceFetch() && playlistId) {
+      try {
+        let source = sources.get(playlistId);
+        if (!source) {
+          source = loadSource({ data: { playlistId } });
+          sources.set(playlistId, source);
+          source.catch(() => sources.delete(playlistId));
         }
+        return await local(await source, opts.data);
+      } catch (error) {
+        console.warn("[device-provider] on-device request failed, using server", error);
       }
-      return remote(opts) as Promise<TOut>;
-    },
-    [remote, local, loadSource],
-  );
+    }
+    return remote(opts) as Promise<TOut>;
+  }, []);
 }
 
 type CatalogInput = { playlistId: string; kind: CatalogKind; categoryId?: string | undefined; search?: string | undefined };
