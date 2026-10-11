@@ -32,6 +32,15 @@ export const getCachedTitleMetadata = createServerFn({ method: "POST" })
     const { lookupKeyFor } = await import("./metadata.server");
     const entries = data.names.map((name) => ({ name, ...lookupKeyFor(name) }));
     const keys = [...new Set(entries.map((entry) => entry.key).filter(Boolean))];
+    // Rows saved before the year joined the lookup key are stored under the
+    // bare title; query those too and match them by year below.
+    const queryKeys = [...keys];
+    for (const key of keys) {
+      const pipe = key.lastIndexOf("|");
+      if (pipe === -1) continue;
+      const bare = key.slice(0, pipe);
+      if (bare && !keys.includes(bare)) queryKeys.push(bare);
+    }
     const rows: Array<{
       lookup_key: string;
       resolved_title: string | null;
