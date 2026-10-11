@@ -116,11 +116,11 @@ function PlaylistsPage() {
   const set = (key: keyof Form) => (value: string) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const connect = useMutation({
-    mutationFn: () => {
-      debugLog("connect", `${editing ? "Updating" : "Adding"} ${kind} source`, { server: redactUrl(kind === "xtream" ? form.serverUrl : form.m3uUrl) });
+    mutationFn: (force?: boolean) => {
+      debugLog("connect", `${editing ? "Updating" : "Adding"} ${kind} source`, { server: redactUrl(kind === "xtream" ? form.serverUrl : form.m3uUrl), force: !!force });
       const data = kind === "xtream"
-        ? { name: form.name, kind, serverUrl: form.serverUrl, username: form.username, password: form.password }
-        : { name: form.name, kind, m3uUrl: form.m3uUrl };
+        ? { name: form.name, kind, serverUrl: form.serverUrl, username: form.username, password: form.password, force }
+        : { name: form.name, kind, m3uUrl: form.m3uUrl, force };
       return editing ? update({ data: { ...data, id: editing.id } }) : create({ data });
     },
     onMutate: () => setStep("testing"),
