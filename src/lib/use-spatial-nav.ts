@@ -79,7 +79,12 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
           destination = inRow[index + (direction === 'right' || direction === 'down' ? 1 : -1)];
         }
         if (destination) { event.preventDefault(); focusElement(destination); return; }
-        if (dialog || !horizontal) { event.preventDefault(); return; }
+        // Inside a dialog, keep focus contained. On the page, a vertical press
+        // past the last ordered row falls through to spatial navigation so
+        // content below the rows (e.g. the favourites lists) stays reachable.
+        if (dialog) { event.preventDefault(); return; }
+        if (!horizontal) { /* fall through to spatial navigation below */ }
+        else { /* fall through: spatial may still find a target sideways */ }
       }
       // Only measure elements in the current zone — scanning the whole page on
       // every key press is what made held Up/Down feel laggy.
