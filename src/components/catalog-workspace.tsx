@@ -116,6 +116,11 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     staleTime: 30 * 60_000,
     gcTime: 60 * 60_000,
   });
+  const refetchMetadata = metadata.refetch;
+  useEffect(() => {
+    if (activeId && names.length) void refetchMetadata();
+  }, [activeId, names, refetchMetadata]);
+
 
   const titleGroups = useMemo(() => groupCatalogItems(catalogue.data ?? [], metadata.data), [catalogue.data, metadata.data]);
   const groupedItems = useMemo(() => titleGroups.map((group) => group.item), [titleGroups]);
