@@ -250,8 +250,12 @@ function PlaylistsPage() {
           {result.ok ? (
             <>
               <CheckCircle2 className="size-12 text-primary" />
-              <p className="font-display text-xl font-bold">Connected to {result.name}</p>
-              <p className="text-sm text-muted-foreground">{describe(result.summary)}</p>
+              <p className="font-display text-xl font-bold">{result.forced ? `${result.name} saved` : `Connected to ${result.name}`}</p>
+              <p className="text-sm text-muted-foreground">
+                {result.forced
+                  ? "Saved without checking the connection. If the details are right, your channels, movies and shows will load when the provider answers."
+                  : describe(result.summary)}
+              </p>
               <Button data-tv-focus data-pl-item data-step-entry onClick={() => { setActiveId(result.id); setStep("list"); }}>Done</Button>
             </>
           ) : (
