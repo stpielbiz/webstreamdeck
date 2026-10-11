@@ -263,8 +263,9 @@ function PlaylistsPage() {
               <XCircle className="size-12 text-destructive" />
               <p className="font-display text-xl font-bold">Could not connect</p>
               <p className="max-w-md text-sm text-muted-foreground">{result.message}</p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap justify-center gap-2">
                 <Button data-tv-focus data-pl-item data-step-entry onClick={() => setStep("details")}>Try again</Button>
+                <Button variant="outline" data-tv-focus data-pl-item onClick={() => connect.mutate(true)}>{editing ? "Save anyway" : "Add anyway"}</Button>
                 <Button variant="ghost" data-tv-focus data-pl-item onClick={() => setStep("list")}>Cancel</Button>
               </div>
             </>
