@@ -93,7 +93,7 @@ async function probeSource(data: z.infer<typeof sourceSchema>, existingPassword?
   } catch {
     throw new Error("Could not reach that link. Check the address and try again.");
   }
-  if (!response.ok) throw new Error(`The playlist link returned an error (${response.status}).`);
+  if (!response.ok) throw new Error(provider.describeProviderStatus(response.status, "The playlist link"));
   const text = await response.text();
   const head = text.slice(0, 2000).toUpperCase();
   if (!head.includes("#EXTM3U") && !head.includes("#EXTINF")) throw new Error("That link does not look like an M3U playlist.");
