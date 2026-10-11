@@ -4,7 +4,6 @@
  * device, so when the native bridge can fetch, provider calls run here using
  * the same parsing code the server uses. Browsers keep using the server.
  */
-import { useGetCategories, useGetItems, useGetMovie, useGetSeries, useGetSchedules, useGetSchedule, useGetNowNext, useGetPlayback } from "@/lib/device-provider";
 import { useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
@@ -95,37 +94,37 @@ function useDeviceFn<TIn, TOut>(
 type CatalogInput = { playlistId: string; kind: CatalogKind; categoryId?: string; search?: string };
 
 export function useGetCategories() {
-  return useDeviceFn(useGetCategories() as Remote<Pick<CatalogInput, "playlistId" | "kind">>, (row, d) =>
+  return useDeviceFn(useServerFn(getCategories) as Remote<Pick<CatalogInput, "playlistId" | "kind">>, (row, d) =>
     provider.fetchCategories(row, d.kind),
   );
 }
 
 export function useGetItems() {
-  return useDeviceFn(useGetItems() as Remote<CatalogInput>, (row, d) =>
+  return useDeviceFn(useServerFn(getItems) as Remote<CatalogInput>, (row, d) =>
     provider.fetchItems(row, d.kind, d.categoryId, d.search),
   );
 }
 
 export function useGetMovie() {
-  return useDeviceFn(useGetMovie() as Remote<{ playlistId: string; id: string }>, (row, d) =>
+  return useDeviceFn(useServerFn(getMovie) as Remote<{ playlistId: string; id: string }>, (row, d) =>
     provider.fetchMovie(row, d.id),
   );
 }
 
 export function useGetSeries() {
-  return useDeviceFn(useGetSeries() as Remote<{ playlistId: string; id: string }>, (row, d) =>
+  return useDeviceFn(useServerFn(getSeries) as Remote<{ playlistId: string; id: string }>, (row, d) =>
     provider.fetchSeries(row, d.id),
   );
 }
 
 export function useGetNowNext() {
-  return useDeviceFn(useGetNowNext() as Remote<{ playlistId: string; channelIds: string[] }>, (row, d) =>
+  return useDeviceFn(useServerFn(getNowNext) as Remote<{ playlistId: string; channelIds: string[] }>, (row, d) =>
     provider.fetchNowNext(row, d.channelIds),
   );
 }
 
 export function useGetSchedule() {
-  return useDeviceFn(useGetSchedule() as Remote<{ playlistId: string; channelId: string }>, async (row, d) => {
+  return useDeviceFn(useServerFn(getSchedule) as Remote<{ playlistId: string; channelId: string }>, async (row, d) => {
     if (row.kind !== "xtream") return [];
     try {
       return await provider.xtreamSchedule(row, d.channelId);
@@ -138,7 +137,7 @@ export function useGetSchedule() {
 type SchedulesInput = { playlistId: string; channelIds: string[]; start: string; end: string };
 
 export function useGetSchedules() {
-  return useDeviceFn(useGetSchedules() as Remote<SchedulesInput>, async (row, d): Promise<ChannelSchedule[]> => {
+  return useDeviceFn(useServerFn(getSchedules) as Remote<SchedulesInput>, async (row, d): Promise<ChannelSchedule[]> => {
     const windowStart = Date.parse(d.start);
     const windowEnd = Date.parse(d.end);
     if (row.kind !== "xtream" || !Number.isFinite(windowStart) || !Number.isFinite(windowEnd)) {
@@ -171,7 +170,7 @@ export function useGetSchedules() {
 type PlaybackInput = { playlistId: string; kind: "live" | "movie" | "episode"; itemId: string; ext?: string | null };
 
 export function useGetPlayback() {
-  return useDeviceFn(useGetPlayback() as Remote<PlaybackInput>, async (row, d) => {
+  return useDeviceFn(useServerFn(getPlayback) as Remote<PlaybackInput>, async (row, d) => {
     const upstream = await provider.resolveStreamUrl(row, d.kind, d.itemId, d.ext ?? undefined);
     return { url: upstream, directUrl: upstream as string | null, live: d.kind === "live" };
   });
