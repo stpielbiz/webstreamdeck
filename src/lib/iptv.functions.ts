@@ -64,6 +64,7 @@ const createSchema = z
     username: z.string().trim().optional(),
     password: z.string().optional(),
     m3uUrl: z.string().trim().optional(),
+    force: z.boolean().optional(),
   })
   .refine((value) => (value.kind === "m3u" ? !!value.m3uUrl : !!value.serverUrl && !!value.username), {
     message: "Missing playlist details.",
