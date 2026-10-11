@@ -14,6 +14,7 @@ import { TvShell } from "@/components/tv-shell";
 import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/search-field";
 import { VideoPlayer } from "@/components/video-player";
+import { hasNativePlayer } from "@/lib/external-player";
 import { cn } from "@/lib/utils";
 import { useAppSearchFocus } from "@/lib/app-search";
 
@@ -299,7 +300,9 @@ function TvLive() {
     if (selected?.id === item.id) setFullscreen(true);
     else {
       setSelected(item);
-      setFullscreen(false);
+      // The Fire TV app can't preview in-page (the provider only serves the
+      // device player), so OK goes straight to its full-screen player.
+      setFullscreen(hasNativePlayer());
     }
   };
 
@@ -412,7 +415,11 @@ function TvLive() {
           {selected && !fullscreen && (
             <div className="mb-2 flex shrink-0 items-center gap-3 rounded-lg border border-border bg-card p-2" aria-label={`Preview of ${selected.name}`}>
               <div className="w-64 shrink-0 overflow-hidden rounded bg-muted">
-                <VideoPlayer allowNative={false} onStop={closePlayer} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+                {hasNativePlayer() ? (
+                  <div className="flex aspect-video w-full items-center justify-center text-xs text-muted-foreground">Press OK to watch</div>
+                ) : (
+                  <VideoPlayer allowNative={false} onStop={closePlayer} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase text-primary">Preview</p>
