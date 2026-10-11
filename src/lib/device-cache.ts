@@ -80,7 +80,8 @@ export function hydrateDeviceCache(client: QueryClient): Promise<void> {
     const entries = await readAll();
     const now = Date.now();
     for (const entry of entries) {
-      if (now - entry.at > MAX_AGE) continue;
+      // Title details links never expire; only the playlist lists age out.
+      if (entry.queryKey[0] !== "cached-title-metadata" && now - entry.at > MAX_AGE) continue;
       if (client.getQueryData(entry.queryKey) !== undefined) continue;
       // Outdated or cut-off lists still show instantly but are marked stale so
       // they are downloaded again in the background.
