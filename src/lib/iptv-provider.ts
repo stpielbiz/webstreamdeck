@@ -28,8 +28,21 @@ const USER_AGENT = "VLC/3.0.20 LibVLC/3.0.20";
 // Some providers only accept known player apps; retry with these when refused.
 const FALLBACK_AGENTS = ["TiviMate/5.1.6 (Android 11)", "okhttp/4.12.0", "IPTVSmartersPro"];
 
+type DeviceFetcher = (url: string, userAgent: string) => Promise<Response>;
+let deviceFetcher: DeviceFetcher | null = null;
+
+/** Route provider requests through the device's own connection (Fire TV app). Client-only. */
+export function setDeviceFetcher(fetcher: DeviceFetcher | null) {
+  deviceFetcher = fetcher;
+}
+
 export async function providerFetch(url: string, init: RequestInit = {}) {
   const custom = new Headers(init.headers).has("user-agent");
+  if (deviceFetcher && !custom) {
+    let response = await deviceFetcher(url, "TiviMate/4.7.0 (Linux; Android 9)");
+    if (response.status === 403 || response.status === 401) response = await deviceFetcher(url, USER_AGENT);
+    return response;
+  }
   const agents = custom ? [null] : [USER_AGENT, ...FALLBACK_AGENTS];
   let response: Response | undefined;
   for (const agent of agents) {
