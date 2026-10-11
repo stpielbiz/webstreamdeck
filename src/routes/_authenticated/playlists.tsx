@@ -48,7 +48,7 @@ function PlaylistsPage() {
   const [form, setForm] = useState<Form>(emptyForm);
   const [editing, setEditing] = useState<PlaylistSummary | null>(null);
   const [deleting, setDeleting] = useState<PlaylistSummary | null>(null);
-  const [result, setResult] = useState<{ ok: true; name: string; id: string; summary: ConnectionSummary } | { ok: false; message: string } | null>(null);
+  const [result, setResult] = useState<{ ok: true; name: string; id: string; summary: ConnectionSummary; forced: boolean } | { ok: false; message: string } | null>(null);
   const root = useRef<HTMLDivElement>(null);
 
   // Focus the first control of each step so the remote always lands somewhere useful.
@@ -116,17 +116,17 @@ function PlaylistsPage() {
   const set = (key: keyof Form) => (value: string) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const connect = useMutation({
-    mutationFn: () => {
-      debugLog("connect", `${editing ? "Updating" : "Adding"} ${kind} source`, { server: redactUrl(kind === "xtream" ? form.serverUrl : form.m3uUrl) });
+    mutationFn: (force?: boolean) => {
+      debugLog("connect", `${editing ? "Updating" : "Adding"} ${kind} source`, { server: redactUrl(kind === "xtream" ? form.serverUrl : form.m3uUrl), force: !!force });
       const data = kind === "xtream"
-        ? { name: form.name, kind, serverUrl: form.serverUrl, username: form.username, password: form.password }
-        : { name: form.name, kind, m3uUrl: form.m3uUrl };
+        ? { name: form.name, kind, serverUrl: form.serverUrl, username: form.username, password: form.password, force }
+        : { name: form.name, kind, m3uUrl: form.m3uUrl, force };
       return editing ? update({ data: { ...data, id: editing.id } }) : create({ data });
     },
     onMutate: () => setStep("testing"),
-    onSuccess: ({ playlist, summary }) => {
+    onSuccess: ({ playlist, summary }, force) => {
       debugLog("connect", "Source connected", { id: playlist.id });
-      setResult({ ok: true, name: playlist.name, id: playlist.id, summary });
+      setResult({ ok: true, name: playlist.name, id: playlist.id, summary, forced: !!force });
       setStep("result");
       refetch();
       if (editing) requestLibraryRefresh(playlist.id);
@@ -218,7 +218,7 @@ function PlaylistsPage() {
       )}
 
       {step === "details" && (
-        <form className="space-y-4 rounded-xl border border-border bg-card p-5" onSubmit={(event) => { event.preventDefault(); if (canConnect) connect.mutate(); }}>
+        <form className="space-y-4 rounded-xl border border-border bg-card p-5" onSubmit={(event) => { event.preventDefault(); if (canConnect) connect.mutate(false); }}>
           <h1 className="font-display text-xl font-bold">{editing ? `Edit ${editing.name}` : kind === "xtream" ? "Xtream Codes details" : "M3U link details"}</h1>
           <Field entry label="Name" value={form.name} onChange={set("name")} placeholder="Living room" />
           {kind === "xtream" ? (
@@ -241,7 +241,7 @@ function PlaylistsPage() {
         <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-10 text-center">
           <Loader2 className="size-10 animate-spin text-primary" />
           <p className="font-semibold">Connecting to your provider…</p>
-          <p className="text-sm text-muted-foreground">This can take a few seconds.</p>
+          <p className="text-sm text-muted-foreground">Trying up to 5 times — this can take a little while.</p>
         </div>
       )}
 
@@ -250,8 +250,12 @@ function PlaylistsPage() {
           {result.ok ? (
             <>
               <CheckCircle2 className="size-12 text-primary" />
-              <p className="font-display text-xl font-bold">Connected to {result.name}</p>
-              <p className="text-sm text-muted-foreground">{describe(result.summary)}</p>
+              <p className="font-display text-xl font-bold">{result.forced ? `${result.name} saved` : `Connected to ${result.name}`}</p>
+              <p className="text-sm text-muted-foreground">
+                {result.forced
+                  ? "Saved without checking the connection. If the details are right, your channels, movies and shows will load when the provider answers."
+                  : describe(result.summary)}
+              </p>
               <Button data-tv-focus data-pl-item data-step-entry onClick={() => { setActiveId(result.id); setStep("list"); }}>Done</Button>
             </>
           ) : (
@@ -259,8 +263,9 @@ function PlaylistsPage() {
               <XCircle className="size-12 text-destructive" />
               <p className="font-display text-xl font-bold">Could not connect</p>
               <p className="max-w-md text-sm text-muted-foreground">{result.message}</p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap justify-center gap-2">
                 <Button data-tv-focus data-pl-item data-step-entry onClick={() => setStep("details")}>Try again</Button>
+                <Button variant="outline" data-tv-focus data-pl-item onClick={() => connect.mutate(true)}>{editing ? "Save anyway" : "Add anyway"}</Button>
                 <Button variant="ghost" data-tv-focus data-pl-item onClick={() => setStep("list")}>Cancel</Button>
               </div>
             </>

@@ -64,6 +64,7 @@ const createSchema = z
     username: z.string().trim().optional(),
     password: z.string().optional(),
     m3uUrl: z.string().trim().optional(),
+    force: z.boolean().optional(),
   })
   .refine((value) => (value.kind === "m3u" ? !!value.m3uUrl : !!value.serverUrl && !!value.username), {
     message: "Missing playlist details.",
@@ -115,13 +116,30 @@ const sourceSchema = z.object({
   username: z.string().trim().max(200).optional(),
   password: z.string().max(200).optional(),
   m3uUrl: z.string().trim().max(2000).optional(),
+  force: z.boolean().optional(),
 });
+
+/** Retries the connection check up to 5 times with a short pause; some providers answer slowly or refuse the first attempts. */
+async function probeWithRetries(data: z.infer<typeof sourceSchema>, existingPassword?: string | null): Promise<ConnectionSummary> {
+  let lastError: Error | undefined;
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      return await probeSource(data, existingPassword);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  }
+  throw lastError ?? new Error("Could not connect to that provider.");
+}
 
 export const createPlaylist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createSchema.parse(input))
   .handler(async ({ data, context }): Promise<{ playlist: PlaylistSummary; summary: ConnectionSummary }> => {
-    const summary = await probeSource(data);
+    const summary = data.force
+      ? { live: 0, movie: 0, series: 0, unit: "categories" as const }
+      : await probeWithRetries(data);
     const { data: row, error } = await context.supabase
       .from("playlists")
       .insert({
@@ -146,7 +164,9 @@ export const updatePlaylist = createServerFn({ method: "POST" })
     const existing = await loadPlaylist(context.supabase, data.id);
     if (data.kind === "xtream" && (!data.serverUrl || !data.username)) throw new Error("Missing playlist details.");
     if (data.kind === "m3u" && !data.m3uUrl) throw new Error("Missing playlist link.");
-    const summary = await probeSource(data, existing.password);
+    const summary = data.force
+      ? { live: 0, movie: 0, series: 0, unit: "categories" as const }
+      : await probeWithRetries(data, existing.password);
     const { data: row, error } = await context.supabase
       .from("playlists")
       .update({
