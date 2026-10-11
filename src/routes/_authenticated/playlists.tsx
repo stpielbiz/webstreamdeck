@@ -48,7 +48,7 @@ function PlaylistsPage() {
   const [form, setForm] = useState<Form>(emptyForm);
   const [editing, setEditing] = useState<PlaylistSummary | null>(null);
   const [deleting, setDeleting] = useState<PlaylistSummary | null>(null);
-  const [result, setResult] = useState<{ ok: true; name: string; id: string; summary: ConnectionSummary } | { ok: false; message: string } | null>(null);
+  const [result, setResult] = useState<{ ok: true; name: string; id: string; summary: ConnectionSummary; forced: boolean } | { ok: false; message: string } | null>(null);
   const root = useRef<HTMLDivElement>(null);
 
   // Focus the first control of each step so the remote always lands somewhere useful.
