@@ -32,4 +32,4 @@
 - All search inputs use the shared SearchField with local draft state and confirmation on Enter, blur or keyboard dismissal; native Back is consumed before page navigation — prevents per-letter requests and keeps remote typing on the current screen.
 - Fire TV display density is an account setting applied through the shared TV shell and root sizing selectors, never browser zoom — this keeps focus geometry deterministic while leaving browser screens unchanged.
 - Account expiry is stored separately from roles; expired accounts retain only Home, Settings, and sign-out access — this prevents subscription state from becoming a privilege source.
-- Provider calls go through `src/lib/device-provider.ts` hooks: in the Fire TV app they run the shared `iptv-provider.ts` parsing on-device via `StreamDeckNative.fetchText`, falling back to server functions — providers often refuse or blank our servers but accept the subscriber’s device.
+- Provider calls use `device-provider.ts` hooks: Fire TV runs `iptv-provider.ts` on-device via `StreamDeckNative.fetchText`, else server — providers often blank our servers.
