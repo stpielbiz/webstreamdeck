@@ -21,6 +21,7 @@ class MainActivity : Activity() {
     private lateinit var webView: WebView
     private lateinit var appUpdater: AppUpdater
     private var lastPlayerClosedAt = 0L
+    private var lastPlayRequestAt = 0L
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -125,6 +126,11 @@ class MainActivity : Activity() {
             }
             val url = request.optString("url")
             if (!url.startsWith("http")) return
+            // Ignore repeat requests while a player is open or just closed, so a
+            // misbehaving page can never stack players and freeze the device.
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (PlayerActivity.isOpen || now - lastPlayRequestAt < 3000 || now - lastPlayerClosedAt < 1500) return
+            lastPlayRequestAt = now
             val intent = Intent(this@MainActivity, PlayerActivity::class.java).apply {
                 putExtra(PlayerActivity.EXTRA_URL, url)
                 putExtra(PlayerActivity.EXTRA_TITLE, request.optString("title"))
