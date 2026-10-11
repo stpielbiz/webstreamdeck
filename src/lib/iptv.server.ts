@@ -45,7 +45,7 @@ export async function providerFetch(url: string, init: RequestInit = {}) {
 /** Plain-language explanation for a provider HTTP error. */
 export function describeProviderStatus(status: number, what = "The provider"): string {
   if (status === 403) {
-    return `${what} refused the connection (error 403). Your login may be fine — many providers only allow connections from home internet and block cloud servers like ours, which is why it can work in TiviMate but not here. Other causes: the account has reached its device/connection limit (close it on other devices and retry), the account is tied to one IP address or app, or the server address is slightly different (check http vs https and the port number). Your provider can tell you which applies.`;
+    return `${what} refused the connection (error 403). Your login details are most likely fine. The connection check runs on our servers, not on your device — so a VPN on your device does not apply here. Many providers only allow connections from home internet and block server connections like ours, which is why the same account can work in a player app on your device but not here. Other possible causes: the account has reached its device/connection limit (close it on other devices and retry), the account is tied to one IP address or one app, or the server address is slightly different (check http vs https and the port number). Your provider can tell you which applies.`;
   }
   if (status === 401) return `${what} rejected the username or password (error 401). Check for extra spaces or capital letters.`;
   if (status === 404) return `${what} could not find that address (error 404). Check the server address and port.`;
