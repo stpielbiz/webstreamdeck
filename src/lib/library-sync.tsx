@@ -284,16 +284,42 @@ export function useTitleBackfill(playlistId: string | null) {
         const items = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
         if (!items.length) continue;
         const summaryKey = ["cached-title-metadata", playlistId, kind, "summary"] as const;
-        if (client.getQueryData(summaryKey) === undefined) {
-          const saved: Record<string, TitleMetadata> = {};
+        // Delta link: keep saved details, drop removed titles, look up only new ones.
+        const names = items.map((item) => item.name);
+        const current = new Set(names);
+        const saved: Record<string, TitleMetadata> = {};
+        for (const [, data] of client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) Object.assign(saved, data ?? {});
+        const byKey = new Map<string, TitleMetadata>();
+        for (const value of Object.values(saved)) if (value?.key) byKey.set(value.key, value);
+        const next: Record<string, TitleMetadata> = {};
+        const missing: string[] = [];
+        for (const name of names) {
+          const hit = saved[name] ?? byKey.get(lookupKeyFor(name).key);
+          if (hit) next[name] = hit; else missing.push(name);
+        }
+        const checkedKey = `streamdeck.meta-checked:${playlistId}:${kind}`;
+        let checked: Set<string>;
+        try { checked = new Set(JSON.parse(localStorage.getItem(checkedKey) ?? "[]") as string[]); } catch { checked = new Set(); }
+        const toFetch = missing.filter((name) => !checked.has(name));
+        const previous = client.getQueryData<Record<string, TitleMetadata>>(summaryKey);
+        const pruned = previous ? Object.keys(previous).some((name) => !current.has(name)) : true;
+        if (toFetch.length || pruned || Object.keys(next).length !== Object.keys(previous ?? {}).length) {
           try {
-            const names = items.map((item) => item.name);
-            for (let index = 0; index < names.length && !cancelled; index += 5000) {
-              Object.assign(saved, await fetchCached({ data: { playlistId, kind, names: names.slice(index, index + 5000) } }));
+            const chunks: string[][] = [];
+            for (let i = 0; i < toFetch.length; i += 5000) chunks.push(toFetch.slice(i, i + 5000));
+            for (let i = 0; i < chunks.length && !cancelled; i += 3) {
+              const results = await Promise.all(chunks.slice(i, i + 3).map((chunk) => fetchCached({ data: { playlistId, kind, names: chunk } })));
+              for (const result of results) Object.assign(next, result);
             }
-            if (!cancelled) client.setQueryData(summaryKey, saved);
+            for (const name of toFetch) checked.add(name);
+            const kept = [...checked].filter((name) => current.has(name) && !next[name]);
+            try { localStorage.setItem(checkedKey, JSON.stringify(kept)); } catch { /* storage full */ }
+            if (!cancelled) {
+              client.setQueryData(summaryKey, next);
+              client.setQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind], exact: false }, (old) => old ? { ...old, ...next } : old);
+            }
           } catch {
-            /* Retry the saved metadata scan on the next mounted session. */
+            /* Retry on the next pass. */
           }
         }
         let done: Set<string>;
