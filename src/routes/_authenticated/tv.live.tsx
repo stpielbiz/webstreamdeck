@@ -189,7 +189,12 @@ function TvLive() {
     const initial = channels.find((item) => item.id === channel);
     if (!initial) return;
     setPage(Math.floor(channels.indexOf(initial) / PAGE_SIZE));
-    setFocusedId(initial.id);
+    // Opened from favourites: start the channel straight away instead of
+    // only focusing its row, then drop the parameter so Back or a refresh
+    // doesn't restart playback.
+    playChannel(initial);
+    void navigate({ to: ".", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channels, channel]);
 
   useEffect(() => {
