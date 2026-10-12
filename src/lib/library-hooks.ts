@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback } from "react";
 
 import {
+  clearProgress,
   listFavorites,
   listProgress,
   saveProgress,
@@ -41,6 +42,15 @@ export function useToggleFavorite() {
       logoUrl?: string | null;
     }) => mutate({ data: input }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["favorites"] }),
+  });
+}
+
+export function useClearProgress() {
+  const queryClient = useQueryClient();
+  const clear = useServerFn(clearProgress);
+  return useMutation({
+    mutationFn: (input: { playlistId: string; itemId: string }) => clear({ data: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["progress"] }),
   });
 }
 

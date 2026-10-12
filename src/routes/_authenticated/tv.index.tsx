@@ -10,7 +10,10 @@ import { toast } from "sonner";
 import { TvShell } from "@/components/tv-shell";
 import { GlobalSearch } from "@/components/global-search";
 import { usePlaylists } from "@/components/playlist-context";
-import { useFavorites, useProgress } from "@/lib/library-hooks";
+import { useFavorites, useProgress, useToggleFavorite, useClearProgress, isFavorite } from "@/lib/library-hooks";
+import { useLongPress } from "@/lib/use-long-press";
+import { RemoveConfirmDialog } from "@/components/remove-confirm-dialog";
+import type { ProgressRow } from "@/lib/iptv.functions";
 import { SectionMenu } from "@/components/layered-navigation";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/lib/use-admin";
@@ -46,6 +49,9 @@ function TvHome() {
   const { data: favorites } = useFavorites();
   const { isAdmin } = useIsAdmin();
   const [focusedSection, setFocusedSection] = useState("Home");
+  const [removing, setRemoving] = useState<ProgressRow | null>(null);
+  const toggleFavorite = useToggleFavorite();
+  const clearProgress = useClearProgress();
   const expired = useAccountAccess().data?.expired === true;
   const checkForUpdates = () => {
     const native = window.StreamDeckNative;
@@ -117,9 +123,27 @@ function TvHome() {
                     zoneEntry={index === 0}
                     edgeLeft={index === 0}
                     onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })}
+                    onLongPress={() => setRemoving(row)}
                   />
                 ))}
               </HomeShelf>
+              <RemoveConfirmDialog
+                title={removing?.title ?? null}
+                mode={removing && activeId && isFavorite(favorites, activeId, removing.itemKind === "episode" ? "series" : "movie", removing.itemKind === "episode" && removing.seriesId ? removing.seriesId : removing.itemId) ? "favourite" : "continue"}
+                onClose={() => setRemoving(null)}
+                onConfirm={() => {
+                  if (!removing || !activeId) return;
+                  const kind = removing.itemKind === "episode" ? "series" : "movie";
+                  const id = removing.itemKind === "episode" && removing.seriesId ? removing.seriesId : removing.itemId;
+                  if (isFavorite(favorites, activeId, kind, id)) {
+                    toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: id, title: removing.title, logoUrl: removing.posterUrl });
+                    toast.success(`Removed ${removing.title} from favourites`);
+                  } else {
+                    clearProgress.mutate({ playlistId: removing.playlistId, itemId: removing.itemId });
+                    toast.success(`Removed ${removing.title} from continue watching`);
+                  }
+                }}
+              />
               <FavouritesLists tv home />
               </>}
             </div>
@@ -149,6 +173,7 @@ function HomeTile({
   image,
   progress,
   onSelect,
+  onLongPress,
   zoneEntry,
   edgeLeft,
 }: {
@@ -158,9 +183,11 @@ function HomeTile({
   image?: string | null;
   progress?: number | null;
   onSelect: () => void;
+  onLongPress?: () => void;
   zoneEntry?: boolean;
   edgeLeft?: boolean;
 }) {
+  const longPress = useLongPress(onLongPress ?? (() => {}));
   const shellClass = kind === "continue" ? "w-48" : kind === "channel" ? "w-28" : "w-28";
   const imageClass = kind === "continue" ? "aspect-video" : kind === "channel" ? "aspect-square" : "aspect-[2/3]";
   return (
@@ -172,6 +199,7 @@ function HomeTile({
       data-zone-entry={zoneEntry ? "true" : undefined}
       data-zone-edge-left={edgeLeft ? "true" : undefined}
       onClick={onSelect}
+      {...(onLongPress ? longPress : {})}
       className={`group h-auto shrink-0 flex-col items-stretch justify-start overflow-hidden rounded p-0 text-left outline-none transition focus:scale-[1.025] focus:ring-2 focus:ring-primary motion-reduce:transform-none ${shellClass}`}
     >
       <span className={`relative block w-full overflow-hidden rounded border border-border bg-muted ${imageClass}`}>

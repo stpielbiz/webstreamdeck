@@ -6,12 +6,16 @@ import { usePlaylists } from "@/components/playlist-context";
 import { EmptyState, PosterGrid, PosterTile, Shelf } from "@/components/media";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useProgress } from "@/lib/library-hooks";
+import { useProgress, useFavorites, useToggleFavorite, useClearProgress, isFavorite } from "@/lib/library-hooks";
 import { SectionMenu } from "@/components/layered-navigation";
 import { FavouritesLists } from "@/components/favourites-lists";
+import { RemoveConfirmDialog } from "@/components/remove-confirm-dialog";
 import { useAccountAccess } from "@/lib/account-access";
 import { useLibraryOverview, hasCompletedDetailsUpdate } from "@/lib/library-sync";
 import { DetailsUpdateHint } from "@/components/details-update-hint";
+import { useState } from "react";
+import { toast } from "sonner";
+import type { ProgressRow } from "@/lib/iptv.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -33,6 +37,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { playlists, activeId, active, isLoading } = usePlaylists();
   const progress = useProgress();
+  const favorites = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+  const clearProgress = useClearProgress();
+  const [removing, setRemoving] = useState<ProgressRow | null>(null);
   const expired = useAccountAccess().data?.expired === true;
   const library = useLibraryOverview(activeId);
   const detailsPending = !!activeId &&
@@ -112,6 +120,7 @@ function Dashboard() {
                 search={{ play: true }}
                 title={row.title}
                 image={row.posterUrl}
+                onLongPress={() => setRemoving(row)}
                 subtitle={
                   row.external
                     ? "Watching in an external player"
@@ -137,6 +146,23 @@ function Dashboard() {
 
       {detailsPending && <DetailsUpdateHint />}
       <FavouritesLists home />
+      <RemoveConfirmDialog
+        title={removing?.title ?? null}
+        mode={removing && activeId && isFavorite(favorites.data, activeId, removing.itemKind === "episode" ? "series" : "movie", removing.itemKind === "episode" && removing.seriesId ? removing.seriesId : removing.itemId) ? "favourite" : "continue"}
+        onClose={() => setRemoving(null)}
+        onConfirm={() => {
+          if (!removing || !activeId) return;
+          const kind = removing.itemKind === "episode" ? "series" : "movie";
+          const id = removing.itemKind === "episode" && removing.seriesId ? removing.seriesId : removing.itemId;
+          if (isFavorite(favorites.data, activeId, kind, id)) {
+            toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: id, title: removing.title, logoUrl: removing.posterUrl });
+            toast.success(`Removed ${removing.title} from favourites`);
+          } else {
+            clearProgress.mutate({ playlistId: removing.playlistId, itemId: removing.itemId });
+            toast.success(`Removed ${removing.title} from continue watching`);
+          }
+        }}
+      />
       </>}
     </div>
   );

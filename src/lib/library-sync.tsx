@@ -389,6 +389,24 @@ export function hasCompletedDetailsUpdate(playlistId: string, kind: "movie" | "s
 }
 
 /** Re-resolves every title missing a description or cast, in parallel batches. */
+/** Keeps the screen awake while a long update runs; no-op where unsupported. */
+async function acquireWakeLock(): Promise<{ release: () => Promise<void> } | null> {
+  const native = (window as unknown as { StreamDeckNative?: { setKeepAwake?: (enabled: boolean) => void } }).StreamDeckNative;
+  try { native?.setKeepAwake?.(true); } catch { /* bridge unavailable */ }
+  try {
+    const nav = navigator as Navigator & { wakeLock?: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> } };
+    const lock = nav.wakeLock ? await nav.wakeLock.request("screen") : null;
+    return {
+      release: async () => {
+        try { native?.setKeepAwake?.(false); } catch { /* bridge unavailable */ }
+        await lock?.release().catch(() => {});
+      },
+    };
+  } catch {
+    return { release: async () => { try { native?.setKeepAwake?.(false); } catch { /* bridge unavailable */ } } };
+  }
+}
+
 export async function runBulkRefresh(
   client: QueryClient,
   playlistId: string,
@@ -396,6 +414,7 @@ export async function runBulkRefresh(
   refresh: (input: { data: { kind: "movie" | "series"; names: string[] } }) => Promise<Record<string, TitleMetadata>>,
 ) {
   if (bulkState.running) return;
+  const wakeLock = await acquireWakeLock();
   const items = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
   const known: Record<string, TitleMetadata> = {};
   for (const [, data] of client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) Object.assign(known, data ?? {});
@@ -419,8 +438,12 @@ export async function runBulkRefresh(
       }
     }
   };
-  await Promise.all(Array.from({ length: PARALLEL }, worker));
-  setBulk({ running: false });
+  try {
+    await Promise.all(Array.from({ length: PARALLEL }, worker));
+  } finally {
+    setBulk({ running: false });
+    void wakeLock?.release().catch(() => {});
+  }
   if (!bulkCancel && !bulkState.failed) {
     try { localStorage.setItem(detailsDoneKey(playlistId, kind), String(items.length)); } catch { /* storage unavailable */ }
   }

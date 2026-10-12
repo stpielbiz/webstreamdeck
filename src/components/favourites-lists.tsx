@@ -11,13 +11,13 @@ import type { CatalogItem } from "@/lib/iptv-types";
 import { mediaMatchKey, variantsForItem } from "@/lib/title-variants";
 import { useSyncPlaylists } from "@/lib/playlist-sync";
 import { useLongPress } from "@/lib/use-long-press";
+import { RemoveConfirmDialog } from "@/components/remove-confirm-dialog";
 import { toast } from "sonner";
 
 function FavouriteOpenButton({
   row,
   column,
   index,
-  isChannel,
   onOpen,
   onRemove,
   className,
@@ -26,17 +26,12 @@ function FavouriteOpenButton({
   row: FavoriteRow;
   column: number;
   index: number;
-  isChannel: boolean;
   onOpen: () => void;
   onRemove: () => void;
   className?: string;
   children: React.ReactNode;
 }) {
-  const longPress = useLongPress(() => {
-    if (!isChannel) return;
-    onRemove();
-    toast.success(`Removed ${row.title} from favourites`);
-  });
+  const longPress = useLongPress(onRemove);
   return (
     <Button
       variant="ghost"
@@ -46,7 +41,7 @@ function FavouriteOpenButton({
       data-favourite-action="open"
       data-zone-edge-left={column === 0 ? "true" : undefined}
       onClick={onOpen}
-      title={isChannel ? `${row.title} — hold OK to remove from favourites` : row.title}
+      title={`${row.title} — hold OK to remove from favourites`}
       {...longPress}
       className={className}
     >
@@ -70,6 +65,7 @@ export function FavouritesLists({ tv = false, home = false }: { tv?: boolean; ho
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLElement | null>(null);
   const [selected, setSelected] = useState<(FavoriteRow & { openId: string }) | null>(null);
+  const [removing, setRemoving] = useState<FavoriteRow | null>(null);
   const sync = useSyncPlaylists();
   const all = favorites.data ?? [];
   const own = all.filter((row) => row.playlistId === activeId).map((row) => ({ ...row, openId: row.itemId }));
@@ -149,7 +145,7 @@ export function FavouritesLists({ tv = false, home = false }: { tv?: boolean; ho
                   {items.length === 0 && <p className="py-4 text-sm text-muted-foreground">No favourite {group.title.toLowerCase()} yet.</p>}
                   {items.map((row, index) => (
                     <div key={row.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center border-b border-border/50">
-                      <FavouriteOpenButton row={row} column={column} index={index} isChannel={group.kind === "live"} onOpen={() => open(row)} onRemove={() => toggle.mutate({ playlistId: row.playlistId, itemKind: row.itemKind, itemId: row.itemId, title: row.title, logoUrl: row.logoUrl })} className="h-12 min-w-0 justify-start gap-2 rounded px-2 text-left">
+                      <FavouriteOpenButton row={row} column={column} index={index} onOpen={() => open(row)} onRemove={() => setRemoving(row)} className="h-12 min-w-0 justify-start gap-2 rounded px-2 text-left">
                         {row.logoUrl && <img src={row.logoUrl} alt="" loading="lazy" className={group.kind === "live" ? "size-8 shrink-0 object-contain" : "h-10 w-7 shrink-0 rounded-sm object-cover"} onError={(event) => { event.currentTarget.hidden = true; }} />}
                         <span className="min-w-0 flex-1 truncate text-sm font-medium">{row.title}</span>
                         {group.kind === "live" && <Play className="size-3 shrink-0 text-primary" />}
@@ -163,6 +159,16 @@ export function FavouritesLists({ tv = false, home = false }: { tv?: boolean; ho
           })}
         </div>
       )}
+      <RemoveConfirmDialog
+        title={removing?.title ?? null}
+        mode="favourite"
+        onClose={() => setRemoving(null)}
+        onConfirm={() => {
+          if (!removing) return;
+          toggle.mutate({ playlistId: removing.playlistId, itemKind: removing.itemKind, itemId: removing.itemId, title: removing.title, logoUrl: removing.logoUrl });
+          toast.success(`Removed ${removing.title} from favourites`);
+        }}
+      />
       <TitleDetailsDialog kind={selected?.itemKind === "series" ? "series" : "movie"} id={selected?.itemId ?? null} name={selected?.title} image={selected?.logoUrl} variants={variants} onClose={() => setSelected(null)} onCloseAutoFocus={(event) => {
         event.preventDefault();
         window.requestAnimationFrame(() => {

@@ -3,6 +3,7 @@ import { ExternalLink, Play, Star } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { useLongPress } from "@/lib/use-long-press";
 
 // Poster tiles link to several typed routes; a loose wrapper keeps the props generic.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,6 +21,7 @@ export function PosterTile({
   favorite,
   onToggleFavorite,
   onSelect,
+  onLongPress,
   zoneEntry,
 }: {
   to?: string;
@@ -34,8 +36,10 @@ export function PosterTile({
   favorite?: boolean | undefined;
   onToggleFavorite?: (() => void) | undefined;
   onSelect?: (() => void) | undefined;
+  onLongPress?: (() => void) | undefined;
   zoneEntry?: boolean | undefined;
 }) {
+  const longPress = useLongPress(onLongPress ?? (() => {}));
   const artwork = (
     <>
       <div className="relative aspect-[2/3] w-full bg-muted">
@@ -77,11 +81,11 @@ export function PosterTile({
   return (
     <div className="group relative">
       {onSelect ? (
-        <button type="button" data-tv-focus data-zone-entry={zoneEntry ? "true" : undefined} onClick={onSelect} className="block w-full overflow-hidden rounded-lg border border-border bg-card text-left outline-none transition hover:border-primary/60 focus-visible:tile-focus">
+        <button type="button" data-tv-focus data-zone-entry={zoneEntry ? "true" : undefined} onClick={onSelect} {...(onLongPress ? longPress : {})} className="block w-full overflow-hidden rounded-lg border border-border bg-card text-left outline-none transition hover:border-primary/60 focus-visible:tile-focus">
           {artwork}
         </button>
       ) : (
-        <AnyLink to={to} params={params} search={search} className="block overflow-hidden rounded-lg border border-border bg-card transition focus-visible:tile-focus hover:border-primary/60">
+        <AnyLink to={to} params={params} search={search} {...(onLongPress ? longPress : {})} className="block overflow-hidden rounded-lg border border-border bg-card transition focus-visible:tile-focus hover:border-primary/60">
           {artwork}
         </AnyLink>
       )}
