@@ -9,6 +9,9 @@ import type { Franchise } from "@/lib/franchise.functions";
 import type { TitleGroup } from "@/lib/title-variants";
 import { useFranchiseMatches } from "@/components/franchise-details";
 export { useFranchiseMatches } from "@/components/franchise-details";
+import { usePlaylists } from "@/components/playlist-context";
+import { useProgress } from "@/lib/library-hooks";
+import { completedForVariants, progressForVariants } from "@/lib/watch-progress";
 import { cn } from "@/lib/utils";
 
 export function FranchiseCard({ franchise, owned, onOpen }: { franchise: Franchise; owned: number; onOpen: () => void }) {
@@ -35,6 +38,8 @@ export function FranchiseList({ franchise, movies, shows, open, onClose }: {
   const [order, setOrder] = useState<"year" | "story">("year");
   const [picked, setPicked] = useState<{ kind: "movie" | "series"; group: TitleGroup } | null>(null);
   const matches = useFranchiseMatches(franchise, movies, shows);
+  const { activeId } = usePlaylists();
+  const progress = useProgress();
   const sorted = [...matches].sort((a, b) =>
     order === "story" ? a.member.story_index - b.member.story_index : (a.member.year ?? 9999) - (b.member.year ?? 9999));
 
