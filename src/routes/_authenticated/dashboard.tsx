@@ -120,6 +120,7 @@ function Dashboard() {
                 search={{ play: true }}
                 title={row.title}
                 image={row.posterUrl}
+                onLongPress={() => setRemoving(row)}
                 subtitle={
                   row.external
                     ? "Watching in an external player"
