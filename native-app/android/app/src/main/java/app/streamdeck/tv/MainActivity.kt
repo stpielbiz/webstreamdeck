@@ -73,15 +73,32 @@ class MainActivity : Activity() {
             }
         }
 
+        // Fresh site files on every launch; saved data (IndexedDB/localStorage) is kept.
+        webView.clearCache(false)
         if (savedInstanceState != null) webView.restoreState(savedInstanceState)
         else webView.loadUrl(BuildConfig.START_URL)
         webView.requestFocus()
         appUpdater.checkAtLaunch()
     }
 
+    private var pausedAt = 0L
+
+    override fun onPause() {
+        super.onPause()
+        pausedAt = android.os.SystemClock.elapsedRealtime()
+    }
+
     override fun onResume() {
         super.onResume()
         if (::appUpdater.isInitialized) appUpdater.onResume()
+        val now = android.os.SystemClock.elapsedRealtime()
+        val sincePlayer = now - lastPlayerClosedAt
+        // Returning after a long absence (not from our own player): load the newest site.
+        if (pausedAt > 0 && now - pausedAt > 30 * 60 * 1000 && sincePlayer > 5000 && ::webView.isInitialized) {
+            webView.clearCache(false)
+            webView.reload()
+        }
+        pausedAt = 0L
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -173,6 +190,15 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun checkForUpdates() {
             runOnUiThread { appUpdater.checkManually() }
+        }
+
+        /** Drops cached site files and reloads the newest published version. */
+        @JavascriptInterface
+        fun reloadApp(url: String) {
+            runOnUiThread {
+                webView.clearCache(false)
+                webView.loadUrl(url)
+            }
         }
 
         /** Keeps the screen on during long background updates. */
