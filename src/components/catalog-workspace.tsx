@@ -242,7 +242,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     setVisibleCount((value) => value + WINDOW);
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
-        const tiles = contentRef.current?.querySelectorAll<HTMLElement>("[data-grid-entry] [data-tv-focus], [data-window-tile]");
+        const tiles = contentRef.current?.querySelectorAll<HTMLElement>("[data-window-sections] [data-tv-focus]");
         const next = tiles && tiles.length > before ? tiles[before] : null;
         if (next) { next.focus({ preventScroll: true }); next.scrollIntoView({ block: "nearest" }); return;
         }
@@ -478,7 +478,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
           <h1 className="mt-1 truncate font-display text-xl font-bold">{`Choose ${kind === "movie" ? "a movie" : "a show"}`}</h1>
         </div>
 
-        <div className="mt-4 min-w-0">
+        <div className="mt-4 min-w-0" data-window-sections>
         <div className="mb-3 flex items-center gap-3">
           <h2 className="truncate font-display text-lg font-semibold">{searching ? `Results for “${search.trim()}”` : genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
         </div>
