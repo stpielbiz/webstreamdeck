@@ -9,6 +9,7 @@ import android.view.KeyEvent
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.OptIn
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -79,6 +80,12 @@ class PlayerActivity : Activity() {
             .setMediaSourceFactory(DefaultMediaSourceFactory(this).setDataSourceFactory(httpFactory))
             .setSeekBackIncrementMs(10_000)
             .setSeekForwardIncrementMs(10_000)
+            .build()
+
+        // Providers ship subtitle tracks with many streams; never select one.
+        player.trackSelectionParameters = player.trackSelectionParameters
+            .buildUpon()
+            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
             .build()
 
         playerView = PlayerView(this).apply {
