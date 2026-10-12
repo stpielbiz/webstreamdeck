@@ -194,6 +194,15 @@ function LivePage() {
     staleTime: 60_000,
   });
 
+  const toggleChannel = (item: CatalogItem) => {
+    if (!activeId) return;
+    const starred = isFavorite(favorites.data, activeId, "live", item.id);
+    toggle.mutate(
+      { playlistId: activeId, itemKind: "live", itemId: item.id, title: item.name, logoUrl: item.image },
+      { onSuccess: () => toast.success(starred ? `Removed ${item.name} from favourites` : `Added ${item.name} to favourites`) },
+    );
+  };
+
   const step = (direction: 1 | -1) => {
     if (!selected) return;
     const index = visible.findIndex((item) => item.id === selected.id);
@@ -267,69 +276,17 @@ function LivePage() {
           ) : visible.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">No channels here.</p>
           ) : (
-            visible.map((item) => {
-              const entry = epgMap.get(item.id);
-              const starred = isFavorite(favorites.data, activeId, "live", item.id);
-              return (
-                <div
-                  key={item.id}
-                  className={cn(
-                    "group flex items-center gap-3 border-b border-border/60 px-3 py-2.5",
-                    selected?.id === item.id && "bg-muted",
-                  )}
-                >
-                  <button
-                    type="button"
-                    data-tv-focus
-                    onClick={() => setSelected(item)}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                  >
-                    {item.image ? (
-                      <img
-                        src={item.image}
-                        alt=""
-                        loading="lazy"
-                        className="size-9 shrink-0 rounded object-contain"
-                      />
-                    ) : (
-                      <span className="grid size-9 shrink-0 place-items-center rounded bg-muted">
-                        <Tv className="size-4 text-muted-foreground" />
-                      </span>
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{item.name}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {entry?.now
-                          ? `${timeLabel(entry.now.start)} ${entry.now.title}`
-                          : "No guide data"}
-                      </span>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={starred ? "Remove from favourites" : "Add to favourites"}
-                    onClick={() =>
-                      activeId &&
-                      toggle.mutate({
-                        playlistId: activeId,
-                        itemKind: "live",
-                        itemId: item.id,
-                        title: item.name,
-                        logoUrl: item.image,
-                      })
-                    }
-                    className="shrink-0 rounded p-1 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
-                  >
-                    <Star
-                      className={cn(
-                        "size-4",
-                        starred ? "fill-primary text-primary" : "text-muted-foreground",
-                      )}
-                    />
-                  </button>
-                </div>
-              );
-            })
+            visible.map((item) => (
+              <ChannelRow
+                key={item.id}
+                item={item}
+                entry={epgMap.get(item.id)}
+                starred={isFavorite(favorites.data, activeId, "live", item.id)}
+                selected={selected?.id === item.id}
+                onSelect={() => setSelected(item)}
+                onToggleFavorite={() => toggleChannel(item)}
+              />
+            ))
           )}
         </div>
       </section>
