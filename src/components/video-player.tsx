@@ -99,6 +99,39 @@ export function VideoPlayer({
   const [autoLaunched, setAutoLaunched] = useState(false);
   const autoLaunchRef = useRef<string | null>(null);
 
+  // Automatic recovery: once a stream has played, drops and freezes reconnect
+  // with backoff (instant, 2s, 4s … 30s) for up to about 3 minutes.
+  const [reloadKey, setReloadKey] = useState(0);
+  const [reconnecting, setReconnecting] = useState(false);
+  const playedRef = useRef(false);
+  const playingSinceRef = useRef(0);
+  const resumeAtRef = useRef(0);
+  const recoveryRef = useRef({ attempts: 0, since: 0 });
+  const reconnectTimerRef = useRef<number | null>(null);
+  const reconnect = useCallback((): boolean => {
+    if (!playedRef.current) return false;
+    if (reconnectTimerRef.current) return true;
+    const now = Date.now();
+    const state = recoveryRef.current;
+    if (!state.since) state.since = now;
+    if (now - state.since > 180_000) {
+      setReconnecting(false);
+      return false;
+    }
+    const delay = state.attempts === 0 ? 0 : Math.min(30_000, 1000 * 2 ** Math.min(state.attempts, 5));
+    state.attempts += 1;
+    const video = videoRef.current;
+    if (video && !live && video.currentTime > 0) resumeAtRef.current = video.currentTime;
+    playingSinceRef.current = 0;
+    setReconnecting(true);
+    debugLog("player", `Reconnecting (attempt ${state.attempts}) in ${delay}ms`);
+    reconnectTimerRef.current = window.setTimeout(() => {
+      reconnectTimerRef.current = null;
+      setReloadKey((key) => key + 1);
+    }, delay);
+    return true;
+  }, [live]);
+
   // Inside the Stream Deck TV app, hand playback to its built-in player, which
   // fetches the stream over the device's own connection.
   const startNative = useCallback(() => {
@@ -201,7 +234,18 @@ export function VideoPlayer({
     if (src) debugLog("player", `New stream: ${title ?? ""}`, { relay: redactUrl(src), direct: redactUrl(fallbackSrc), live, nativeApp: hasNativePlayer() });
     setStatus(src ? "loading" : "idle");
     setErrorMessage(null);
+    playedRef.current = false;
+    playingSinceRef.current = 0;
+    recoveryRef.current = { attempts: 0, since: 0 };
+    resumeAtRef.current = 0;
+    setReconnecting(false);
+    if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+    reconnectTimerRef.current = null;
   }, [src]);
+
+  useEffect(() => () => {
+    if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+  }, []);
 
   // Attach the source: hls.js for HLS, native playback for progressive files.
   useEffect(() => {
@@ -247,6 +291,7 @@ export function VideoPlayer({
               url: redactUrl((data as { url?: string }).url ?? (data as { frag?: { url?: string } }).frag?.url),
             });
             if (!data.fatal || destroyed || attempt !== sourceAttemptRef.current) return;
+            if (reconnect()) return;
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR && useFallback()) return;
             setStatus("error");
             setErrorMessage(
@@ -289,8 +334,31 @@ export function VideoPlayer({
 
     void attach();
 
+    // Watchdog: if the picture stops moving while it should be playing, reconnect.
+    let lastTime = -1;
+    let lastMoveAt = Date.now();
+    const watchdog = window.setInterval(() => {
+      const now = Date.now();
+      if (playingSinceRef.current && now - playingSinceRef.current > 60_000 && !video.paused) {
+        recoveryRef.current = { attempts: 0, since: 0 };
+      }
+      if (video.paused || !playedRef.current) {
+        lastMoveAt = now;
+        return;
+      }
+      if (video.currentTime !== lastTime) {
+        lastTime = video.currentTime;
+        lastMoveAt = now;
+      } else if (now - lastMoveAt > 12_000) {
+        lastMoveAt = now;
+        debugLog("player", "Stream froze — reconnecting");
+        reconnect();
+      }
+    }, 3_000);
+
     return () => {
       destroyed = true;
+      window.clearInterval(watchdog);
       sourceAttemptRef.current += 1;
       hlsInstance?.destroy();
       video.removeEventListener("loadedmetadata", dropSubtitles);
@@ -300,7 +368,7 @@ export function VideoPlayer({
       video.removeAttribute("src");
       video.load();
     };
-  }, [activeSrc, live]);
+  }, [activeSrc, live, reloadKey]);
 
   // Report progress every 10 seconds for VOD.
   useEffect(() => {
@@ -382,8 +450,10 @@ export function VideoPlayer({
           onLoadedMetadata={(event) => {
             const video = event.currentTarget;
             setDuration(Number.isFinite(video.duration) ? video.duration : 0);
-            if (!live && startPosition > 5 && startPosition < video.duration - 10) {
-              video.currentTime = startPosition;
+            const resumeAt = resumeAtRef.current > 5 ? resumeAtRef.current : startPosition;
+            resumeAtRef.current = 0;
+            if (!live && resumeAt > 5 && resumeAt < video.duration - 10) {
+              video.currentTime = resumeAt;
             }
             debugLog("player", "Metadata loaded", { duration: video.duration, size: `${video.videoWidth}x${video.videoHeight}` });
             setStatus("ready");
@@ -393,6 +463,11 @@ export function VideoPlayer({
             setPlaying(true);
             showControls();
           }}
+          onPlaying={() => {
+            playedRef.current = true;
+            setReconnecting(false);
+            if (!playingSinceRef.current) playingSinceRef.current = Date.now();
+          }}
           onPause={() => setPlaying(false)}
           onVolumeChange={(event) => {
             setMuted(event.currentTarget.muted);
@@ -400,7 +475,11 @@ export function VideoPlayer({
           }}
           onEnded={() => {
             const video = videoRef.current;
-            if (video && !live) {
+            if (live) {
+              reconnect();
+              return;
+            }
+            if (video) {
               progressRef.current?.(video.duration, video.duration);
             }
             onEnded?.();
@@ -409,6 +488,7 @@ export function VideoPlayer({
             const mediaError = event.currentTarget.error;
             if (!mediaError || mediaError.code === MediaError.MEDIA_ERR_ABORTED) return;
             debugLog("video", `Media error code ${mediaError.code}`, { message: mediaError.message, src: redactUrl(activeSrc) });
+            if (reconnect()) return;
             const fallback = fallbackRef.current;
             if (fallback && activeSrc !== fallback) {
               setActiveSrc(fallback);
@@ -444,6 +524,12 @@ export function VideoPlayer({
               Play again
             </button>
           </div>
+        </div>
+      )}
+
+      {!nativeActive && reconnecting && (
+        <div className="pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-2 rounded-md bg-black/70 px-3 py-1.5 text-xs font-medium text-white">
+          <Loader2 className="size-3.5 animate-spin" /> Reconnecting…
         </div>
       )}
 
