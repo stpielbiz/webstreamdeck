@@ -376,6 +376,7 @@ export function useBulkRefreshState() {
 }
 
 export function stopBulkRefresh() { bulkCancel = true; }
+export function getBulkRefreshState() { return bulkState; }
 
 const detailsDoneKey = (playlistId: string, kind: string) => `sd-details-done:${playlistId}:${kind}`;
 function detailsDoneCount(playlistId: string, kind: string) {
