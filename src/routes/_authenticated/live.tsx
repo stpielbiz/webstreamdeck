@@ -295,6 +295,7 @@ function LivePage() {
         <VideoPlayer
           src={playback.data?.url ?? null}
             fallbackSrc={playback.data?.directUrl ?? null}
+          onRefreshSource={() => playback.refetch()}
           title={selected?.name ?? ""}
           poster={selected?.image ?? null}
           live
@@ -323,6 +324,9 @@ function LivePage() {
             )}
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" disabled={channels.isFetching} onClick={() => void Promise.all([channels.refetch(), playback.refetch()]).then(() => toast.success("Channels updated"))}>
+              {channels.isFetching ? "Updating…" : "Update channels"}
+            </Button>
             <Button variant="outline" size="icon" aria-label="Previous channel" onClick={() => step(-1)}>
               <ChevronUp className="size-4" />
             </Button>

@@ -39,6 +39,8 @@ export interface VideoPlayerProps {
   allowNative?: boolean;
   /** Fired once per stream when playback is handed to an external player. */
   onExternalLaunch?: () => void;
+  /** Called before each reconnect to fetch a fresh stream link. */
+  onRefreshSource?: () => Promise<unknown>;
 }
 
 function formatTime(value: number): string {
@@ -68,8 +70,11 @@ export function VideoPlayer({
   onStop,
   allowNative = true,
   onExternalLaunch,
+  onRefreshSource,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const refreshSourceRef = useRef(onRefreshSource);
+  refreshSourceRef.current = onRefreshSource;
   const shellRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(onProgress);
   progressRef.current = onProgress;
@@ -126,8 +131,13 @@ export function VideoPlayer({
     setReconnecting(true);
     debugLog("player", `Reconnecting (attempt ${state.attempts}) in ${delay}ms`);
     reconnectTimerRef.current = window.setTimeout(() => {
-      reconnectTimerRef.current = null;
-      setReloadKey((key) => key + 1);
+      const refresh = refreshSourceRef.current;
+      // Ask for a fresh provider link first: event feeds get reassigned, so
+      // the old link can carry a different game after a drop.
+      void Promise.resolve(refresh ? refresh().catch(() => undefined) : undefined).finally(() => {
+        reconnectTimerRef.current = null;
+        setReloadKey((key) => key + 1);
+      });
     }, delay);
     return true;
   }, [live]);

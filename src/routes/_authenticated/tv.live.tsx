@@ -83,6 +83,7 @@ function EmptyGuideButton({ onLongPress, ...props }: React.ComponentProps<typeof
 
 function TvLive() {
   const navigate = useNavigate();
+  const EVENT_CATEGORY = /\b(nhl|nba|nfl|mlb|mls|ufc|sports?|events?|ppv)\b/i;
   const { channel } = Route.useSearch();
   const { activeId, playlists } = usePlaylists();
   const fetchCategories = useGetCategories();
@@ -134,7 +135,7 @@ function TvLive() {
       });
     },
     enabled: !!activeId,
-    staleTime: 30 * 60_000,
+    staleTime: EVENT_CATEGORY.test(categories.data?.find((c) => c.id === effectiveCategory)?.name ?? "") ? 5 * 60_000 : 30 * 60_000,
     gcTime: 60 * 60_000,
   });
 
@@ -362,6 +363,40 @@ function TvLive() {
     }
   };
 
+  const refreshPlayback = async () => {
+    if (!activeId || !selected) return;
+    const result = await resolve({ data: { playlistId: activeId, kind: "live", itemId: selected.id } });
+    setUrl(result.url);
+    setDirectUrl(result.directUrl);
+  };
+
+  const [updatingChannels, setUpdatingChannels] = useState(false);
+  const updateChannels = async () => {
+    if (!activeId || updatingChannels) return;
+    setUpdatingChannels(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["tv-live-categories", activeId] });
+      const fresh = await queryClient.fetchQuery({
+        queryKey: ["tv-live-items", activeId, effectiveCategory],
+        queryFn: () => fetchItems({ data: { playlistId: activeId, kind: "live", ...(effectiveCategory ? { categoryId: effectiveCategory } : {}) } }),
+        staleTime: 0,
+      });
+      if (selected) {
+        const name = selected.name.trim().toLocaleLowerCase();
+        const match = fresh.find((item) => item.id === selected.id) ?? fresh.find((item) => item.name.trim().toLocaleLowerCase() === name);
+        if (match) {
+          setSelected(match);
+          if (match.id === selected.id) await refreshPlayback().catch(() => undefined);
+        }
+      }
+      toast.success("Channels updated");
+    } catch (error) {
+      toast.error(`Couldn't update channels: ${(error as Error).message}`);
+    } finally {
+      setUpdatingChannels(false);
+    }
+  };
+
   const exitFullscreen = () => {
     setFullscreen(false);
     restoreChannelFocus();
@@ -466,7 +501,7 @@ function TvLive() {
               <SearchField aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-app-search="true" data-focus-key="live-search" data-zone-entry="true" className="h-9 text-sm" onValueChange={(value) => { setSearch(value); setPage(0); }} onKeyDown={(event) => { if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
             </div>
             <Button data-tv-focus size="sm" variant="secondary" onClick={jumpToNow}>Now</Button>
-            {selected && <Button data-tv-focus variant="secondary" size="sm" onClick={() => setFullscreen(true)}>Full screen</Button>}
+            <Button data-tv-focus variant="secondary" size="sm" disabled={updatingChannels} onClick={() => void updateChannels()}>{updatingChannels ? "Updating…" : "Update channels"}</Button>
           </div>
           {selected && !fullscreen && (
             <div className="mb-2 flex shrink-0 items-center gap-3 rounded-lg border border-border bg-card p-2" aria-label={`Preview of ${selected.name}`}>
@@ -610,7 +645,7 @@ function TvLive() {
               </div>
               <Button data-dialog-back data-tv-focus data-focus-key="live-player-close" variant="ghost" size="icon" aria-label="Exit full screen" onClick={exitFullscreen}><X className="size-5" /></Button>
             </div>
-            <VideoPlayer onStop={exitFullscreen} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+            <VideoPlayer onStop={exitFullscreen} onRefreshSource={refreshPlayback} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
           </div>
         </div>
       )}
