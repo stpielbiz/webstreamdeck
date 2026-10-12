@@ -6,12 +6,16 @@ import { usePlaylists } from "@/components/playlist-context";
 import { EmptyState, PosterGrid, PosterTile, Shelf } from "@/components/media";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useProgress } from "@/lib/library-hooks";
+import { useProgress, useFavorites, useToggleFavorite, useClearProgress, isFavorite } from "@/lib/library-hooks";
 import { SectionMenu } from "@/components/layered-navigation";
 import { FavouritesLists } from "@/components/favourites-lists";
+import { RemoveConfirmDialog } from "@/components/remove-confirm-dialog";
 import { useAccountAccess } from "@/lib/account-access";
 import { useLibraryOverview, hasCompletedDetailsUpdate } from "@/lib/library-sync";
 import { DetailsUpdateHint } from "@/components/details-update-hint";
+import { useState } from "react";
+import { toast } from "sonner";
+import type { ProgressRow } from "@/lib/iptv.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({

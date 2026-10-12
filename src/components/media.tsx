@@ -81,11 +81,11 @@ export function PosterTile({
   return (
     <div className="group relative">
       {onSelect ? (
-        <button type="button" data-tv-focus data-zone-entry={zoneEntry ? "true" : undefined} onClick={onSelect} className="block w-full overflow-hidden rounded-lg border border-border bg-card text-left outline-none transition hover:border-primary/60 focus-visible:tile-focus">
+        <button type="button" data-tv-focus data-zone-entry={zoneEntry ? "true" : undefined} onClick={onSelect} {...(onLongPress ? longPress : {})} className="block w-full overflow-hidden rounded-lg border border-border bg-card text-left outline-none transition hover:border-primary/60 focus-visible:tile-focus">
           {artwork}
         </button>
       ) : (
-        <AnyLink to={to} params={params} search={search} className="block overflow-hidden rounded-lg border border-border bg-card transition focus-visible:tile-focus hover:border-primary/60">
+        <AnyLink to={to} params={params} search={search} {...(onLongPress ? longPress : {})} className="block overflow-hidden rounded-lg border border-border bg-card transition focus-visible:tile-focus hover:border-primary/60">
           {artwork}
         </AnyLink>
       )}
