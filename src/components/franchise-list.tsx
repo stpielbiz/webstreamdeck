@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Layers } from "lucide-react";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { TitleDetailsDialog } from "@/components/title-details-dialog";
 import type { CatalogItem } from "@/lib/iptv-types";
@@ -47,6 +47,9 @@ export function FranchiseList({ franchise, movies, shows, open, onClose }: {
           if (event.key === "ArrowRight") setOrder("story");
         }}>
           <DialogHeader><DialogTitle>{franchise?.name}</DialogTitle></DialogHeader>
+          <div data-remote-row>
+            <DialogClose asChild><Button data-dialog-back data-tv-focus variant="outline" size="sm">Close</Button></DialogClose>
+          </div>
           {franchise?.hasStoryOrder && (
             <div className="flex gap-2">
               <Button size="sm" variant={order === "year" ? "default" : "secondary"} onClick={() => setOrder("year")}>By year</Button>
