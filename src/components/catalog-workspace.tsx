@@ -223,6 +223,33 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     }
     return [...buckets.entries()].map(([label, items]) => ({ label, items }));
   }, [visibleItems, sort, metadata.data]);
+  // Windowed rendering: mount only enough whole sections to reach visibleCount
+  // tiles, so huge categories (All, search) never create thousands of tiles.
+  const windowed = useMemo(() => {
+    const out: { label: string; items: CatalogItem[] }[] = [];
+    let used = 0;
+    for (const section of sections) {
+      const shown = Math.min(section.items.length, limitFor(section.label));
+      if (used > 0 && used + shown > visibleCount) break;
+      out.push(section);
+      used += shown;
+    }
+    const rendered = out.reduce((total, section) => total + Math.min(section.items.length, limitFor(section.label)), 0);
+    return { sections: out, remaining: visibleItems.length - rendered };
+  }, [sections, visibleCount, limits, visibleItems.length]);
+  const loadMore = (trigger?: HTMLElement | null) => {
+    const before = windowed.sections.reduce((total, section) => total + Math.min(section.items.length, limitFor(section.label)), 0);
+    setVisibleCount((value) => value + WINDOW);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const tiles = contentRef.current?.querySelectorAll<HTMLElement>("[data-grid-entry] [data-tv-focus], [data-window-tile]");
+        const next = tiles && tiles.length > before ? tiles[before] : null;
+        if (next) { next.focus({ preventScroll: true }); next.scrollIntoView({ block: "nearest" }); return;
+        }
+        trigger?.focus({ preventScroll: true });
+      });
+    });
+  };
   const selectedGroup = selectedId ? groupByItemId.get(selectedId) : undefined;
   const selectedItem = selectedGroup?.item ?? groupedItems.find((item) => item.id === selectedId);
 
