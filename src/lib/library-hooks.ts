@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback } from "react";
 
 import {
+  clearProgress,
   listFavorites,
   listProgress,
   saveProgress,
