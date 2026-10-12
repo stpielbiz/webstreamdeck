@@ -1,5 +1,5 @@
 import { useGetMovie, useGetSeries, useGetPlayback } from "@/lib/device-provider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Play, Star } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { cleanVariantTitle, mediaMatchKey, type TitleVariant } from "@/lib/title-variants";
 import { FranchiseDetails } from "@/components/franchise-details";
+import { hasCompletedDetailsUpdate } from "@/lib/library-sync";
 
 export type TitleKind = "movie" | "series";
 
