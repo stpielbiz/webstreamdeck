@@ -76,6 +76,11 @@ function ChannelNameButton({
   );
 }
 
+function EmptyGuideButton({ onLongPress, ...props }: React.ComponentProps<typeof Button> & { onLongPress: () => void }) {
+  const longPress = useLongPress(onLongPress);
+  return <Button {...props} {...longPress} />;
+}
+
 function TvLive() {
   const navigate = useNavigate();
   const { channel } = Route.useSearch();
@@ -547,7 +552,7 @@ function TvLive() {
                       {Array.from({ length: 24 }).map((_, marker) => <span key={marker} className="border-r border-border/60" />)}
                     </div>
                     {programmes.length === 0 ? (
-                      <Button
+                      <EmptyGuideButton onLongPress={() => toggleChannelFavorite(item)}
                         variant="ghost"
                         data-tv-focus
                         data-zone-edge-left="true"
@@ -561,7 +566,7 @@ function TvLive() {
                         className="absolute inset-y-1 left-1 h-auto w-[716px] justify-start border border-border bg-secondary/60 px-2 text-xs text-muted-foreground"
                       >
                         No programme information
-                      </Button>
+                      </EmptyGuideButton>
                     ) : programmes.map((programme, programmeIndex) => (
                       <ProgrammeCell
                         key={`${programme.start}-${programmeIndex}`}
@@ -573,6 +578,7 @@ function TvLive() {
                         zoneEntry={index === 0 && programmeIndex === 0}
                         onFocus={(element) => { setFocusedId(item.id); revealCell(element, programmeIndex === 0); }}
                         onSelect={() => playChannel(item)}
+                        onLongPress={() => toggleChannelFavorite(item)}
                       />
                     ))}
                     {clock >= windowStart && clock <= windowEnd && (
@@ -621,6 +627,7 @@ function ProgrammeCell({
   zoneEntry,
   onFocus,
   onSelect,
+  onLongPress,
 }: {
   programme: Programme;
   windowStart: number;
@@ -630,7 +637,9 @@ function ProgrammeCell({
   zoneEntry?: boolean;
   onFocus: (element: HTMLElement) => void;
   onSelect: () => void;
+  onLongPress: () => void;
 }) {
+  const longPress = useLongPress(onLongPress);
   const rawStart = Date.parse(programme.start ?? "");
   const rawEnd = Date.parse(programme.end ?? "");
   if (!Number.isFinite(rawStart) || !Number.isFinite(rawEnd)) return null;
@@ -652,6 +661,7 @@ function ProgrammeCell({
       data-end={end}
       onFocus={(event) => onFocus(event.currentTarget)}
       onClick={onSelect}
+      {...longPress}
       className="absolute inset-y-1 z-10 h-auto justify-start overflow-hidden rounded border border-border bg-secondary px-3 text-left focus-visible:z-20 focus-visible:bg-primary focus-visible:text-primary-foreground"
       style={{ left, width: Math.max(64, width - 4) }}
       title={programme.description ?? programme.title}

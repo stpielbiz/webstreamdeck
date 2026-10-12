@@ -32,11 +32,25 @@ export function useLongPress(onLongPress: () => void, ms = 600) {
     onPointerUp: cancel,
     onPointerLeave: cancel,
     onPointerCancel: cancel,
+    "data-long-press": "true",
+    // Buttons fire click on Enter keydown (and on every key repeat), which
+    // started playback before a hold could register. Block that and decide
+    // on release instead: quick press → click, hold → long-press action only.
     onKeyDown: (event: React.KeyboardEvent) => {
-      if (event.key === "Enter") start();
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      if (!event.repeat && timer.current === null) start();
     },
     onKeyUp: (event: React.KeyboardEvent) => {
-      if (event.key === "Enter") cancel();
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      const wasHeld = fired.current;
+      cancel();
+      if (wasHeld) {
+        fired.current = false;
+        return;
+      }
+      (event.currentTarget as HTMLElement).click();
     },
     onClickCapture: (event: React.SyntheticEvent) => {
       if (fired.current) {
