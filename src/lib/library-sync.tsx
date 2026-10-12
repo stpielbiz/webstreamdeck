@@ -167,7 +167,7 @@ function useRefreshRequest() {
  * Background library sync: refreshes categories, channels, movies, shows and
  * the TV guide for the active playlist, only when the saved copy is stale.
  */
-export function useLibrarySync(playlistId: string | null): SyncStatus {
+export function useLibrarySync(playlistId: string | null, auto = true): SyncStatus {
   const client = useQueryClient();
   const fetchCategories = useGetCategories();
   const fetchItems = useGetItems();
@@ -178,6 +178,8 @@ export function useLibrarySync(playlistId: string | null): SyncStatus {
 
   useEffect(() => {
     if (!playlistId) return;
+    // Background updates off: only a manual "Update now" runs.
+    if (!auto && !force) return;
     let cancelled = false;
     const phase = (name: string, done = 0, total = 0) => { if (force) setRefresh({ running: true, phase: name, done, total }); };
     const stale = (key: readonly unknown[], ttl: number) => {
@@ -255,7 +257,7 @@ export function useLibrarySync(playlistId: string | null): SyncStatus {
     const idle = window.setTimeout(() => void run(), force ? 0 : 1500);
     const interval = window.setInterval(() => void run(), GUIDE_TTL);
     return () => { cancelled = true; window.clearTimeout(idle); window.clearInterval(interval); };
-  }, [playlistId, client, fetchCategories, fetchItems, fetchSchedules, force, request?.n]);
+  }, [playlistId, client, fetchCategories, fetchItems, fetchSchedules, force, request?.n, auto]);
 
   return status;
 }
