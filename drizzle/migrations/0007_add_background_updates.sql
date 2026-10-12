@@ -1,0 +1,1 @@
+ALTER TABLE public.user_settings ADD COLUMN background_updates BOOLEAN NOT NULL DEFAULT TRUE;
