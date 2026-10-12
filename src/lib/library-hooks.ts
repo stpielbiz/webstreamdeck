@@ -41,7 +41,32 @@ export function useToggleFavorite() {
       title: string;
       logoUrl?: string | null;
     }) => mutate({ data: input }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["favorites"] }),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: ["favorites"] });
+      const previous = queryClient.getQueryData<FavoriteRow[]>(["favorites"]);
+      const matches = (row: FavoriteRow) =>
+        row.playlistId === input.playlistId && row.itemKind === input.itemKind && row.itemId === input.itemId;
+      const existing = previous?.find(matches);
+      const next = existing
+        ? (previous ?? []).filter((row) => row.id !== existing.id)
+        : [
+            {
+              id: `pending-${input.playlistId}-${input.itemKind}-${input.itemId}`,
+              playlistId: input.playlistId,
+              itemKind: input.itemKind,
+              itemId: input.itemId,
+              title: input.title,
+              logoUrl: input.logoUrl ?? null,
+            } satisfies FavoriteRow,
+            ...(previous ?? []),
+          ];
+      queryClient.setQueryData<FavoriteRow[]>(["favorites"], next);
+      return { previous };
+    },
+    onError: (_error, _input, context) => {
+      if (context?.previous) queryClient.setQueryData(["favorites"], context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["favorites"] }),
   });
 }
 
