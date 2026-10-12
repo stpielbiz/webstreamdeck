@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useSaveSettings, useSettings } from "@/lib/playlist-sync";
 import { usePlaylists } from "@/components/playlist-context";
-import { requestLibraryRefresh, runBulkRefresh, stopBulkRefresh, useBulkRefreshState, useLibraryRefreshStatus } from "@/lib/library-sync";
+import { requestLibraryRefresh, runBulkRefresh, stopBulkRefresh, useBulkRefreshState, getBulkRefreshState, useLibraryRefreshStatus } from "@/lib/library-sync";
+import { Progress } from "@/components/ui/progress";
+import { useState } from "react";
 import { refreshTitles } from "@/lib/metadata.functions";
 import type { UserSettings } from "@/lib/settings.functions";
 
@@ -44,6 +46,7 @@ function SettingsPage() {
   const { activeId, active } = usePlaylists();
   const refresh = useLibraryRefreshStatus();
   const bulk = useBulkRefreshState();
+  const [detailsProgress, setDetailsProgress] = useState<Record<"movie" | "series", { done: number; total: number; status: "waiting" | "running" | "done" | "stopped" }> | null>(null);
   const client = useQueryClient();
   const refreshFn = useServerFn(refreshTitles);
 
@@ -64,10 +67,19 @@ function SettingsPage() {
   const updateDetails = async () => {
     if (!activeId) return;
     detailsStopped = false;
+    type P = { done: number; total: number; status: "waiting" | "running" | "done" | "stopped" };
+    const progress: Record<"movie" | "series", P> = {
+      movie: { done: 0, total: 0, status: "waiting" },
+      series: { done: 0, total: 0, status: "waiting" },
+    };
+    setDetailsProgress({ ...progress });
     toast("Updating movie & show details. Please wait until it's done.");
     for (const kind of ["movie", "series"] as const) {
       if (detailsStopped) break;
       await runBulkRefresh(client, activeId, kind, ({ data }) => refreshFn({ data: { ...data, playlistId: activeId } }));
+      const s = getBulkRefreshState();
+      progress[kind] = { done: s.done, total: s.total, status: detailsStopped ? "stopped" : "done" };
+      setDetailsProgress({ ...progress });
     }
   };
   const stopDetails = () => { detailsStopped = true; stopBulkRefresh(); };
@@ -148,19 +160,36 @@ function SettingsPage() {
             Fills in genres, posters, descriptions and cast for every movie and show{active ? ` in “${active.name}”` : ""}.
             This can take a while for large libraries. Please wait on this screen until the update is done for the best result.
           </span>
-          {bulk.running && (
-            <span className="mt-2 block text-sm text-primary">
-              <span className="animate-pulse">
-                {bulk.kind === "series" ? "Shows" : "Movies"} {bulk.done.toLocaleString()} / {bulk.total.toLocaleString()}
+          {(bulk.running || detailsProgress) && (
+            <span data-remote-row className="mt-3 flex items-center gap-4">
+              <span className="min-w-0 flex-1 space-y-2">
+                {(["movie", "series"] as const).map((kind) => {
+                  const live = bulk.running && bulk.kind === kind;
+                  const saved = detailsProgress?.[kind];
+                  const done = live ? bulk.done : saved?.done ?? 0;
+                  const total = live ? bulk.total : saved?.total ?? 0;
+                  const status = live ? "running" : saved?.status ?? "waiting";
+                  const pct = status === "done" ? 100 : total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+                  return (
+                    <span key={kind} className="grid grid-cols-[4rem_minmax(0,1fr)_3rem] items-center gap-3 text-sm">
+                      <span className="font-medium">{kind === "movie" ? "Movies" : "Shows"}</span>
+                      <Progress value={pct} className="h-2" />
+                      <span className="text-right tabular-nums text-muted-foreground">
+                        {status === "waiting" ? "Waiting" : status === "stopped" ? `${pct}% ■` : `${pct}%`}
+                      </span>
+                    </span>
+                  );
+                })}
+                {bulk.running && <span className="block text-sm font-medium text-primary">Please wait until the update is done.</span>}
               </span>
-              <span className="mt-1 block font-medium">Please wait until the update is done.</span>
+              {bulk.running && (
+                <Button data-tv-focus data-focus-key="setting-details-stop" variant="outline" onClick={stopDetails}>Stop</Button>
+              )}
             </span>
           )}
         </span>
         <div data-remote-row className="flex shrink-0 gap-2">
-          {bulk.running ? (
-            <Button data-tv-focus data-focus-key="setting-details-stop" variant="outline" onClick={stopDetails}>Stop</Button>
-          ) : (
+          {!bulk.running && (
             <Button data-tv-focus data-focus-key="setting-details-update" disabled={!activeId} onClick={() => void updateDetails()}>
               <RefreshCw className="size-4" /> Update details now
             </Button>
