@@ -37,6 +37,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { playlists, activeId, active, isLoading } = usePlaylists();
   const progress = useProgress();
+  const favorites = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+  const clearProgress = useClearProgress();
+  const [removing, setRemoving] = useState<ProgressRow | null>(null);
   const expired = useAccountAccess().data?.expired === true;
   const library = useLibraryOverview(activeId);
   const detailsPending = !!activeId &&
