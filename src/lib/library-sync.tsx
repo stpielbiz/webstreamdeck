@@ -389,6 +389,16 @@ export function hasCompletedDetailsUpdate(playlistId: string, kind: "movie" | "s
 }
 
 /** Re-resolves every title missing a description or cast, in parallel batches. */
+/** Keeps the screen awake while a long update runs; no-op where unsupported. */
+async function acquireWakeLock(): Promise<{ release: () => Promise<void> } | null> {
+  try {
+    const nav = navigator as Navigator & { wakeLock?: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> } };
+    return nav.wakeLock ? await nav.wakeLock.request("screen") : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function runBulkRefresh(
   client: QueryClient,
   playlistId: string,
@@ -396,6 +406,7 @@ export async function runBulkRefresh(
   refresh: (input: { data: { kind: "movie" | "series"; names: string[] } }) => Promise<Record<string, TitleMetadata>>,
 ) {
   if (bulkState.running) return;
+  const wakeLock = await acquireWakeLock();
   const items = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
   const known: Record<string, TitleMetadata> = {};
   for (const [, data] of client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) Object.assign(known, data ?? {});
