@@ -39,6 +39,8 @@ export interface SyncStatus { running: boolean; done: number; total: number }
 export interface LibrarySectionStatus {
   total: number;
   updated: number;
+  /** Titles looked up, whether or not information was found. */
+  checked: number;
   percent: number;
   /** Titles with a real description / channels with programme descriptions. */
   withOverview: number;
@@ -58,6 +60,7 @@ export interface LibraryOverview {
 const emptySection = (): LibrarySectionStatus => ({
   total: 0,
   updated: 0,
+  checked: 0,
   percent: 0,
   withOverview: 0,
   withCast: 0,
@@ -102,10 +105,14 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
         for (const genre of new Set(metadata[name]?.genres ?? [])) genres.set(genre, (genres.get(genre) ?? 0) + 1);
       }
       const total = items?.length ?? 0;
+      // After a completed details update every title has been looked up; the
+      // rest simply had no information available, so count them as checked.
+      const checked = total && detailsDoneCount(playlistId, kind) >= total ? total : enriched.length;
       return {
         total,
         updated: enriched.length,
-        percent: total ? Math.round((enriched.length / total) * 100) : 0,
+        checked,
+        percent: total ? Math.round((checked / total) * 100) : 0,
         withOverview: enriched.filter((name) => metadata[name]?.overview).length,
         withCast: enriched.filter((name) => metadata[name]?.cast?.length).length,
         topGenres: [...genres].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3).map(([genre]) => genre),
@@ -123,6 +130,7 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
       live: {
         total,
         updated: covered,
+        checked: covered,
         percent: total ? Math.round((covered / total) * 100) : 0,
         withOverview: channels ? channels.filter((channel) => guide?.[channel.id]?.p.some((programme) => programme.description)).length : 0,
         withCast: 0,
@@ -369,6 +377,11 @@ export function useBulkRefreshState() {
 
 export function stopBulkRefresh() { bulkCancel = true; }
 
+const detailsDoneKey = (playlistId: string, kind: string) => `sd-details-done:${playlistId}:${kind}`;
+function detailsDoneCount(playlistId: string, kind: string) {
+  try { return Number(localStorage.getItem(detailsDoneKey(playlistId, kind)) ?? 0); } catch { return 0; }
+}
+
 /** Re-resolves every title missing a description or cast, in parallel batches. */
 export async function runBulkRefresh(
   client: QueryClient,
@@ -402,5 +415,8 @@ export async function runBulkRefresh(
   };
   await Promise.all(Array.from({ length: PARALLEL }, worker));
   setBulk({ running: false });
+  if (!bulkCancel && !bulkState.failed) {
+    try { localStorage.setItem(detailsDoneKey(playlistId, kind), String(items.length)); } catch { /* storage unavailable */ }
+  }
   toast.success(bulkCancel ? "Details update stopped" : `Details update finished${bulkState.failed ? ` (${bulkState.failed.toLocaleString()} could not be updated)` : ""}`);
 }
