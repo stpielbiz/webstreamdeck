@@ -487,7 +487,19 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3>
             <div data-grid-entry={sectionIndex === 0 ? "true" : undefined}><PosterGrid>{section.items.slice(0, limitFor(section.label)).map((item) => { const titleGroup = groupByItemId.get(item.id); const variants = titleGroup?.variants ?? []; const favouriteVariant = variants.find((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id)); return <PosterTile key={item.id} title={titleGroup?.title || metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(titleGroup?.year || metadata.data?.[item.name]?.year || item.year || "")} progress={progressForVariants(progress.data, activeId, variants, titleGroup?.title)} favorite={!!favouriteVariant} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: favouriteVariant?.item.id ?? item.id, title: titleGroup?.title ?? item.name, logoUrl: item.image })} />; })}{section.items.length > limitFor(section.label) && <button type="button" data-tv-focus data-focus-key={`show-more-${section.label}`} onClick={(event) => { const label = section.label; const at = limitFor(label); setLimits((prev) => ({ ...prev, [label]: at + 180 })); const grid = event.currentTarget.parentElement; window.requestAnimationFrame(() => (grid?.children[at] as HTMLElement | undefined)?.querySelector<HTMLElement>("[data-tv-focus]")?.focus()); }} className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/60 p-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">Show more<span className="mt-1 text-xs font-normal">{(section.items.length - limitFor(section.label)).toLocaleString()} left</span></button>}</PosterGrid></div>
           </div>
-        ))}
+        ))}{windowed.remaining > 0 && (
+          <button
+            type="button"
+            data-tv-focus
+            data-window-tile="true"
+            data-focus-key="window-show-more"
+            onFocus={(event) => { if (event.relatedTarget || document.hasFocus()) loadMore(event.currentTarget); }}
+            onClick={(event) => loadMore(event.currentTarget)}
+            className="mb-5 flex w-full flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/60 p-4 text-center text-sm font-semibold text-muted-foreground transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            Show more<span className="mt-1 text-xs font-normal">{windowed.remaining.toLocaleString()} left</span>
+          </button>
+        )}</>}
         </div>
       </div>
 
