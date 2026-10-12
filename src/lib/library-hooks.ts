@@ -45,6 +45,15 @@ export function useToggleFavorite() {
   });
 }
 
+export function useClearProgress() {
+  const queryClient = useQueryClient();
+  const clear = useServerFn(clearProgress);
+  return useMutation({
+    mutationFn: (input: { playlistId: string; itemId: string }) => clear({ data: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["progress"] }),
+  });
+}
+
 export function useSaveProgress() {
   const queryClient = useQueryClient();
   const save = useServerFn(saveProgress);

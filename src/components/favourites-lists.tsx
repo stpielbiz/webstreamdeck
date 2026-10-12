@@ -32,11 +32,7 @@ function FavouriteOpenButton({
   className?: string;
   children: React.ReactNode;
 }) {
-  const longPress = useLongPress(() => {
-    if (!isChannel) return;
-    onRemove();
-    toast.success(`Removed ${row.title} from favourites`);
-  });
+  const longPress = useLongPress(onRemove);
   return (
     <Button
       variant="ghost"
@@ -46,7 +42,7 @@ function FavouriteOpenButton({
       data-favourite-action="open"
       data-zone-edge-left={column === 0 ? "true" : undefined}
       onClick={onOpen}
-      title={isChannel ? `${row.title} — hold OK to remove from favourites` : row.title}
+      title={`${row.title} — hold OK to remove from favourites`}
       {...longPress}
       className={className}
     >
