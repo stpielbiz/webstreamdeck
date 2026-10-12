@@ -45,7 +45,6 @@ export const Route = createFileRoute("/_authenticated/tv/live")({
 });
 
 function ChannelNameButton({
-  item,
   label,
   starred,
   onPlay,
@@ -53,7 +52,6 @@ function ChannelNameButton({
   className,
   children,
 }: {
-  item: CatalogItem;
   label: string;
   starred: boolean;
   onPlay: () => void;
@@ -526,7 +524,6 @@ function TvLive() {
               return (
                 <div key={item.id} data-guide-row className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
                   <ChannelNameButton
-                    item={item}
                     label={item.name}
                     starred={isFavorite(favorites.data, activeId, "live", item.id)}
                     onPlay={() => playChannel(item)}
