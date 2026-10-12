@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GUIDE_TTL, guideKey, mergeGuide, type GuideStore } from "@/lib/library-sync";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Play, Tv, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Play, Star, Tv, X } from "lucide-react";
 import { z } from "zod";
 
 import { getCategories, getItems, getPlayback, getSchedules } from "@/lib/iptv.functions";
@@ -17,6 +17,9 @@ import { VideoPlayer } from "@/components/video-player";
 import { hasNativePlayer } from "@/lib/external-player";
 import { cn } from "@/lib/utils";
 import { useAppSearchFocus } from "@/lib/app-search";
+import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
+import { useLongPress } from "@/lib/use-long-press";
+import { toast } from "sonner";
 
 const GUIDE_HOURS = 12;
 const GUIDE_WIDTH = 2880;
@@ -41,6 +44,38 @@ export const Route = createFileRoute("/_authenticated/tv/live")({
   component: TvLive,
 });
 
+function ChannelNameButton({
+  label,
+  starred,
+  onPlay,
+  onToggleFavorite,
+  className,
+  children,
+}: {
+  label: string;
+  starred: boolean;
+  onPlay: () => void;
+  onToggleFavorite: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const longPress = useLongPress(onToggleFavorite);
+  return (
+    <Button
+      variant="ghost"
+      tabIndex={-1}
+      onClick={onPlay}
+      title={`${label} — hold OK to ${starred ? "remove from" : "add to"} favourites`}
+      aria-label={label}
+      {...longPress}
+      className={className}
+    >
+      {children}
+      {starred && <Star className="size-3 shrink-0 fill-primary text-primary" />}
+    </Button>
+  );
+}
+
 function TvLive() {
   const navigate = useNavigate();
   const { channel } = Route.useSearch();
@@ -49,6 +84,8 @@ function TvLive() {
   const fetchItems = useGetItems();
   const fetchSchedules = useGetSchedules();
   const resolve = useGetPlayback();
+  const favorites = useFavorites();
+  const toggleFavorite = useToggleFavorite();
 
   const [categoryId, setCategoryId] = useState("");
   const [selected, setSelected] = useState<CatalogItem | null>(null);
@@ -294,6 +331,15 @@ function TvLive() {
     });
   };
 
+  const toggleChannelFavorite = (item: CatalogItem) => {
+    if (!activeId) return;
+    const starred = isFavorite(favorites.data, activeId, "live", item.id);
+    toggleFavorite.mutate(
+      { playlistId: activeId, itemKind: "live", itemId: item.id, title: item.name, logoUrl: item.image },
+      { onSuccess: () => toast.success(starred ? `Removed ${item.name} from favourites` : `Added ${item.name} to favourites`) },
+    );
+  };
+
   const playChannel = (item: CatalogItem) => {
     setFocusedId(item.id);
     lastChannel.current = item.id;
@@ -477,12 +523,11 @@ function TvLive() {
               const programmes = (scheduleMap.get(item.id) ?? []).filter((p) => { const st = Date.parse(p.start ?? ""); const en = Date.parse(p.end ?? ""); return Number.isFinite(st) && Number.isFinite(en) && en > windowStart && st < windowEnd; });
               return (
                 <div key={item.id} data-guide-row className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
-                  <Button
-                    variant="ghost"
-                    tabIndex={-1}
-                    onClick={() => playChannel(item)}
-                    title={item.name}
-                    aria-label={item.name}
+                  <ChannelNameButton
+                    label={item.name}
+                    starred={isFavorite(favorites.data, activeId, "live", item.id)}
+                    onPlay={() => playChannel(item)}
+                    onToggleFavorite={() => toggleChannelFavorite(item)}
                     className={cn(
                       "sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start gap-2 whitespace-normal rounded-none border-r border-border bg-card px-2 text-left focus-visible:z-30",
                       focusedId === item.id && "bg-secondary",
@@ -491,7 +536,7 @@ function TvLive() {
                     <span className="w-6 shrink-0 text-center text-xs tabular-nums text-muted-foreground">{item.number ?? page * PAGE_SIZE + index + 1}</span>
                     {item.image && !failedImages.has(item.image) && <img src={item.image} alt="" loading="lazy" className="size-6 shrink-0 object-contain" onError={() => { const image = item.image; if (image) setFailedImages((previous) => new Set(previous).add(image)); }} />}
                     <span className="min-w-0 flex-1 line-clamp-2 break-words text-xs font-semibold leading-4">{item.name}</span>
-                  </Button>
+                  </ChannelNameButton>
                   <div className="relative h-full w-[2880px] shrink-0 bg-muted/20">
                     <div className="pointer-events-none absolute inset-0 grid grid-cols-24">
                       {Array.from({ length: 24 }).map((_, marker) => <span key={marker} className="border-r border-border/60" />)}
