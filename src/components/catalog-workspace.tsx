@@ -53,6 +53,8 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const [search, setSearch] = useState("");
   const [limits, setLimits] = useState<Record<string, number>>({});
   const limitFor = (label: string) => limits[label] ?? 180;
+  const WINDOW = 500;
+  const [visibleCount, setVisibleCount] = useState(WINDOW);
   useAppSearchFocus("catalog-search");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedVariants, setSelectedVariants] = useState<TitleVariant[]>([]);
