@@ -10,6 +10,50 @@ import type { FavoriteRow } from "@/lib/iptv.functions";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { mediaMatchKey, variantsForItem } from "@/lib/title-variants";
 import { useSyncPlaylists } from "@/lib/playlist-sync";
+import { useLongPress } from "@/lib/use-long-press";
+import { toast } from "sonner";
+
+function FavouriteOpenButton({
+  row,
+  column,
+  index,
+  isChannel,
+  onOpen,
+  onRemove,
+  className,
+  children,
+}: {
+  row: FavoriteRow;
+  column: number;
+  index: number;
+  isChannel: boolean;
+  onOpen: () => void;
+  onRemove: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const longPress = useLongPress(() => {
+    if (!isChannel) return;
+    onRemove();
+    toast.success(`Removed ${row.title} from favourites`);
+  });
+  return (
+    <Button
+      variant="ghost"
+      data-tv-focus
+      data-favourite-col={column}
+      data-favourite-row={index}
+      data-favourite-action="open"
+      data-zone-edge-left={column === 0 ? "true" : undefined}
+      onClick={onOpen}
+      title={isChannel ? `${row.title} — hold OK to remove from favourites` : row.title}
+      {...longPress}
+      className={className}
+    >
+      {children}
+    </Button>
+  );
+}
 
 const GROUPS = [
   { kind: "live", title: "Channels", icon: Tv },
