@@ -53,6 +53,8 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const [search, setSearch] = useState("");
   const [limits, setLimits] = useState<Record<string, number>>({});
   const limitFor = (label: string) => limits[label] ?? 180;
+  const WINDOW = 500;
+  const [visibleCount, setVisibleCount] = useState(WINDOW);
   useAppSearchFocus("catalog-search");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedVariants, setSelectedVariants] = useState<TitleVariant[]>([]);
@@ -203,7 +205,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     event.stopPropagation();
     featuredOrigin.current.focus();
   };
-  useEffect(() => { setLimits({}); }, [genre, search, sort, activeId, kind]);
+  useEffect(() => { setLimits({}); setVisibleCount(WINDOW); }, [genre, search, sort, activeId, kind]);
   const sections = useMemo(() => {
     const buckets = new Map<string, CatalogItem[]>();
     for (const item of visibleItems) {
@@ -221,6 +223,33 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     }
     return [...buckets.entries()].map(([label, items]) => ({ label, items }));
   }, [visibleItems, sort, metadata.data]);
+  // Windowed rendering: mount only enough whole sections to reach visibleCount
+  // tiles, so huge categories (All, search) never create thousands of tiles.
+  const windowed = useMemo(() => {
+    const out: { label: string; items: CatalogItem[] }[] = [];
+    let used = 0;
+    for (const section of sections) {
+      const shown = Math.min(section.items.length, limitFor(section.label));
+      if (used > 0 && used + shown > visibleCount) break;
+      out.push(section);
+      used += shown;
+    }
+    const rendered = out.reduce((total, section) => total + Math.min(section.items.length, limitFor(section.label)), 0);
+    return { sections: out, remaining: visibleItems.length - rendered };
+  }, [sections, visibleCount, limits, visibleItems.length]);
+  const loadMore = (trigger?: HTMLElement | null) => {
+    const before = windowed.sections.reduce((total, section) => total + Math.min(section.items.length, limitFor(section.label)), 0);
+    setVisibleCount((value) => value + WINDOW);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const tiles = contentRef.current?.querySelectorAll<HTMLElement>("[data-window-sections] [data-tv-focus]");
+        const next = tiles && tiles.length > before ? tiles[before] : null;
+        if (next) { next.focus({ preventScroll: true }); next.scrollIntoView({ block: "nearest" }); return;
+        }
+        trigger?.focus({ preventScroll: true });
+      });
+    });
+  };
   const selectedGroup = selectedId ? groupByItemId.get(selectedId) : undefined;
   const selectedItem = selectedGroup?.item ?? groupedItems.find((item) => item.id === selectedId);
 
@@ -449,16 +478,28 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
           <h1 className="mt-1 truncate font-display text-xl font-bold">{`Choose ${kind === "movie" ? "a movie" : "a show"}`}</h1>
         </div>
 
-        <div className="mt-4 min-w-0">
+        <div className="mt-4 min-w-0" data-window-sections>
         <div className="mb-3 flex items-center gap-3">
           <h2 className="truncate font-display text-lg font-semibold">{searching ? `Results for “${search.trim()}”` : genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
         </div>
-        {catalogue.isLoading && !catalogue.data ? <CatalogGridLoading title={kind === "movie" ? "Movies" : "Shows"} /> : catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 ? <EmptyState title="Nothing here" description={searching ? `No titles match “${search.trim()}”.` : "No titles match this system category."} /> : sections.map((section, sectionIndex) => (
+        {catalogue.isLoading && !catalogue.data ? <CatalogGridLoading title={kind === "movie" ? "Movies" : "Shows"} /> : catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 ? <EmptyState title="Nothing here" description={searching ? `No titles match “${search.trim()}”.` : "No titles match this system category."} /> : <>{windowed.sections.map((section, sectionIndex) => (
           <div key={section.label} className="mb-5">
             <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3>
             <div data-grid-entry={sectionIndex === 0 ? "true" : undefined}><PosterGrid>{section.items.slice(0, limitFor(section.label)).map((item) => { const titleGroup = groupByItemId.get(item.id); const variants = titleGroup?.variants ?? []; const favouriteVariant = variants.find((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id)); return <PosterTile key={item.id} title={titleGroup?.title || metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(titleGroup?.year || metadata.data?.[item.name]?.year || item.year || "")} progress={progressForVariants(progress.data, activeId, variants, titleGroup?.title)} favorite={!!favouriteVariant} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: favouriteVariant?.item.id ?? item.id, title: titleGroup?.title ?? item.name, logoUrl: item.image })} />; })}{section.items.length > limitFor(section.label) && <button type="button" data-tv-focus data-focus-key={`show-more-${section.label}`} onClick={(event) => { const label = section.label; const at = limitFor(label); setLimits((prev) => ({ ...prev, [label]: at + 180 })); const grid = event.currentTarget.parentElement; window.requestAnimationFrame(() => (grid?.children[at] as HTMLElement | undefined)?.querySelector<HTMLElement>("[data-tv-focus]")?.focus()); }} className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/60 p-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">Show more<span className="mt-1 text-xs font-normal">{(section.items.length - limitFor(section.label)).toLocaleString()} left</span></button>}</PosterGrid></div>
           </div>
-        ))}
+        ))}{windowed.remaining > 0 && (
+          <button
+            type="button"
+            data-tv-focus
+            data-window-tile="true"
+            data-focus-key="window-show-more"
+            onFocus={(event) => { if (event.relatedTarget || document.hasFocus()) loadMore(event.currentTarget); }}
+            onClick={(event) => loadMore(event.currentTarget)}
+            className="mb-5 flex w-full flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/60 p-4 text-center text-sm font-semibold text-muted-foreground transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            Show more<span className="mt-1 text-xs font-normal">{windowed.remaining.toLocaleString()} left</span>
+          </button>
+        )}</>}
         </div>
       </div>
 

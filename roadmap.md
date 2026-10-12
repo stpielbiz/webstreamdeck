@@ -46,3 +46,4 @@
 - [x] Show immediate loading feedback and catalogue placeholders when Movies or Shows opens from a cold cache.
 - [x] Speed up movie detail updates: match saved database rows by bare title when the year-key misses, so already-saved movies resolve instantly without TMDB/AI calls.
 - [x] Fire TV loads provider lists on-device (native fetchText bridge)
+- [x] Cap the All category and search results to 500 tiles at a time with a Show more tile and auto-load on remote scroll, so big libraries stay responsive on Fire TV.
