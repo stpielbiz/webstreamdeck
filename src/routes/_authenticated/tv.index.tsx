@@ -1,3 +1,4 @@
+import { hardReload } from "@/lib/hard-reload";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Clapperboard, Download, ListVideo, MonitorPlay, Settings, ShieldCheck, Star, Tv } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
