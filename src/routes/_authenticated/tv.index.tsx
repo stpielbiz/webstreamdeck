@@ -10,7 +10,10 @@ import { toast } from "sonner";
 import { TvShell } from "@/components/tv-shell";
 import { GlobalSearch } from "@/components/global-search";
 import { usePlaylists } from "@/components/playlist-context";
-import { useFavorites, useProgress } from "@/lib/library-hooks";
+import { useFavorites, useProgress, useToggleFavorite, useClearProgress, isFavorite } from "@/lib/library-hooks";
+import { useLongPress } from "@/lib/use-long-press";
+import { RemoveConfirmDialog } from "@/components/remove-confirm-dialog";
+import type { ProgressRow } from "@/lib/iptv.functions";
 import { SectionMenu } from "@/components/layered-navigation";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/lib/use-admin";
@@ -46,6 +49,9 @@ function TvHome() {
   const { data: favorites } = useFavorites();
   const { isAdmin } = useIsAdmin();
   const [focusedSection, setFocusedSection] = useState("Home");
+  const [removing, setRemoving] = useState<ProgressRow | null>(null);
+  const toggleFavorite = useToggleFavorite();
+  const clearProgress = useClearProgress();
   const expired = useAccountAccess().data?.expired === true;
   const checkForUpdates = () => {
     const native = window.StreamDeckNative;
