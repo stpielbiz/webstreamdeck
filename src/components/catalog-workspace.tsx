@@ -205,7 +205,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     event.stopPropagation();
     featuredOrigin.current.focus();
   };
-  useEffect(() => { setLimits({}); }, [genre, search, sort, activeId, kind]);
+  useEffect(() => { setLimits({}); setVisibleCount(WINDOW); }, [genre, search, sort, activeId, kind]);
   const sections = useMemo(() => {
     const buckets = new Map<string, CatalogItem[]>();
     for (const item of visibleItems) {
