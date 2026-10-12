@@ -149,6 +149,7 @@ function HomeTile({
   image,
   progress,
   onSelect,
+  onLongPress,
   zoneEntry,
   edgeLeft,
 }: {
@@ -158,9 +159,11 @@ function HomeTile({
   image?: string | null;
   progress?: number | null;
   onSelect: () => void;
+  onLongPress?: () => void;
   zoneEntry?: boolean;
   edgeLeft?: boolean;
 }) {
+  const longPress = useLongPress(onLongPress ?? (() => {}));
   const shellClass = kind === "continue" ? "w-48" : kind === "channel" ? "w-28" : "w-28";
   const imageClass = kind === "continue" ? "aspect-video" : kind === "channel" ? "aspect-square" : "aspect-[2/3]";
   return (
@@ -172,6 +175,7 @@ function HomeTile({
       data-zone-entry={zoneEntry ? "true" : undefined}
       data-zone-edge-left={edgeLeft ? "true" : undefined}
       onClick={onSelect}
+      {...(onLongPress ? longPress : {})}
       className={`group h-auto shrink-0 flex-col items-stretch justify-start overflow-hidden rounded p-0 text-left outline-none transition focus:scale-[1.025] focus:ring-2 focus:ring-primary motion-reduce:transform-none ${shellClass}`}
     >
       <span className={`relative block w-full overflow-hidden rounded border border-border bg-muted ${imageClass}`}>

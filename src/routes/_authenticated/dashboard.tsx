@@ -146,6 +146,23 @@ function Dashboard() {
 
       {detailsPending && <DetailsUpdateHint />}
       <FavouritesLists home />
+      <RemoveConfirmDialog
+        title={removing?.title ?? null}
+        mode={removing && activeId && isFavorite(favorites.data, activeId, removing.itemKind === "episode" ? "series" : "movie", removing.itemKind === "episode" && removing.seriesId ? removing.seriesId : removing.itemId) ? "favourite" : "continue"}
+        onClose={() => setRemoving(null)}
+        onConfirm={() => {
+          if (!removing || !activeId) return;
+          const kind = removing.itemKind === "episode" ? "series" : "movie";
+          const id = removing.itemKind === "episode" && removing.seriesId ? removing.seriesId : removing.itemId;
+          if (isFavorite(favorites.data, activeId, kind, id)) {
+            toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: id, title: removing.title, logoUrl: removing.posterUrl });
+            toast.success(`Removed ${removing.title} from favourites`);
+          } else {
+            clearProgress.mutate({ playlistId: removing.playlistId, itemId: removing.itemId });
+            toast.success(`Removed ${removing.title} from continue watching`);
+          }
+        }}
+      />
       </>}
     </div>
   );
