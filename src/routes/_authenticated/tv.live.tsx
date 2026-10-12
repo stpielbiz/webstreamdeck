@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GUIDE_TTL, guideKey, mergeGuide, type GuideStore } from "@/lib/library-sync";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Play, Tv, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Play, Star, Tv, X } from "lucide-react";
 import { z } from "zod";
 
 import { getCategories, getItems, getPlayback, getSchedules } from "@/lib/iptv.functions";
@@ -17,6 +17,9 @@ import { VideoPlayer } from "@/components/video-player";
 import { hasNativePlayer } from "@/lib/external-player";
 import { cn } from "@/lib/utils";
 import { useAppSearchFocus } from "@/lib/app-search";
+import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
+import { useLongPress } from "@/lib/use-long-press";
+import { toast } from "sonner";
 
 const GUIDE_HOURS = 12;
 const GUIDE_WIDTH = 2880;
