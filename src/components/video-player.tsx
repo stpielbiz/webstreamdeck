@@ -50,6 +50,11 @@ function formatTime(value: number): string {
   return `${hours ? `${hours}:` : ""}${mm}:${String(seconds).padStart(2, "0")}`;
 }
 
+/** Providers embed subtitle tracks in their streams; keep subtitles off everywhere. */
+function disableSubtitles(video: HTMLVideoElement) {
+  for (const track of Array.from(video.textTracks)) track.mode = "disabled";
+}
+
 export function VideoPlayer({
   src,
   fallbackSrc = null,
@@ -231,7 +236,7 @@ export function VideoPlayer({
         if (destroyed) return;
         if (Hls.isSupported()) {
           usedHls = true;
-          const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 30 });
+          const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 30, subtitleDisplay: false });
           hlsInstance = hls;
           hls.on(Hls.Events.ERROR, (_event, data) => {
             const response = (data as { response?: { code?: number; text?: string } }).response;
@@ -258,6 +263,13 @@ export function VideoPlayer({
       }
       if (!usedHls) video.src = activeSrc;
 
+      // Subtitles stay off: drop any text track the element exposes, and
+      // re-check once metadata/data load (tracks may only appear then).
+      const dropSubtitles = () => disableSubtitles(video);
+      dropSubtitles();
+      video.addEventListener("loadedmetadata", dropSubtitles);
+      video.addEventListener("loadeddata", dropSubtitles);
+
       try {
         await video.play();
         debugLog("player", "Playback started");
@@ -280,6 +292,8 @@ export function VideoPlayer({
       destroyed = true;
       sourceAttemptRef.current += 1;
       hlsInstance?.destroy();
+      video.removeEventListener("loadedmetadata", dropSubtitles);
+      video.removeEventListener("loadeddata", dropSubtitles);
       video.pause();
       if (!live && video.currentTime > 0) progressRef.current?.(video.currentTime, Number.isFinite(video.duration) ? video.duration : null);
       video.removeAttribute("src");
