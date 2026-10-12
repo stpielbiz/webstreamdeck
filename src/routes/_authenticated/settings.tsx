@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Monitor, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft, Film, Monitor, PauseCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -7,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useSaveSettings, useSettings } from "@/lib/playlist-sync";
 import { usePlaylists } from "@/components/playlist-context";
-import { requestLibraryRefresh, useLibraryRefreshStatus } from "@/lib/library-sync";
+import { requestLibraryRefresh, runBulkRefresh, stopBulkRefresh, useBulkRefreshState, useLibraryRefreshStatus } from "@/lib/library-sync";
+import { refreshTitles } from "@/lib/metadata.functions";
+import type { UserSettings } from "@/lib/settings.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   validateSearch: z.object({ mode: z.literal("tv").optional() }),
@@ -24,25 +28,49 @@ export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
+let detailsStopped = false;
+
 function SettingsPage() {
   const { mode } = Route.useSearch();
   const settings = useSettings();
   const save = useSaveSettings();
-  const enabled = settings.data?.syncPlaylists ?? false;
-  const screenSize = settings.data?.screenSize ?? "large";
+  const current: UserSettings = {
+    syncPlaylists: settings.data?.syncPlaylists ?? false,
+    screenSize: settings.data?.screenSize ?? "large",
+    backgroundUpdates: settings.data?.backgroundUpdates ?? true,
+  };
+  const enabled = current.syncPlaylists;
+  const screenSize = current.screenSize;
   const { activeId, active } = usePlaylists();
   const refresh = useLibraryRefreshStatus();
+  const bulk = useBulkRefreshState();
+  const client = useQueryClient();
+  const refreshFn = useServerFn(refreshTitles);
 
+  const update = (patch: Partial<UserSettings>, ok: string, fail: string) =>
+    save.mutate({ ...current, ...patch }, {
+      onSuccess: () => toast.success(ok),
+      onError: () => toast.error(fail),
+    });
   const toggle = (value: boolean) =>
-    save.mutate({ syncPlaylists: value, screenSize }, {
-      onSuccess: () => toast.success(value ? "Playlist sync is on" : "Playlist sync is off"),
-      onError: () => toast.error("Could not save the setting. Try again."),
-    });
+    update({ syncPlaylists: value }, value ? "Playlist sync is on" : "Playlist sync is off", "Could not save the setting. Try again.");
   const chooseScreenSize = (value: "large" | "medium" | "small") =>
-    save.mutate({ syncPlaylists: enabled, screenSize: value }, {
-      onSuccess: () => toast.success(`TV display size set to ${value}`),
-      onError: () => toast.error("Could not save the display size. Try again."),
-    });
+    update({ screenSize: value }, `TV display size set to ${value}`, "Could not save the display size. Try again.");
+  const toggleBackground = (value: boolean) => {
+    if (!value) stopBulkRefresh();
+    update({ backgroundUpdates: value }, value ? "Background updates are on" : "All background updates stopped", "Could not save the setting. Try again.");
+  };
+
+  const updateDetails = async () => {
+    if (!activeId) return;
+    detailsStopped = false;
+    toast("Updating movie & show details. Please wait until it's done.");
+    for (const kind of ["movie", "series"] as const) {
+      if (detailsStopped) break;
+      await runBulkRefresh(client, activeId, kind, ({ data }) => refreshFn({ data: { ...data, playlistId: activeId } }));
+    }
+  };
+  const stopDetails = () => { detailsStopped = true; stopBulkRefresh(); };
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
@@ -96,6 +124,49 @@ function SettingsPage() {
           aria-label="Sync my playlists"
         />
       </label>
+      <label className="flex cursor-pointer items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
+        <span>
+          <span className="flex items-center gap-2 font-semibold"><PauseCircle className="size-4 text-primary" /> Background updates</span>
+          <span className="mt-1 block text-sm text-muted-foreground">
+            When on, your channels, movies, shows, TV guide and title details update quietly in the background.
+            Turn off to stop all background updates — the app then uses what is already saved. The update buttons below still work when you press them.
+          </span>
+        </span>
+        <Switch
+          data-tv-focus
+          data-focus-key="setting-background-updates"
+          checked={current.backgroundUpdates}
+          disabled={settings.isLoading || save.isPending}
+          onCheckedChange={toggleBackground}
+          aria-label="Background updates"
+        />
+      </label>
+      <div className="flex items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
+        <span>
+          <span className="flex items-center gap-2 font-semibold"><Film className="size-4 text-primary" /> Update movie &amp; show details</span>
+          <span className="mt-1 block text-sm text-muted-foreground">
+            Fills in genres, posters, descriptions and cast for every movie and show{active ? ` in “${active.name}”` : ""}.
+            This can take a while for large libraries. Please wait on this screen until the update is done for the best result.
+          </span>
+          {bulk.running && (
+            <span className="mt-2 block text-sm text-primary">
+              <span className="animate-pulse">
+                {bulk.kind === "series" ? "Shows" : "Movies"} {bulk.done.toLocaleString()} / {bulk.total.toLocaleString()}
+              </span>
+              <span className="mt-1 block font-medium">Please wait until the update is done.</span>
+            </span>
+          )}
+        </span>
+        <div data-remote-row className="flex shrink-0 gap-2">
+          {bulk.running ? (
+            <Button data-tv-focus data-focus-key="setting-details-stop" variant="outline" onClick={stopDetails}>Stop</Button>
+          ) : (
+            <Button data-tv-focus data-focus-key="setting-details-update" disabled={!activeId} onClick={() => void updateDetails()}>
+              <RefreshCw className="size-4" /> Update details now
+            </Button>
+          )}
+        </div>
+      </div>
       <div className="flex items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
         <span>
           <span className="block font-semibold">Update library &amp; TV guide</span>

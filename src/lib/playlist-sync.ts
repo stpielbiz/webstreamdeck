@@ -27,6 +27,10 @@ export function useSyncPlaylists() {
   return useSettings().data?.syncPlaylists ?? false;
 }
 
+export function useBackgroundUpdates() {
+  return useSettings().data?.backgroundUpdates ?? true;
+}
+
 export function useTvScreenSize() {
   return useSettings().data?.screenSize ?? "large";
 }
