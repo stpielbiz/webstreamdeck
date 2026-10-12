@@ -17,7 +17,6 @@ function FavouriteOpenButton({
   row,
   column,
   index,
-  isChannel,
   onOpen,
   onRemove,
   className,
@@ -26,7 +25,6 @@ function FavouriteOpenButton({
   row: FavoriteRow;
   column: number;
   index: number;
-  isChannel: boolean;
   onOpen: () => void;
   onRemove: () => void;
   className?: string;
@@ -66,6 +64,7 @@ export function FavouritesLists({ tv = false, home = false }: { tv?: boolean; ho
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLElement | null>(null);
   const [selected, setSelected] = useState<(FavoriteRow & { openId: string }) | null>(null);
+  const [removing, setRemoving] = useState<FavoriteRow | null>(null);
   const sync = useSyncPlaylists();
   const all = favorites.data ?? [];
   const own = all.filter((row) => row.playlistId === activeId).map((row) => ({ ...row, openId: row.itemId }));
