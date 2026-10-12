@@ -16,6 +16,8 @@ import { SearchField } from "@/components/search-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
+import { useLongPress } from "@/lib/use-long-press";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/live")({
   validateSearch: z.object({ channel: z.string().optional() }),
@@ -39,6 +41,75 @@ function timeLabel(iso: string | null) {
   return Number.isNaN(date.getTime())
     ? ""
     : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function ChannelRow({
+  item,
+  entry,
+  starred,
+  onSelect,
+  onToggleFavorite,
+  selected,
+}: {
+  item: CatalogItem;
+  entry: { now: { start: string | null; title: string } | null } | undefined;
+  starred: boolean;
+  selected: boolean;
+  onSelect: () => void;
+  onToggleFavorite: () => void;
+}) {
+  const longPress = useLongPress(onToggleFavorite);
+  return (
+    <div
+      className={cn(
+        "group flex items-center gap-3 border-b border-border/60 px-3 py-2.5",
+        selected && "bg-muted",
+      )}
+    >
+      <button
+        type="button"
+        data-tv-focus
+        onClick={onSelect}
+        title={`${item.name} — press and hold to ${starred ? "remove from" : "add to"} favourites`}
+        {...longPress}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+      >
+        {item.image ? (
+          <img
+            src={item.image}
+            alt=""
+            loading="lazy"
+            className="size-9 shrink-0 rounded object-contain"
+          />
+        ) : (
+          <span className="grid size-9 shrink-0 place-items-center rounded bg-muted">
+            <Tv className="size-4 text-muted-foreground" />
+          </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium">{item.name}</span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {entry?.now
+              ? `${timeLabel(entry.now.start)} ${entry.now.title}`
+              : "No guide data"}
+          </span>
+        </span>
+      </button>
+      <button
+        type="button"
+        aria-label={starred ? "Remove from favourites" : "Add to favourites"}
+        onClick={onToggleFavorite}
+        className="shrink-0 rounded p-1 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
+      >
+        <Star
+          className={cn(
+            "size-4",
+            starred ? "fill-primary text-primary" : "text-muted-foreground",
+          )}
+        />
+      </button>
+    </div>
+  );
 }
 
 function LivePage() {
