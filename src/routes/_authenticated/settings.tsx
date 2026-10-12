@@ -87,9 +87,11 @@ function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="flex items-center gap-3">
+        <span data-remote-row>
         <Button asChild variant="ghost" data-tv-focus data-layer-back>
           <Link to={mode === "tv" ? "/tv" : "/dashboard"}><ArrowLeft className="size-4" /> {mode === "tv" ? "Back to TV Home" : "Back"}</Link>
         </Button>
+        </span>
         <h1 className="font-display text-2xl font-semibold">Settings</h1>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-6 rounded-xl border border-border bg-card p-5">
@@ -126,7 +128,7 @@ function SettingsPage() {
             you can resume it at the same spot on another playlist that has the same title.
           </span>
         </span>
-        <Switch
+        <span data-remote-row className="shrink-0"><Switch
           data-tv-focus
           data-zone-entry="true"
           data-focus-key="setting-sync-playlists"
@@ -134,7 +136,7 @@ function SettingsPage() {
           disabled={settings.isLoading || save.isPending}
           onCheckedChange={toggle}
           aria-label="Sync my playlists"
-        />
+        /></span>
       </label>
       <label className="flex cursor-pointer items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
         <span>
@@ -144,14 +146,14 @@ function SettingsPage() {
             Turn off to stop all background updates — the app then uses what is already saved. The update buttons below still work when you press them.
           </span>
         </span>
-        <Switch
+        <span data-remote-row className="shrink-0"><Switch
           data-tv-focus
           data-focus-key="setting-background-updates"
           checked={current.backgroundUpdates}
           disabled={settings.isLoading || save.isPending}
           onCheckedChange={toggleBackground}
           aria-label="Background updates"
-        />
+        /></span>
       </label>
       <div className="flex items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
         <span>
@@ -209,14 +211,14 @@ function SettingsPage() {
             </span>
           )}
         </span>
-        <Button
+        <div data-remote-row className="shrink-0"><Button
           data-tv-focus
           data-focus-key="setting-refresh-library"
           disabled={!activeId || refresh.running}
           onClick={() => { if (activeId) { requestLibraryRefresh(activeId); toast("Updating your library in the background"); } }}
         >
           <RefreshCw className={refresh.running ? "size-4 animate-spin" : "size-4"} /> {refresh.running ? "Updating…" : "Update now"}
-        </Button>
+        </Button></div>
       </div>
     </div>
   );
