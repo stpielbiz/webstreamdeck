@@ -44,6 +44,40 @@ export const Route = createFileRoute("/_authenticated/tv/live")({
   component: TvLive,
 });
 
+function ChannelNameButton({
+  item,
+  label,
+  starred,
+  onPlay,
+  onToggleFavorite,
+  className,
+  children,
+}: {
+  item: CatalogItem;
+  label: string;
+  starred: boolean;
+  onPlay: () => void;
+  onToggleFavorite: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const longPress = useLongPress(onToggleFavorite);
+  return (
+    <Button
+      variant="ghost"
+      tabIndex={-1}
+      onClick={onPlay}
+      title={`${label} — hold OK to ${starred ? "remove from" : "add to"} favourites`}
+      aria-label={label}
+      {...longPress}
+      className={className}
+    >
+      {children}
+      {starred && <Star className="size-3 shrink-0 fill-primary text-primary" />}
+    </Button>
+  );
+}
+
 function TvLive() {
   const navigate = useNavigate();
   const { channel } = Route.useSearch();
@@ -52,6 +86,8 @@ function TvLive() {
   const fetchItems = useGetItems();
   const fetchSchedules = useGetSchedules();
   const resolve = useGetPlayback();
+  const favorites = useFavorites();
+  const toggleFavorite = useToggleFavorite();
 
   const [categoryId, setCategoryId] = useState("");
   const [selected, setSelected] = useState<CatalogItem | null>(null);
