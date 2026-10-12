@@ -55,13 +55,10 @@ function TvHome() {
   const expired = useAccountAccess().data?.expired === true;
   const checkForUpdates = () => {
     const native = window.StreamDeckNative;
-    if (typeof native?.checkForUpdates === "function") {
-      native.checkForUpdates();
-      return;
-    }
-    toast.info(native ? "Install the latest TV app to enable manual update checks." : "The website updates automatically. Update checks are available in the Fire TV app.", {
-      action: { label: "Get the TV app", onClick: () => void navigate({ to: "/download", search: { mode: "tv" } }) },
-    });
+    const hasNativeCheck = typeof native?.checkForUpdates === "function";
+    if (hasNativeCheck) native!.checkForUpdates!();
+    toast.info("Refreshing…");
+    window.setTimeout(() => void hardReload(), hasNativeCheck ? 1500 : 300);
   };
 
   const syncPlaylists = useSyncPlaylists();
