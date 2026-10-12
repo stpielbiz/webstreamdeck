@@ -29,6 +29,7 @@ import { useAppSearchFocus } from "@/lib/app-search";
 import { LayerHeading } from "@/components/layered-navigation";
 import { TitleDetailsDialog } from "@/components/title-details-dialog";
 import { groupCatalogItems, mediaMatchKey, type TitleGroup, type TitleVariant } from "@/lib/title-variants";
+import { progressForVariants } from "@/lib/watch-progress";
 
 type Kind = "movie" | "series";
 
@@ -531,12 +532,6 @@ function formatResume(seconds: number) {
   return hours > 0 ? `${hours}h ${minutes}m` : `${Math.max(1, minutes)}m`;
 }
 
-function progressForVariants(rows: ReturnType<typeof useProgress>["data"], playlistId: string | null, variants: TitleVariant[], title?: string) {
-  const ids = new Set(variants.map((variant) => variant.item.id));
-  const row = (rows ?? []).find((entry) => entry.playlistId === playlistId && (ids.has(entry.itemId) || (entry.seriesId ? ids.has(entry.seriesId) : false) || (!!title && mediaMatchKey(entry.title) === mediaMatchKey(title))) && !entry.completed);
-  if (!row) return null;
-  return row.durationSeconds ? row.positionSeconds / row.durationSeconds : 0.05;
-}
 const CACHE_PREFIX = "streamdeck-cache:";
 function readCache<T = unknown>(key: string): { at: number; data: T } | undefined {
   if (typeof window === "undefined") return undefined;
