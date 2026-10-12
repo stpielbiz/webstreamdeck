@@ -225,7 +225,6 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin, library
         <p className="mt-5 text-xs font-semibold uppercase text-primary">Focused section</p>
         <h2 className="mt-1 font-display text-4xl font-bold">{preview.title}</h2>
         <p className="mt-3 max-w-xl text-lg text-muted-foreground">{preview.body}</p>
-        {section === "Live TV" && <LibraryStatus status={library.live} kind="live" hasPlaylist={hasPlaylist} syncing={sync.running} />}
         {section === "Movies" && <LibraryStatus status={library.movie} kind="movie" hasPlaylist={hasPlaylist} isAdmin={isAdmin} />}
         {section === "Shows" && <LibraryStatus status={library.series} kind="series" hasPlaylist={hasPlaylist} isAdmin={isAdmin} />}
         {section === "Favourites" && (
@@ -256,7 +255,7 @@ function LibraryStatus({ status, kind, hasPlaylist, syncing = false, isAdmin = f
         <div className="h-full bg-primary transition-[width] motion-reduce:transition-none" style={{ width: `${status.percent}%` }} />
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-sm text-muted-foreground">
-        <p>{syncing ? "Updating TV guide… " : ""}{label}: {status.updated.toLocaleString()} of {status.total.toLocaleString()}</p>
+        <p>{syncing ? "Updating TV guide… " : ""}{kind === "live" ? `${label}: ${status.updated.toLocaleString()} of ${status.total.toLocaleString()}` : `Checked ${status.checked.toLocaleString()} of ${status.total.toLocaleString()}${status.checked > status.updated ? ` · ${(status.checked - status.updated).toLocaleString()} no information found` : ""}`}</p>
         <p>Last updated: {lastUpdated}</p>
       </div>
       <ul className="mt-4 space-y-1 text-sm">
