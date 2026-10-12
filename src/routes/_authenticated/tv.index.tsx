@@ -14,7 +14,8 @@ import { useFavorites, useProgress } from "@/lib/library-hooks";
 import { SectionMenu } from "@/components/layered-navigation";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/lib/use-admin";
-import { useLibraryOverview, useBulkRefreshState, runBulkRefresh, stopBulkRefresh, type LibrarySectionStatus } from "@/lib/library-sync";
+import { useLibraryOverview, useBulkRefreshState, runBulkRefresh, stopBulkRefresh, hasCompletedDetailsUpdate, type LibrarySectionStatus } from "@/lib/library-sync";
+import { DetailsUpdateHint } from "@/components/details-update-hint";
 import { adminRefreshTitles } from "@/lib/metadata.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { SubscriptionBanner } from "@/components/subscription-banner";
@@ -237,6 +238,7 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin, library
 }
 
 function LibraryStatus({ status, kind, hasPlaylist, syncing = false, isAdmin = false }: { status: LibrarySectionStatus; kind: "live" | "movie" | "series"; hasPlaylist: boolean; syncing?: boolean; isAdmin?: boolean }) {
+  const { activeId } = usePlaylists();
   if (!hasPlaylist) return <p className="mt-5 text-sm text-muted-foreground">Add a playlist to see library status.</p>;
   if (!status.loaded) return <p className="mt-5 text-sm text-muted-foreground">Preparing saved library…</p>;
   const label = kind === "live" ? "TV guide" : "Title details";
@@ -271,6 +273,7 @@ function LibraryStatus({ status, kind, hasPlaylist, syncing = false, isAdmin = f
       {kind !== "live" && status.topGenres.length > 0 && (
         <p className="mt-4 text-sm"><span className="text-muted-foreground">Top genres:</span> {status.topGenres.join(" · ")}</p>
       )}
+      {kind !== "live" && activeId && status.loaded && !hasCompletedDetailsUpdate(activeId, kind, status.total) && <DetailsUpdateHint tv />}
     </div>
   );
 }

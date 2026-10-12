@@ -10,6 +10,8 @@ import { useProgress } from "@/lib/library-hooks";
 import { SectionMenu } from "@/components/layered-navigation";
 import { FavouritesLists } from "@/components/favourites-lists";
 import { useAccountAccess } from "@/lib/account-access";
+import { useLibraryOverview, hasCompletedDetailsUpdate } from "@/lib/library-sync";
+import { DetailsUpdateHint } from "@/components/details-update-hint";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -32,6 +34,10 @@ function Dashboard() {
   const { playlists, activeId, active, isLoading } = usePlaylists();
   const progress = useProgress();
   const expired = useAccountAccess().data?.expired === true;
+  const library = useLibraryOverview(activeId);
+  const detailsPending = !!activeId &&
+    ((library.movie.loaded && !hasCompletedDetailsUpdate(activeId, "movie", library.movie.total)) ||
+      (library.series.loaded && !hasCompletedDetailsUpdate(activeId, "series", library.series.total)));
 
   if (isLoading) {
     return (
@@ -129,6 +135,7 @@ function Dashboard() {
         )}
       </Shelf>
 
+      {detailsPending && <DetailsUpdateHint />}
       <FavouritesLists home />
       </>}
     </div>

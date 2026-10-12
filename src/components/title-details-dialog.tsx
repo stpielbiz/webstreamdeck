@@ -1,5 +1,5 @@
 import { useGetMovie, useGetSeries, useGetPlayback } from "@/lib/device-provider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Play, Star } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { cleanVariantTitle, mediaMatchKey, type TitleVariant } from "@/lib/title-variants";
 import { FranchiseDetails } from "@/components/franchise-details";
+import { hasCompletedDetailsUpdate } from "@/lib/library-sync";
 
 export type TitleKind = "movie" | "series";
 
@@ -110,6 +111,9 @@ function TitleDetailsContent({
     staleTime: 30 * 60_000,
   });
   const selectedMetadata = providedMetadata ?? ownMetadata.data ?? undefined;
+  const queryClient = useQueryClient();
+  const catalogueTotal = (activeId ? queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, kind])?.length : 0) ?? 0;
+  const detailsUpdatePending = !!activeId && !hasCompletedDetailsUpdate(activeId, kind, catalogueTotal);
 
   const movie = useQuery({
     queryKey: ["movie", activeId, activeItemId],
@@ -216,6 +220,11 @@ function TitleDetailsContent({
               </DialogHeader>
               {overview && <p className="mt-4 line-clamp-5 text-sm leading-relaxed text-muted-foreground">{overview}</p>}
               {(selectedMetadata?.cast?.length ?? 0) > 0 && <p className="mt-3 line-clamp-2 text-xs text-muted-foreground"><span className="font-semibold text-foreground">Cast:</span> {selectedMetadata?.cast.join(", ")}</p>}
+              {!overview && (selectedMetadata?.cast?.length ?? 0) === 0 && detailsUpdatePending && (
+                <p className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+                  No details saved yet — run the movie &amp; show details update in Settings to see descriptions, artwork, actors and more.
+                </p>
+              )}
 
             </div>
             <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">

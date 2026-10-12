@@ -382,6 +382,11 @@ function detailsDoneCount(playlistId: string, kind: string) {
   try { return Number(localStorage.getItem(detailsDoneKey(playlistId, kind)) ?? 0); } catch { return 0; }
 }
 
+/** True once a full details update has finished for every title in the catalogue (on this device). */
+export function hasCompletedDetailsUpdate(playlistId: string, kind: "movie" | "series", total: number) {
+  return total > 0 && detailsDoneCount(playlistId, kind) >= total;
+}
+
 /** Re-resolves every title missing a description or cast, in parallel batches. */
 export async function runBulkRefresh(
   client: QueryClient,
