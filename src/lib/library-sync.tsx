@@ -430,8 +430,12 @@ export async function runBulkRefresh(
       }
     }
   };
-  await Promise.all(Array.from({ length: PARALLEL }, worker));
-  setBulk({ running: false });
+  try {
+    await Promise.all(Array.from({ length: PARALLEL }, worker));
+  } finally {
+    setBulk({ running: false });
+    void wakeLock?.release().catch(() => {});
+  }
   if (!bulkCancel && !bulkState.failed) {
     try { localStorage.setItem(detailsDoneKey(playlistId, kind), String(items.length)); } catch { /* storage unavailable */ }
   }
