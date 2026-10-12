@@ -9,6 +9,9 @@ import type { Franchise } from "@/lib/franchise.functions";
 import type { TitleGroup } from "@/lib/title-variants";
 import { useFranchiseMatches } from "@/components/franchise-details";
 export { useFranchiseMatches } from "@/components/franchise-details";
+import { usePlaylists } from "@/components/playlist-context";
+import { useProgress } from "@/lib/library-hooks";
+import { completedForVariants, progressForVariants } from "@/lib/watch-progress";
 import { cn } from "@/lib/utils";
 
 export function FranchiseCard({ franchise, owned, onOpen }: { franchise: Franchise; owned: number; onOpen: () => void }) {
@@ -35,6 +38,8 @@ export function FranchiseList({ franchise, movies, shows, open, onClose }: {
   const [order, setOrder] = useState<"year" | "story">("year");
   const [picked, setPicked] = useState<{ kind: "movie" | "series"; group: TitleGroup } | null>(null);
   const matches = useFranchiseMatches(franchise, movies, shows);
+  const { activeId } = usePlaylists();
+  const progress = useProgress();
   const sorted = [...matches].sort((a, b) =>
     order === "story" ? a.member.story_index - b.member.story_index : (a.member.year ?? 9999) - (b.member.year ?? 9999));
 
@@ -57,7 +62,10 @@ export function FranchiseList({ franchise, movies, shows, open, onClose }: {
             </div>
           )}
           <ul className="max-h-[60vh] space-y-1 overflow-y-auto p-1">
-            {sorted.map(({ member, group }, i) => (
+            {sorted.map(({ member, group }, i) => {
+              const watched = group ? progressForVariants(progress.data, activeId, group.variants, group.title) : null;
+              const finished = group ? completedForVariants(progress.data, activeId, group.variants, group.title) : false;
+              return (
               <li key={`${member.title}-${member.year}`}>
                 <button
                   type="button"
@@ -65,7 +73,7 @@ export function FranchiseList({ franchise, movies, shows, open, onClose }: {
                   autoFocus={i === 0}
                   disabled={!group}
                   onClick={() => group && setPicked({ kind: member.kind, group })}
-                  className={cn("flex w-full items-center gap-3 rounded px-2 py-1.5 text-left outline-none focus:bg-secondary focus:ring-2 focus:ring-primary", !group && "opacity-50")}
+                  className={cn("relative flex w-full items-center gap-3 overflow-hidden rounded px-2 py-1.5 text-left outline-none focus:bg-secondary focus:ring-2 focus:ring-primary", !group && "opacity-50")}
                 >
                   <span className="w-6 text-right text-xs text-muted-foreground">{i + 1}</span>
                   <span className="grid h-12 w-8 shrink-0 place-items-center overflow-hidden rounded bg-muted">
@@ -74,12 +82,18 @@ export function FranchiseList({ franchise, movies, shows, open, onClose }: {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{member.title}</span>
                     <span className="block text-xs text-muted-foreground">
-                      {member.year ?? "—"} · {member.kind === "movie" ? "Movie" : "Show"}{!group && " · Not in your list"}
+                      {member.year ?? "—"} · {member.kind === "movie" ? "Movie" : "Show"}{!group && " · Not in your list"}{finished && " · Watched"}
                     </span>
                   </span>
+                  {watched !== null && (
+                    <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-muted">
+                      <span className="block h-full bg-primary" style={{ width: `${Math.min(100, watched * 100)}%` }} />
+                    </span>
+                  )}
                 </button>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </DialogContent>
       </Dialog>
