@@ -123,9 +123,27 @@ function TvHome() {
                     zoneEntry={index === 0}
                     edgeLeft={index === 0}
                     onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })}
+                    onLongPress={() => setRemoving(row)}
                   />
                 ))}
               </HomeShelf>
+              <RemoveConfirmDialog
+                title={removing?.title ?? null}
+                mode={removing && activeId && isFavorite(favorites, activeId, removing.itemKind === "episode" ? "series" : "movie", removing.itemKind === "episode" && removing.seriesId ? removing.seriesId : removing.itemId) ? "favourite" : "continue"}
+                onClose={() => setRemoving(null)}
+                onConfirm={() => {
+                  if (!removing || !activeId) return;
+                  const kind = removing.itemKind === "episode" ? "series" : "movie";
+                  const id = removing.itemKind === "episode" && removing.seriesId ? removing.seriesId : removing.itemId;
+                  if (isFavorite(favorites, activeId, kind, id)) {
+                    toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: id, title: removing.title, logoUrl: removing.posterUrl });
+                    toast.success(`Removed ${removing.title} from favourites`);
+                  } else {
+                    clearProgress.mutate({ playlistId: removing.playlistId, itemId: removing.itemId });
+                    toast.success(`Removed ${removing.title} from continue watching`);
+                  }
+                }}
+              />
               <FavouritesLists tv home />
               </>}
             </div>
