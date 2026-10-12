@@ -60,6 +60,7 @@ export interface LibraryOverview {
 const emptySection = (): LibrarySectionStatus => ({
   total: 0,
   updated: 0,
+  checked: 0,
   percent: 0,
   withOverview: 0,
   withCast: 0,
@@ -129,6 +130,7 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
       live: {
         total,
         updated: covered,
+        checked: covered,
         percent: total ? Math.round((covered / total) * 100) : 0,
         withOverview: channels ? channels.filter((channel) => guide?.[channel.id]?.p.some((programme) => programme.description)).length : 0,
         withCast: 0,
