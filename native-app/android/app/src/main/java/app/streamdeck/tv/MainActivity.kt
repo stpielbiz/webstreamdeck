@@ -175,5 +175,13 @@ class MainActivity : Activity() {
             runOnUiThread { appUpdater.checkManually() }
         }
 
+        /** Keeps the screen on during long background updates. */
+        @JavascriptInterface
+        fun setKeepAwake(enabled: Boolean) {
+            runOnUiThread {
+                if (enabled) webView.keepScreenOn = true else webView.keepScreenOn = false
+            }
+        }
+
     }
 }

@@ -391,11 +391,19 @@ export function hasCompletedDetailsUpdate(playlistId: string, kind: "movie" | "s
 /** Re-resolves every title missing a description or cast, in parallel batches. */
 /** Keeps the screen awake while a long update runs; no-op where unsupported. */
 async function acquireWakeLock(): Promise<{ release: () => Promise<void> } | null> {
+  const native = (window as unknown as { StreamDeckNative?: { setKeepAwake?: (enabled: boolean) => void } }).StreamDeckNative;
+  try { native?.setKeepAwake?.(true); } catch { /* bridge unavailable */ }
   try {
     const nav = navigator as Navigator & { wakeLock?: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> } };
-    return nav.wakeLock ? await nav.wakeLock.request("screen") : null;
+    const lock = nav.wakeLock ? await nav.wakeLock.request("screen") : null;
+    return {
+      release: async () => {
+        try { native?.setKeepAwake?.(false); } catch { /* bridge unavailable */ }
+        await lock?.release().catch(() => {});
+      },
+    };
   } catch {
-    return null;
+    return { release: async () => { try { native?.setKeepAwake?.(false); } catch { /* bridge unavailable */ } } };
   }
 }
 
