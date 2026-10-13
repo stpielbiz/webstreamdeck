@@ -471,7 +471,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         {featured === "popular" ? (
           <PopularRow kind={kind} tv={tv} items={catalogue.data ?? []} metadata={metadata.data} onOpen={selectTitle} />
         ) : (
-            <Top10Row kind={kind} tv={tv} items={catalogue.data ?? []} metadata={metadata.data} service={featured} onOpen={selectTitle} />
+            <Top10Row kind={kind} tv={tv} items={catalogue.data ?? []} metadata={metadata.data} service={featured} loading={catalogue.isLoading && !catalogue.data} onOpen={selectTitle} />
         )}
         </div>
         <div ref={categoryContentRef} className="min-w-0 scroll-mt-2">
