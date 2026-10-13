@@ -60,13 +60,34 @@ export function Top10Row({
        return { rank: r.rank, item, variants, title: r.title, poster: item?.image || r.poster_url };
     });
 
-  if (entries.length === 0) return null;
+  const waiting = loading || top.isLoading;
+
+  if (!waiting && entries.length === 0) return null;
 
   return (
     <section id={`top10-${service}`} className={cn("mb-6", tv && "mb-3")}>
       <h2 className={cn("mb-3 flex items-center gap-2 font-display font-semibold", tv ? "mb-2 text-lg" : "text-lg")}>
         <Trophy className={cn("text-primary", tv ? "size-4" : "size-5")} /> Top 10 on {service === "netflix" ? "Netflix" : "Prime Video"}
       </h2>
+      {waiting ? (
+        <div className={cn("scrollbar-thin flex gap-3 overflow-x-auto pb-2", tv && "gap-2")} aria-busy="true" aria-label="Checking your list">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={`${service}-checking-${i}`}
+              className={cn("relative shrink-0 animate-pulse overflow-hidden rounded-md border border-border bg-card", tv ? "w-24" : "w-28")}
+            >
+              <div className="aspect-[2/3] bg-muted" />
+              <span className="absolute left-1 top-1 rounded bg-muted px-1.5 text-xs font-bold text-muted-foreground">#{i + 1}</span>
+              <div className="absolute inset-x-1 top-1/2 flex -translate-y-1/2 justify-center">
+                <span className="rounded bg-background/90 px-1.5 py-0.5 text-center text-[10px] font-medium text-muted-foreground">
+                  Checking your list…
+                </span>
+              </div>
+              <p className="mx-2 my-1.5 h-3 rounded bg-muted" />
+            </div>
+          ))}
+        </div>
+      ) : (
       <div className={cn("scrollbar-thin flex gap-3 overflow-x-auto pb-2", tv && "gap-2")}>
          {entries.map(({ rank, item, variants, title, poster }, i) =>
           item ? (
