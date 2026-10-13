@@ -27,6 +27,7 @@ export function Top10Row({
   items: CatalogItem[];
   metadata?: Record<string, { title: string | null }> | undefined;
   service: Top10Service;
+  loading?: boolean;
   onOpen: (id: string, trigger?: HTMLElement | null, variants?: TitleVariant[]) => void;
 }) {
   const fetchTop = useServerFn(getStreamingTop10);
