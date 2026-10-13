@@ -187,6 +187,44 @@ export type Database = {
         }
         Relationships: []
       }
+      recent_channels: {
+        Row: {
+          id: string
+          item_id: string
+          logo_url: string | null
+          playlist_id: string
+          title: string
+          user_id: string
+          watched_at: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          logo_url?: string | null
+          playlist_id: string
+          title: string
+          user_id: string
+          watched_at?: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          logo_url?: string | null
+          playlist_id?: string
+          title?: string
+          user_id?: string
+          watched_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recent_channels_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_franchises: {
         Row: {
           created_at: string

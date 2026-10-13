@@ -57,6 +57,13 @@
       "when": 1791772101883,
       "tag": "0007_add_background_updates",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791934189177,
+      "tag": "0008_recent_channels",
+      "breakpoints": true
     }
   ]
 }

@@ -39,6 +39,11 @@
             android:configChanges="orientation|screenSize|keyboard|keyboardHidden|navigation"
             android:exported="false" />
 
+        <activity
+            android:name=".MultiViewActivity"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden|navigation"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.updates"

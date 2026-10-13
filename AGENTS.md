@@ -33,3 +33,4 @@
 - Fire TV display density is an account setting applied through the shared TV shell and root sizing selectors, never browser zoom — this keeps focus geometry deterministic while leaving browser screens unchanged.
 - Account expiry is stored separately from roles; expired accounts retain only Home, Settings, and sign-out access — this prevents subscription state from becoming a privilege source.
 - Provider calls use `device-provider.ts` hooks: Fire TV runs `iptv-provider.ts` on-device via `StreamDeckNative.fetchText`, else server — providers often blank our servers.
+- Live TV Multi-view uses one player per screen (native MultiViewActivity via StreamDeckNative.playMulti, in-page grid in browsers) and Recent channels are account rows in recent_channels trimmed to 10 per playlist — mirrors TiviMate without relying on Fire OS system PiP.

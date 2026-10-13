@@ -134,6 +134,18 @@ class MainActivity : Activity() {
     }
 
     inner class Bridge {
+        /** Open Multi-view with up to four live channels: JSON array of {url,title}. */
+        @JavascriptInterface
+        fun playMulti(json: String) {
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (PlayerActivity.isOpen || MultiViewActivity.isOpen || now - lastPlayRequestAt < 3000) return
+            lastPlayRequestAt = now
+            val intent = Intent(this@MainActivity, MultiViewActivity::class.java).apply {
+                putExtra(MultiViewActivity.EXTRA_SCREENS, json)
+            }
+            runOnUiThread { startActivity(intent) }
+        }
+
         @JavascriptInterface
         fun play(json: String) {
             val request = try {
