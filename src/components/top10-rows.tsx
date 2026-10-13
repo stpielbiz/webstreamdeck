@@ -124,6 +124,7 @@ export function Top10Row({
           ),
         )}
       </div>
+      )}
     </section>
   );
 }
