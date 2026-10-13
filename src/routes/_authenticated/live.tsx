@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
 import { useLongPress } from "@/lib/use-long-press";
 import { toast } from "sonner";
+import { MultiView } from "@/components/multi-view";
+import { RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 
 export const Route = createFileRoute("/_authenticated/live")({
   validateSearch: z.object({ channel: z.string().optional() }),
@@ -126,6 +128,14 @@ function LivePage() {
   const [selected, setSelected] = useState<CatalogItem | null>(null);
 
   const favorites = useFavorites();
+  const recent = useRecentChannels(activeId);
+  const touchRecent = useTouchRecent();
+  const [multiOpen, setMultiOpen] = useState(false);
+  useEffect(() => {
+    if (selected) touchRecent(activeId, selected);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id]);
+  const isRecent = categoryId === RECENT_CATEGORY;
   const toggle = useToggleFavorite();
 
   const categories = useQuery({
@@ -136,13 +146,13 @@ function LivePage() {
   });
 
   const channels = useQuery({
-    queryKey: ["items", activeId, "live", categoryId ?? "all", search],
+    queryKey: ["items", activeId, "live", isRecent ? "all" : (categoryId ?? "all"), search],
     queryFn: () =>
       fetchItems({
         data: {
           playlistId: activeId!,
           kind: "live",
-          categoryId: search ? undefined : (categoryId ?? undefined),
+          categoryId: search || isRecent ? undefined : (categoryId || undefined),
           search: search || undefined,
         },
       }),
@@ -150,7 +160,10 @@ function LivePage() {
     staleTime: 5 * 60_000,
   });
 
-  const visible = useMemo(() => (channels.data ?? []).slice(0, 400), [channels.data]);
+  const visible = useMemo(
+    () => (isRecent && !search ? orderByRecent(channels.data ?? [], recent.rows) : (channels.data ?? [])).slice(0, 400),
+    [channels.data, isRecent, search, recent.rows],
+  );
 
   const epg = useQuery({
     queryKey: ["nownext", activeId, visible.slice(0, 40).map((item) => item.id).join(",")],
@@ -236,6 +249,9 @@ function LivePage() {
           <h1 className="font-display text-2xl font-bold">Live TV</h1>
           <p className="mt-1 text-sm text-muted-foreground">Choose a channel category</p>
           <div className="mt-5 flex flex-col gap-1">
+            {recent.rows.length > 0 && (
+              <Button data-tv-focus variant="ghost" className="h-12 justify-start px-4 text-base" onClick={() => { setCategoryId(RECENT_CATEGORY); setSelected(null); }}>Recent</Button>
+            )}
             <Button data-tv-focus variant="ghost" className="h-12 justify-between px-4 text-base" onClick={() => { setCategoryId(""); setSelected(null); }}>All channels</Button>
             {categories.isLoading
               ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />)
@@ -327,6 +343,7 @@ function LivePage() {
             <Button variant="outline" disabled={channels.isFetching} onClick={() => void Promise.all([channels.refetch(), playback.refetch()]).then(() => toast.success("Channels updated"))}>
               {channels.isFetching ? "Updating…" : "Update channels"}
             </Button>
+            <Button variant="outline" onClick={() => setMultiOpen(true)}>Multi-view</Button>
             <Button variant="outline" size="icon" aria-label="Previous channel" onClick={() => step(-1)}>
               <ChevronUp className="size-4" />
             </Button>
@@ -360,6 +377,17 @@ function LivePage() {
           </div>
         </div>
       </section>
+      <MultiView
+        open={multiOpen}
+        playlistId={activeId}
+        initial={selected}
+        candidates={[
+          ...orderByRecent(channels.data ?? [], recent.rows),
+          ...(channels.data ?? []).filter((item) => isFavorite(favorites.data, activeId, "live", item.id)),
+          ...visible,
+        ]}
+        onClose={() => setMultiOpen(false)}
+      />
     </div>
   );
 }
