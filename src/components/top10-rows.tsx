@@ -20,6 +20,7 @@ export function Top10Row({
   items,
   metadata,
   service,
+  loading = false,
   onOpen,
 }: {
   kind: "movie" | "series";
