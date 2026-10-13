@@ -14,6 +14,8 @@ export interface NativePlayRequest {
 
 interface StreamDeckNativeBridge {
   play: (json: string) => void;
+  /** Multi-view: JSON array of {url, title}, up to four screens. */
+  playMulti?: (json: string) => void;
   checkForUpdates?: () => void;
   /** Fetch a URL over the device's own connection; answers via __streamDeckFetchDone. */
   fetchText?: (requestId: string, url: string, userAgent: string) => void;
