@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 import { useAppSearchFocus } from "@/lib/app-search";
 import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
 import { useLongPress } from "@/lib/use-long-press";
+import { MultiView } from "@/components/multi-view";
+import { RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 import { toast } from "sonner";
 
 const GUIDE_HOURS = 12;
@@ -106,7 +108,10 @@ function TvLive() {
   useAppSearchFocus("live-search");
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   const searching = search.trim().length > 0;
-  const effectiveCategory = searching ? "" : categoryId;
+  const effectiveCategory = searching || categoryId === RECENT_CATEGORY ? "" : categoryId;
+  const recent = useRecentChannels(activeId);
+  const touchRecent = useTouchRecent();
+  const [multiOpen, setMultiOpen] = useState(false);
   const [windowStart] = useState(() => {
     const now = new Date();
     now.setMinutes(now.getMinutes() < 30 ? 0 : 30, 0, 0);
@@ -141,8 +146,9 @@ function TvLive() {
 
   const channels = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
-    return (items.data ?? []).filter((item) => !term || item.name.toLocaleLowerCase().includes(term) || String(item.number ?? "").includes(term));
-  }, [items.data, search]);
+    const source = !term && categoryId === RECENT_CATEGORY ? orderByRecent(items.data ?? [], recent.rows) : (items.data ?? []);
+    return source.filter((item) => !term || item.name.toLocaleLowerCase().includes(term) || String(item.number ?? "").includes(term));
+  }, [items.data, search, categoryId, recent.rows]);
   const pageCount = Math.max(1, Math.ceil(channels.length / PAGE_SIZE));
   const visibleChannels = useMemo(
     () => channels.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
@@ -354,6 +360,7 @@ function TvLive() {
   const playChannel = (item: CatalogItem) => {
     setFocusedId(item.id);
     lastChannel.current = item.id;
+    touchRecent(activeId, item);
     if (selected?.id === item.id) setFullscreen(true);
     else {
       setSelected(item);
@@ -465,6 +472,19 @@ function TvLive() {
           </Button>
           <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Channel categories</p>
           <div data-tv-zone="live-categories" data-tv-zone-order="1" className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
+            {recent.rows.length > 0 && (
+              <Button
+                data-tv-focus
+                data-focus-key="live-category-recent"
+                variant={categoryId === RECENT_CATEGORY ? "default" : "ghost"}
+                className="h-9 w-full justify-start truncate px-2 text-xs"
+                onFocus={() => previewCategory(RECENT_CATEGORY)}
+                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); } }}
+                onClick={() => chooseCategory(RECENT_CATEGORY)}
+              >
+                Recent
+              </Button>
+            )}
             <Button
               data-tv-focus
               data-focus-key="live-category-all"
@@ -502,6 +522,7 @@ function TvLive() {
             </div>
             <Button data-tv-focus size="sm" variant="secondary" onClick={jumpToNow}>Now</Button>
             <Button data-tv-focus variant="secondary" size="sm" disabled={updatingChannels} onClick={() => void updateChannels()}>{updatingChannels ? "Updating…" : "Update channels"}</Button>
+            <Button data-tv-focus variant="secondary" size="sm" onClick={() => setMultiOpen(true)}>Multi-view</Button>
           </div>
           {selected && !fullscreen && (
             <div className="mb-2 flex shrink-0 items-center gap-3 rounded-lg border border-border bg-card p-2" aria-label={`Preview of ${selected.name}`}>
@@ -649,6 +670,17 @@ function TvLive() {
           </div>
         </div>
       )}
+      <MultiView
+        open={multiOpen}
+        playlistId={activeId}
+        initial={selected ?? focused}
+        candidates={[
+          ...orderByRecent(items.data ?? [], recent.rows),
+          ...(items.data ?? []).filter((item) => isFavorite(favorites.data, activeId, "live", item.id)),
+          ...visibleChannels,
+        ]}
+        onClose={() => { setMultiOpen(false); restoreChannelFocus(); }}
+      />
     </TvShell>
   );
 }
