@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Check, Play } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronRight, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { usePlaylists } from "@/components/playlist-context";
@@ -183,6 +183,17 @@ function ShowBlock({ group, rows, onPlay, first }: { group: TitleGroup; rows?: P
     image: episode.image ?? group.item.image, seriesId, season: episode.season, episode: episode.episode, durationSeconds: episode.durationSeconds, focusKey,
   });
   const showKey = `fr-show-${seriesId}`;
+  const started = (rows ?? []).some((row) => row.playlistId === activeId && row.seriesId === seriesId);
+  const [openOverride, setOpenOverride] = useState<boolean | null>(null);
+  const open = openOverride ?? started;
+  const firstEpisodeKey = all[0] ? `fr-ep-${all[0].id}` : showKey;
+  const toggle = () => {
+    const next = !open;
+    setOpenOverride(next);
+    if (next) {
+      window.requestAnimationFrame(() => { document.querySelector<HTMLElement>(`[data-focus-key="${CSS.escape(firstEpisodeKey)}"]`)?.focus(); });
+    }
+  };
 
   return (
     <div className="rounded border border-border bg-card/50 p-2">
