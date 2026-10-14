@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Check, Play } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronRight, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { usePlaylists } from "@/components/playlist-context";
@@ -183,23 +183,43 @@ function ShowBlock({ group, rows, onPlay, first }: { group: TitleGroup; rows?: P
     image: episode.image ?? group.item.image, seriesId, season: episode.season, episode: episode.episode, durationSeconds: episode.durationSeconds, focusKey,
   });
   const showKey = `fr-show-${seriesId}`;
+  const started = (rows ?? []).some((row) => row.playlistId === activeId && row.seriesId === seriesId);
+  const [openOverride, setOpenOverride] = useState<boolean | null>(null);
+  const open = openOverride ?? started;
+  const firstEpisodeKey = all[0] ? `fr-ep-${all[0].id}` : showKey;
+  const toggle = () => {
+    const next = !open;
+    setOpenOverride(next);
+    if (next) {
+      window.requestAnimationFrame(() => { document.querySelector<HTMLElement>(`[data-focus-key="${CSS.escape(firstEpisodeKey)}"]`)?.focus(); });
+    }
+  };
 
   return (
     <div className="rounded border border-border bg-card/50 p-2">
-      <div data-remote-row>
+      <div data-remote-row className="flex items-stretch gap-1">
         <button type="button" data-tv-focus data-zone-entry={first ? "true" : undefined} data-focus-key={showKey} disabled={!resumeEpisode}
-          onClick={() => resumeEpisode && play(resumeEpisode, showKey)} className={rowClass}>
+          onClick={() => resumeEpisode && play(resumeEpisode, showKey)} className={cn(rowClass, "flex-1")}>
           <Thumb src={group.item.image} />
           <span className="min-w-0 flex-1">
             <span className="block truncate font-semibold">{group.title}</span>
             <span className="block text-xs text-muted-foreground">
-              {series.isLoading ? "Loading seasons…" : resumeEpisode ? `${lastRow ? "Continue" : "Start"} S${resumeEpisode.season} E${resumeEpisode.episode}` : "No episodes found"}
+              {series.isLoading ? "Loading seasons…"
+                : resumeEpisode
+                  ? open
+                    ? `${lastRow ? "Continue" : "Start"} S${resumeEpisode.season} E${resumeEpisode.episode}`
+                    : `${seasons.length} season${seasons.length === 1 ? "" : "s"} · ${lastRow ? "Continue" : "Start"} S${resumeEpisode.season} E${resumeEpisode.episode}`
+                  : open ? "No episodes found" : `${seasons.length} season${seasons.length === 1 ? "" : "s"}`}
             </span>
           </span>
           <Play className="size-4 text-primary" />
         </button>
+        <button type="button" data-tv-focus aria-label={open ? "Hide seasons" : "Show seasons"} onClick={toggle}
+          className="shrink-0 rounded px-2 text-muted-foreground outline-none hover:bg-secondary focus:bg-secondary focus:ring-2 focus:ring-primary">
+          {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+        </button>
       </div>
-      {seasons.map((season) => {
+      {open && seasons.map((season) => {
         const watched = season.episodes.filter((e) => episodeRow(e.id)?.completed).length;
         return (
           <div key={season.season} className="mt-3 pl-2">
