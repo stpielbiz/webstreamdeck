@@ -19,6 +19,8 @@ interface StreamDeckNativeBridge {
   checkForUpdates?: () => void;
   /** Fetch a URL over the device's own connection; answers via __streamDeckFetchDone. */
   fetchText?: (requestId: string, url: string, userAgent: string) => void;
+  /** Hands the player's bottom bar the recent channels: JSON array of {title, url}. */
+  setRecentChannels?: (json: string) => void;
 }
 
 declare global {
@@ -28,7 +30,15 @@ declare global {
     __streamDeckEnded?: (() => void) | undefined;
     __streamDeckClosed?: (() => void) | undefined;
     __streamDeckFetchDone?: ((requestId: string, status: number, body: string) => void) | undefined;
+    /** The native player's bottom bar switched channel; carries the channel title. */
+    __streamDeckChannelSwitched?: ((title: string) => void) | undefined;
   }
+}
+
+/** Gives the native player's bottom bar the recent channels to offer. */
+export function sendRecentChannels(list: { title: string; url: string }[]): void {
+  if (typeof window === "undefined") return;
+  window.StreamDeckNative?.setRecentChannels?.(JSON.stringify(list.slice(0, 10)));
 }
 
 export function hasNativePlayer(): boolean {
