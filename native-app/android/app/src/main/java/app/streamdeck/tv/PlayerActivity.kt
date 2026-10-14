@@ -37,6 +37,8 @@ class PlayerActivity : Activity() {
         fun onProgress(positionSeconds: Double, durationSeconds: Double)
         fun onEnded()
         fun onClosed()
+        /** The bottom bar switched to another recent channel without closing. */
+        fun onChannelSwitched(title: String) {}
     }
 
     companion object {
@@ -54,6 +56,10 @@ class PlayerActivity : Activity() {
 
         @Volatile
         var isOpen = false
+
+        /** Recent channels for the bottom bar, set by the website via the bridge. */
+        @Volatile
+        var recentChannels: List<Pair<String, String>> = emptyList()
     }
 
     private lateinit var player: ExoPlayer
