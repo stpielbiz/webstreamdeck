@@ -287,14 +287,66 @@ class PlayerActivity : Activity() {
         if (position > 0) listener?.onProgress(position, duration)
     }
 
+    private fun showRecentBar() {
+        if (!::recentBar.isInitialized) return
+        recentRow.removeAllViews()
+        val channels = recentChannels
+        if (channels.isEmpty()) return
+        channels.forEachIndexed { index, (title, channelUrl) ->
+            val button = android.widget.Button(this).apply {
+                text = title
+                isFocusable = true
+                setOnClickListener { switchChannel(title, channelUrl) }
+                setOnFocusChangeListener { v, hasFocus ->
+                    v.setBackgroundColor(if (hasFocus) Color.argb(220, 60, 60, 60) else Color.argb(120, 30, 30, 30))
+                    if (hasFocus) scheduleHideRecentBar()
+                }
+            }
+            recentRow.addView(button)
+            if (index == 0) button.requestFocus()
+        }
+        recentBar.visibility = View.VISIBLE
+        scheduleHideRecentBar()
+    }
+
+    private fun scheduleHideRecentBar() {
+        handler.removeCallbacks(hideRecentBar)
+        handler.postDelayed(hideRecentBar, 5_000)
+    }
+
+    private fun switchChannel(title: String, channelUrl: String) {
+        currentTitle = title
+        candidates = alternates(channelUrl)
+        candidateIndex = 0
+        attempts = 0
+        failingSince = 0L
+        load(candidates.first(), 0)
+        recentBar.visibility = View.GONE
+        listener?.onChannelSwitched(title)
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.keyCode == KeyEvent.KEYCODE_BACK) {
             if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) {
+                if (::recentBar.isInitialized && recentBar.visibility == View.VISIBLE) {
+                    recentBar.visibility = View.GONE
+                    playerView.requestFocus()
+                    return true
+                }
                 closing = true
                 handler.removeCallbacks(reconnectRunnable)
                 reportProgress()
                 if (::player.isInitialized) player.pause()
                 finish()
+            }
+            return true
+        }
+        if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && event.action == KeyEvent.ACTION_DOWN) {
+            if (::recentBar.isInitialized && recentBar.visibility == View.VISIBLE) {
+                recentBar.visibility = View.GONE
+                playerView.requestFocus()
+            } else {
+                showRecentBar()
             }
             return true
         }
