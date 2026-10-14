@@ -417,10 +417,15 @@ function TvLive() {
     restoreChannelFocus();
   };
 
-  // Hand the native player's bottom bar the recent channels (Down on the
-  // remote shows it, TiviMate-style). URLs are resolved on this device.
+  // Resolve the recent channels' links while a channel plays full screen:
+  // the native player's bottom bar (Down on the remote, TiviMate-style) and
+  // the web player's recents strip both use this list.
+  const [recentList, setRecentList] = useState<{ title: string; url: string }[]>([]);
   useEffect(() => {
-    if (!fullscreen || !hasNativePlayer() || !activeId || !selected) return;
+    if (!fullscreen || !activeId || !selected) {
+      setRecentList([]);
+      return;
+    }
     let cancelled = false;
     const candidates = orderByRecent(items.data ?? [], recent.rows)
       .filter((item) => item.id !== selected.id)
@@ -436,13 +441,19 @@ function TvLive() {
         }
         if (cancelled) return;
       }
-      sendRecentChannels(list);
+      setRecentList(list);
+      if (hasNativePlayer()) sendRecentChannels(list);
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullscreen, selected?.id, activeId]);
+
+  const pickRecent = (title: string) => {
+    const item = (items.data ?? []).find((entry) => entry.name === title);
+    if (item) playChannel(item);
+  };
 
   // The native bottom bar switched channel: keep the page and Recent in sync.
   useEffect(() => {
