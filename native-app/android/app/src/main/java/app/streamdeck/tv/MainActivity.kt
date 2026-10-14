@@ -71,6 +71,15 @@ class MainActivity : Activity() {
                     webView.requestFocus()
                 }
             }
+
+            override fun onChannelSwitched(title: String) {
+                runOnUiThread {
+                    webView.evaluateJavascript(
+                        "window.__streamDeckChannelSwitched && window.__streamDeckChannelSwitched(" + JSONObject.quote(title) + ")",
+                        null,
+                    )
+                }
+            }
         }
 
         // Fresh site files on every launch; saved data (IndexedDB/localStorage) is kept.
@@ -210,6 +219,22 @@ class MainActivity : Activity() {
             runOnUiThread {
                 webView.clearCache(false)
                 webView.loadUrl(url)
+            }
+        }
+
+        /** Hands the player's bottom bar the recent channels: JSON array of {title, url}. */
+        @JavascriptInterface
+        fun setRecentChannels(json: String) {
+            try {
+                val array = org.json.JSONArray(json)
+                val list = mutableListOf<Pair<String, String>>()
+                for (i in 0 until minOf(array.length(), 10)) {
+                    val entry = array.getJSONObject(i)
+                    val url = entry.optString("url")
+                    if (url.startsWith("http")) list.add(entry.optString("title") to url)
+                }
+                PlayerActivity.recentChannels = list
+            } catch (_: Exception) {
             }
         }
 

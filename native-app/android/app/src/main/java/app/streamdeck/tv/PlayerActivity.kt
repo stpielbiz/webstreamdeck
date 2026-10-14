@@ -37,6 +37,8 @@ class PlayerActivity : Activity() {
         fun onProgress(positionSeconds: Double, durationSeconds: Double)
         fun onEnded()
         fun onClosed()
+        /** The bottom bar switched to another recent channel without closing. */
+        fun onChannelSwitched(title: String) {}
     }
 
     companion object {
@@ -54,11 +56,19 @@ class PlayerActivity : Activity() {
 
         @Volatile
         var isOpen = false
+
+        /** Recent channels for the bottom bar, set by the website via the bridge. */
+        @Volatile
+        var recentChannels: List<Pair<String, String>> = emptyList()
     }
 
     private lateinit var player: ExoPlayer
     private lateinit var playerView: PlayerView
     private lateinit var reconnectLabel: TextView
+    private lateinit var recentBar: android.widget.HorizontalScrollView
+    private lateinit var recentRow: android.widget.LinearLayout
+    private var currentTitle = ""
+    private val hideRecentBar = Runnable { recentBar.visibility = View.GONE }
     private val handler = Handler(Looper.getMainLooper())
     private var live = false
     private var ended = false
@@ -103,6 +113,7 @@ class PlayerActivity : Activity() {
         isOpen = true
 
         val url = intent.getStringExtra(EXTRA_URL) ?: return finish()
+        currentTitle = intent.getStringExtra(EXTRA_TITLE) ?: ""
         live = intent.getBooleanExtra(EXTRA_LIVE, false)
         val startSeconds = intent.getDoubleExtra(EXTRA_START, 0.0)
         candidates = alternates(url)
@@ -139,12 +150,24 @@ class PlayerActivity : Activity() {
             setBackgroundColor(Color.argb(170, 0, 0, 0))
             visibility = View.GONE
         }
+        // TiviMate-style bottom bar: recent channels, shown with Down.
+        recentRow = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            setPadding(32, 12, 32, 12)
+        }
+        recentBar = android.widget.HorizontalScrollView(this).apply {
+            addView(recentRow)
+            setBackgroundColor(Color.argb(190, 0, 0, 0))
+            visibility = View.GONE
+            isHorizontalScrollBarEnabled = false
+        }
         val root = FrameLayout(this)
         root.addView(playerView, FrameLayout.LayoutParams(-1, -1))
         root.addView(
             reconnectLabel,
             FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END).apply { setMargins(0, 48, 48, 0) },
         )
+        root.addView(recentBar, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
         setContentView(root)
 
         player.addListener(object : Player.Listener {
@@ -264,14 +287,66 @@ class PlayerActivity : Activity() {
         if (position > 0) listener?.onProgress(position, duration)
     }
 
+    private fun showRecentBar() {
+        if (!::recentBar.isInitialized) return
+        recentRow.removeAllViews()
+        val channels = recentChannels
+        if (channels.isEmpty()) return
+        channels.forEachIndexed { index, (title, channelUrl) ->
+            val button = android.widget.Button(this).apply {
+                text = title
+                isFocusable = true
+                setOnClickListener { switchChannel(title, channelUrl) }
+                setOnFocusChangeListener { v, hasFocus ->
+                    v.setBackgroundColor(if (hasFocus) Color.argb(220, 60, 60, 60) else Color.argb(120, 30, 30, 30))
+                    if (hasFocus) scheduleHideRecentBar()
+                }
+            }
+            recentRow.addView(button)
+            if (index == 0) button.requestFocus()
+        }
+        recentBar.visibility = View.VISIBLE
+        scheduleHideRecentBar()
+    }
+
+    private fun scheduleHideRecentBar() {
+        handler.removeCallbacks(hideRecentBar)
+        handler.postDelayed(hideRecentBar, 5_000)
+    }
+
+    private fun switchChannel(title: String, channelUrl: String) {
+        currentTitle = title
+        candidates = alternates(channelUrl)
+        candidateIndex = 0
+        attempts = 0
+        failingSince = 0L
+        load(candidates.first(), 0)
+        recentBar.visibility = View.GONE
+        listener?.onChannelSwitched(title)
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.keyCode == KeyEvent.KEYCODE_BACK) {
             if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) {
+                if (::recentBar.isInitialized && recentBar.visibility == View.VISIBLE) {
+                    recentBar.visibility = View.GONE
+                    playerView.requestFocus()
+                    return true
+                }
                 closing = true
                 handler.removeCallbacks(reconnectRunnable)
                 reportProgress()
                 if (::player.isInitialized) player.pause()
                 finish()
+            }
+            return true
+        }
+        if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && event.action == KeyEvent.ACTION_DOWN) {
+            if (::recentBar.isInitialized && recentBar.visibility == View.VISIBLE) {
+                recentBar.visibility = View.GONE
+                playerView.requestFocus()
+            } else {
+                showRecentBar()
             }
             return true
         }

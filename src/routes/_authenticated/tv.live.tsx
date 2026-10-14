@@ -14,7 +14,7 @@ import { TvShell } from "@/components/tv-shell";
 import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/search-field";
 import { VideoPlayer } from "@/components/video-player";
-import { hasNativePlayer } from "@/lib/external-player";
+import { hasNativePlayer, sendRecentChannels } from "@/lib/external-player";
 import { cn } from "@/lib/utils";
 import { useAppSearchFocus } from "@/lib/app-search";
 import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
@@ -417,6 +417,59 @@ function TvLive() {
     restoreChannelFocus();
   };
 
+  // Resolve the recent channels' links while a channel plays full screen:
+  // the native player's bottom bar (Down on the remote, TiviMate-style) and
+  // the web player's recents strip both use this list.
+  const [recentList, setRecentList] = useState<{ title: string; url: string }[]>([]);
+  useEffect(() => {
+    if (!fullscreen || !activeId || !selected) {
+      setRecentList([]);
+      return;
+    }
+    let cancelled = false;
+    const candidates = orderByRecent(items.data ?? [], recent.rows)
+      .filter((item) => item.id !== selected.id)
+      .slice(0, 9);
+    void (async () => {
+      const list: { title: string; url: string }[] = [];
+      for (const item of candidates) {
+        try {
+          const result = await resolve({ data: { playlistId: activeId, kind: "live", itemId: item.id } });
+          list.push({ title: item.name, url: result.directUrl ?? result.url });
+        } catch {
+          // Skip channels whose link couldn't be resolved.
+        }
+        if (cancelled) return;
+      }
+      setRecentList(list);
+      if (hasNativePlayer()) sendRecentChannels(list);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullscreen, selected?.id, activeId]);
+
+  const pickRecent = (title: string) => {
+    const item = (items.data ?? []).find((entry) => entry.name === title);
+    if (item) playChannel(item);
+  };
+
+  // The native bottom bar switched channel: keep the page and Recent in sync.
+  useEffect(() => {
+    window.__streamDeckChannelSwitched = (title) => {
+      const item = (items.data ?? []).find((entry) => entry.name === title);
+      if (!item) return;
+      lastChannel.current = item.id;
+      setSelected(item);
+      touchRecent(activeId, item);
+    };
+    return () => {
+      window.__streamDeckChannelSwitched = undefined;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.data, activeId]);
+
   const focused = channels.find((item) => item.id === focusedId) ?? null;
   const focusedProgrammes = focused ? scheduleMap.get(focused.id) ?? [] : [];
   const currentProgramme = focusedProgrammes.find((programme) => {
@@ -666,7 +719,7 @@ function TvLive() {
               </div>
               <Button data-dialog-back data-tv-focus data-focus-key="live-player-close" variant="ghost" size="icon" aria-label="Exit full screen" onClick={exitFullscreen}><X className="size-5" /></Button>
             </div>
-            <VideoPlayer onStop={exitFullscreen} onRefreshSource={refreshPlayback} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+            <VideoPlayer onStop={exitFullscreen} onRefreshSource={refreshPlayback} recents={recentList} onPickRecent={pickRecent} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
           </div>
         </div>
       )}
