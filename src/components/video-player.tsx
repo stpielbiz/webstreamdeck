@@ -41,6 +41,10 @@ export interface VideoPlayerProps {
   onExternalLaunch?: () => void;
   /** Called before each reconnect to fetch a fresh stream link. */
   onRefreshSource?: () => Promise<unknown>;
+  /** Recent channels shown in a bottom strip while the controls are visible. */
+  recents?: { title: string; url: string }[];
+  /** Picks a channel from the recents strip. */
+  onPickRecent?: (title: string) => void;
 }
 
 function formatTime(value: number): string {
@@ -71,6 +75,8 @@ export function VideoPlayer({
   allowNative = true,
   onExternalLaunch,
   onRefreshSource,
+  recents,
+  onPickRecent,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const refreshSourceRef = useRef(onRefreshSource);
@@ -639,6 +645,22 @@ export function VideoPlayer({
               : "pointer-events-none translate-y-2 opacity-0",
           )}
         >
+          {recents && recents.length > 0 && onPickRecent && (
+            <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
+              {recents.map((entry) => (
+                <button
+                  key={entry.title}
+                  type="button"
+                  data-tv-focus
+                  tabIndex={controlsVisible || !playing ? 0 : -1}
+                  onClick={() => onPickRecent(entry.title)}
+                  className="shrink-0 rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white outline-none hover:bg-white/20 focus:bg-primary focus:text-primary-foreground"
+                >
+                  {entry.title}
+                </button>
+              ))}
+            </div>
+          )}
           {title && (
             <p className="mb-2 truncate font-display text-sm font-semibold text-white">{title}</p>
           )}
