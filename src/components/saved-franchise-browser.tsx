@@ -36,7 +36,7 @@ export function SavedFranchiseBrowser({ tv, onBack }: { tv?: boolean; onBack: ()
   const cards = () => Array.from(gridRef.current?.querySelectorAll<HTMLElement>("[data-franchise-card]") ?? []);
   const focusIndex = (index: number) => window.requestAnimationFrame(() => {
     const list = cards();
-    if (list.length) list[Math.max(0, Math.min(index, list.length - 1))].focus();
+    if (list.length) list[Math.max(0, Math.min(index, list.length - 1))]?.focus();
     else backRef.current?.focus();
   });
 
@@ -62,10 +62,10 @@ export function SavedFranchiseBrowser({ tv, onBack }: { tv?: boolean; onBack: ()
     if (next < 0) { if (event.key === "ArrowUp") backRef.current?.focus(); return; }
     if (next >= list.length) {
       // Down from a partial last row lands on the final card.
-      if (event.key === "ArrowDown" && Math.floor(current / cols) < Math.floor((list.length - 1) / cols)) list[list.length - 1].focus();
+      if (event.key === "ArrowDown" && Math.floor(current / cols) < Math.floor((list.length - 1) / cols)) list[list.length - 1]?.focus();
       return;
     }
-    list[next].focus();
+    list[next]?.focus();
   };
 
   if (selected) {
@@ -90,7 +90,7 @@ export function SavedFranchiseBrowser({ tv, onBack }: { tv?: boolean; onBack: ()
     <section className="mx-auto w-full max-w-6xl space-y-5 p-3 sm:p-6">
       <div className="flex items-center gap-3" data-remote-row>
         <Button ref={backRef} data-layer-back data-tv-focus variant="ghost" size="sm" onClick={onBack}
-          onKeyDown={(event) => { if (event.key === "ArrowDown" && cards().length) { event.preventDefault(); event.stopPropagation(); cards()[0].focus(); } }}>
+          onKeyDown={(event) => { if (event.key === "ArrowDown" && cards().length) { event.preventDefault(); event.stopPropagation(); cards()[0]?.focus(); } }}>
           <ArrowLeft className="size-4" /> Home
         </Button>
         <div>
