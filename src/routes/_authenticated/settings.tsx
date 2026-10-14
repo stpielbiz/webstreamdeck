@@ -120,29 +120,33 @@ function SettingsPage() {
           ))}
         </div>
       </div>
-      <SettingToggleCard
-        title="Sync my playlists"
-        description={<>
-          Continue watching follows you across your playlists. If you start a movie or episode on one playlist,
-          you can resume it at the same spot on another playlist that has the same title.
-        </>}
-        checked={enabled}
-        disabled={settings.isLoading || save.isPending}
-        onToggle={toggle}
-        focusKey="setting-sync-playlists"
-      />
-      <SettingToggleCard
-        icon={<PauseCircle className="size-4 text-primary" />}
-        title="Background updates"
-        description={<>
-          When on, your channels, movies, shows, TV guide and title details update quietly in the background.
-          Turn off to stop all background updates — the app then uses what is already saved. The update buttons below still work when you press them.
-        </>}
-        checked={current.backgroundUpdates}
-        disabled={settings.isLoading || save.isPending}
-        onToggle={toggleBackground}
-        focusKey="setting-background-updates"
-      />
+      <div data-remote-row>
+        <SettingToggleCard
+          title="Sync my playlists"
+          description={<>
+            Continue watching follows you across your playlists. If you start a movie or episode on one playlist,
+            you can resume it at the same spot on another playlist that has the same title.
+          </>}
+          checked={enabled}
+          disabled={settings.isLoading || save.isPending}
+          onToggle={toggle}
+          focusKey="setting-sync-playlists"
+        />
+      </div>
+      <div data-remote-row>
+        <SettingToggleCard
+          icon={<PauseCircle className="size-4 text-primary" />}
+          title="Background updates"
+          description={<>
+            When on, your channels, movies, shows, TV guide and title details update quietly in the background.
+            Turn off to stop all background updates — the app then uses what is already saved. The update buttons below still work when you press them.
+          </>}
+          checked={current.backgroundUpdates}
+          disabled={settings.isLoading || save.isPending}
+          onToggle={toggleBackground}
+          focusKey="setting-background-updates"
+        />
+      </div>
       <div className="flex items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
         <span>
           <span className="flex items-center gap-2 font-semibold"><Film className="size-4 text-primary" /> Update movie &amp; show details</span>

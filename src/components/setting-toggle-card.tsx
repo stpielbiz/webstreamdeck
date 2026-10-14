@@ -33,7 +33,6 @@ export function SettingToggleCard({
       aria-checked={checked}
       aria-label={title}
       data-tv-focus
-      data-remote-row
       data-zone-entry="true"
       data-focus-key={focusKey}
       disabled={disabled}
