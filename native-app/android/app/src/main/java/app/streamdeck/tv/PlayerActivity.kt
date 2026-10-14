@@ -150,12 +150,24 @@ class PlayerActivity : Activity() {
             setBackgroundColor(Color.argb(170, 0, 0, 0))
             visibility = View.GONE
         }
+        // TiviMate-style bottom bar: recent channels, shown with Down.
+        recentRow = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            setPadding(32, 12, 32, 12)
+        }
+        recentBar = android.widget.HorizontalScrollView(this).apply {
+            addView(recentRow)
+            setBackgroundColor(Color.argb(190, 0, 0, 0))
+            visibility = View.GONE
+            isHorizontalScrollBarEnabled = false
+        }
         val root = FrameLayout(this)
         root.addView(playerView, FrameLayout.LayoutParams(-1, -1))
         root.addView(
             reconnectLabel,
             FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END).apply { setMargins(0, 48, 48, 0) },
         )
+        root.addView(recentBar, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
         setContentView(root)
 
         player.addListener(object : Player.Listener {
