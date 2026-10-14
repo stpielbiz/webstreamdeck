@@ -39,8 +39,8 @@ const rowClass = "relative flex w-full items-center gap-3 overflow-hidden rounde
 
 export function FranchiseCollectionPage({ franchise, movies, shows, onBack }: {
   franchise: Franchise;
-  movies?: CatalogItem[];
-  shows?: CatalogItem[];
+  movies?: CatalogItem[] | undefined;
+  shows?: CatalogItem[] | undefined;
   onBack: () => void;
 }) {
   const { activeId } = usePlaylists();
@@ -152,11 +152,11 @@ export function FranchiseCollectionPage({ franchise, movies, shows, onBack }: {
   );
 }
 
-function Thumb({ src }: { src?: string | null }) {
+function Thumb({ src }: { src?: string | null | undefined }) {
   return <span className="h-14 w-10 shrink-0 overflow-hidden rounded bg-muted">{src && <img src={src} alt="" loading="lazy" className="size-full object-cover" />}</span>;
 }
 
-function ShowBlock({ group, rows, onPlay, first }: { group: TitleGroup; rows?: ProgressRow[]; onPlay: (p: Playing) => void; first: boolean }) {
+function ShowBlock({ group, rows, onPlay, first }: { group: TitleGroup; rows?: ProgressRow[] | undefined; onPlay: (p: Playing) => void; first: boolean }) {
   const { activeId } = usePlaylists();
   const fetchSeries = useGetSeries();
   const seriesId = group.item.id;
