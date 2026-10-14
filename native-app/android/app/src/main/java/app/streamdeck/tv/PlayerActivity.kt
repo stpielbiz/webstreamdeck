@@ -65,6 +65,10 @@ class PlayerActivity : Activity() {
     private lateinit var player: ExoPlayer
     private lateinit var playerView: PlayerView
     private lateinit var reconnectLabel: TextView
+    private lateinit var recentBar: android.widget.HorizontalScrollView
+    private lateinit var recentRow: android.widget.LinearLayout
+    private var currentTitle = ""
+    private val hideRecentBar = Runnable { recentBar.visibility = View.GONE }
     private val handler = Handler(Looper.getMainLooper())
     private var live = false
     private var ended = false
@@ -109,6 +113,7 @@ class PlayerActivity : Activity() {
         isOpen = true
 
         val url = intent.getStringExtra(EXTRA_URL) ?: return finish()
+        currentTitle = intent.getStringExtra(EXTRA_TITLE) ?: ""
         live = intent.getBooleanExtra(EXTRA_LIVE, false)
         val startSeconds = intent.getDoubleExtra(EXTRA_START, 0.0)
         candidates = alternates(url)
