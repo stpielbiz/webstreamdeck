@@ -33,6 +33,9 @@ import { progressForVariants } from "@/lib/watch-progress";
 
 type Kind = "movie" | "series";
 
+/** Sections opened this session, keyed by kind:category:sort. Not persisted. */
+const expandedStore = new Map<string, Set<string>>();
+
 export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolean }) {
   const { activeId, playlists } = usePlaylists();
   const navigate = useNavigate();
@@ -56,6 +59,24 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const limitFor = (label: string) => limits[label] ?? 180;
   const WINDOW = 500;
   const [visibleCount, setVisibleCount] = useState(WINDOW);
+  const genreTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (genreTimer.current) window.clearTimeout(genreTimer.current); }, []);
+  const [, setExpandTick] = useState(0);
+  const expandKey = `${kind}:${genre}:${sort}`;
+  const expandedSet = (): Set<string> => {
+    let set = expandedStore.get(expandKey);
+    if (!set) {
+      set = new Set(sort === "year" ? [String(new Date().getFullYear())] : []);
+      expandedStore.set(expandKey, set);
+    }
+    return set;
+  };
+  const toggleSection = (label: string) => {
+    const set = expandedSet();
+    if (set.has(label)) set.delete(label);
+    else set.add(label);
+    setExpandTick((value) => value + 1);
+  };
   useAppSearchFocus("catalog-search");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedVariants, setSelectedVariants] = useState<TitleVariant[]>([]);
@@ -308,6 +329,14 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     setPlaying(false);
   };
   const returnToHome = () => void navigate({ to: tv ? "/tv" : "/dashboard" });
+  const focusGenre = (label: string) => {
+    if (genreTimer.current) window.clearTimeout(genreTimer.current);
+    genreTimer.current = window.setTimeout(() => chooseGenre(label), 450);
+  };
+  const commitGenre = (label: string) => {
+    if (genreTimer.current) window.clearTimeout(genreTimer.current);
+    chooseGenre(label);
+  };
   const chooseGenre = (label: string) => {
     if (label === genre) return;
     previousGenre.current = genre;
@@ -416,8 +445,9 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
               data-focus-key="category-All"
               variant={genre === "All" ? "secondary" : "ghost"}
               className="h-10 w-40 shrink-0 justify-between px-3 text-left text-sm md:w-full"
-              onFocus={() => chooseGenre("All")}
-              onClick={() => chooseGenre("All")}
+              onFocus={() => focusGenre("All")}
+              onClick={() => commitGenre("All")}
+              onKeyDown={(event) => { if (event.key === "ArrowRight") commitGenre("All"); }}
             >
               <span className="truncate">All</span><span className="ml-2 text-xs text-muted-foreground">{(catalogue.data ?? []).length}</span>
             </Button>
@@ -429,8 +459,9 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
               data-focus-key={`category-${group.label}`}
               variant={group.label === genre ? "secondary" : "ghost"}
               className="h-10 w-40 shrink-0 justify-between px-3 text-left text-sm md:w-full"
-              onFocus={() => chooseGenre(group.label)}
-              onClick={() => chooseGenre(group.label)}
+              onFocus={() => focusGenre(group.label)}
+              onClick={() => commitGenre(group.label)}
+              onKeyDown={(event) => { if (event.key === "ArrowRight") commitGenre(group.label); }}
             >
               <span className="truncate">{group.label}</span><span className="ml-2 text-xs text-muted-foreground">{group.items.length}</span>
             </Button>
@@ -483,12 +514,12 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
         <div className="mb-3 flex items-center gap-3">
           <h2 className="truncate font-display text-lg font-semibold">{searching ? `Results for “${search.trim()}”` : genre ?? "Titles"} <span className="text-sm font-normal text-muted-foreground">· {visibleItems.length}</span></h2>
         </div>
-        {catalogue.isLoading && !catalogue.data ? <CatalogGridLoading title={kind === "movie" ? "Movies" : "Shows"} /> : catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 ? <EmptyState title="Nothing here" description={searching ? `No titles match “${search.trim()}”.` : "No titles match this system category."} /> : <>{windowed.sections.map((section, sectionIndex) => (
+        {catalogue.isLoading && !catalogue.data ? <CatalogGridLoading title={kind === "movie" ? "Movies" : "Shows"} /> : catalogue.isError || metadata.isError ? <p className="text-sm text-destructive">Your library could not be loaded. Try again shortly.</p> : visibleItems.length === 0 ? <EmptyState title="Nothing here" description={searching ? `No titles match “${search.trim()}”.` : "No titles match this system category."} /> : <>{(searching ? windowed.sections : sections).map((section, sectionIndex) => { const open = searching || expandedSet().has(section.label); return (
           <div key={section.label} className="mb-5">
-            <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3>
-            <div data-grid-entry={sectionIndex === 0 ? "true" : undefined}><PosterGrid>{section.items.slice(0, limitFor(section.label)).map((item) => { const titleGroup = groupByItemId.get(item.id); const variants = titleGroup?.variants ?? []; const favouriteVariant = variants.find((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id)); return <PosterTile key={item.id} title={titleGroup?.title || metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(titleGroup?.year || metadata.data?.[item.name]?.year || item.year || "")} progress={progressForVariants(progress.data, activeId, variants, titleGroup?.title)} favorite={!!favouriteVariant} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: favouriteVariant?.item.id ?? item.id, title: titleGroup?.title ?? item.name, logoUrl: item.image })} />; })}{section.items.length > limitFor(section.label) && <button type="button" data-tv-focus data-focus-key={`show-more-${section.label}`} onClick={(event) => { const label = section.label; const at = limitFor(label); setLimits((prev) => ({ ...prev, [label]: at + 180 })); const grid = event.currentTarget.parentElement; window.requestAnimationFrame(() => (grid?.children[at] as HTMLElement | undefined)?.querySelector<HTMLElement>("[data-tv-focus]")?.focus()); }} className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/60 p-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">Show more<span className="mt-1 text-xs font-normal">{(section.items.length - limitFor(section.label)).toLocaleString()} left</span></button>}</PosterGrid></div>
+            {searching ? <h3 className="sticky top-0 z-10 mb-2 bg-background/95 py-1 font-display text-base font-semibold text-primary backdrop-blur">{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length}</span></h3> : <div data-remote-row><button type="button" data-tv-focus data-section-heading data-grid-entry={sectionIndex === 0 && !open ? "true" : undefined} data-focus-key={`section-${section.label}`} aria-expanded={open} onClick={() => toggleSection(section.label)} className="mb-2 flex w-full items-center justify-between rounded-md border border-border bg-card/60 px-3 py-2 text-left font-display text-base font-semibold text-primary transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"><span>{section.label} <span className="text-xs font-normal text-muted-foreground">· {section.items.length.toLocaleString()} titles</span></span><span className="text-xs font-normal text-muted-foreground">{open ? "Hide" : "Open"}</span></button></div>}
+            {open && <div data-grid-entry={sectionIndex === 0 ? "true" : undefined}><PosterGrid>{section.items.slice(0, limitFor(section.label)).map((item) => { const titleGroup = groupByItemId.get(item.id); const variants = titleGroup?.variants ?? []; const favouriteVariant = variants.find((variant) => isFavorite(favorites.data, activeId, kind, variant.item.id)); return <PosterTile key={item.id} title={titleGroup?.title || metadata.data?.[item.name]?.title || item.name} image={metadata.data?.[item.name]?.poster || item.image} subtitle={String(titleGroup?.year || metadata.data?.[item.name]?.year || item.year || "")} progress={progressForVariants(progress.data, activeId, variants, titleGroup?.title)} favorite={!!favouriteVariant} onSelect={() => selectTitle(item.id)} onToggleFavorite={() => activeId && toggleFavorite.mutate({ playlistId: activeId, itemKind: kind, itemId: favouriteVariant?.item.id ?? item.id, title: titleGroup?.title ?? item.name, logoUrl: item.image })} />; })}{section.items.length > limitFor(section.label) && <button type="button" data-tv-focus data-focus-key={`show-more-${section.label}`} onClick={(event) => { const label = section.label; const at = limitFor(label); setLimits((prev) => ({ ...prev, [label]: at + 180 })); const grid = event.currentTarget.parentElement; window.requestAnimationFrame(() => (grid?.children[at] as HTMLElement | undefined)?.querySelector<HTMLElement>("[data-tv-focus]")?.focus()); }} className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/60 p-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">Show more<span className="mt-1 text-xs font-normal">{(section.items.length - limitFor(section.label)).toLocaleString()} left</span></button>}</PosterGrid></div>}
           </div>
-        ))}{windowed.remaining > 0 && (
+        ); })}{searching && windowed.remaining > 0 && (
           <button
             type="button"
             data-tv-focus
