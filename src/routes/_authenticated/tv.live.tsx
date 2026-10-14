@@ -719,7 +719,7 @@ function TvLive() {
               </div>
               <Button data-dialog-back data-tv-focus data-focus-key="live-player-close" variant="ghost" size="icon" aria-label="Exit full screen" onClick={exitFullscreen}><X className="size-5" /></Button>
             </div>
-            <VideoPlayer onStop={exitFullscreen} onRefreshSource={refreshPlayback} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+            <VideoPlayer onStop={exitFullscreen} onRefreshSource={refreshPlayback} recents={recentList} onPickRecent={pickRecent} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
           </div>
         </div>
       )}
