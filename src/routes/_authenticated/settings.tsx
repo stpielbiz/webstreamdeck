@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { SettingToggleCard } from "@/components/setting-toggle-card";
 import { useSaveSettings, useSettings } from "@/lib/playlist-sync";
 import { usePlaylists } from "@/components/playlist-context";
 import { requestLibraryRefresh, runBulkRefresh, stopBulkRefresh, useBulkRefreshState, getBulkRefreshState, useLibraryRefreshStatus } from "@/lib/library-sync";
@@ -120,41 +120,29 @@ function SettingsPage() {
           ))}
         </div>
       </div>
-      <label className="flex cursor-pointer items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
-        <span>
-          <span className="block font-semibold">Sync my playlists</span>
-          <span className="mt-1 block text-sm text-muted-foreground">
-            Continue watching follows you across your playlists. If you start a movie or episode on one playlist,
-            you can resume it at the same spot on another playlist that has the same title.
-          </span>
-        </span>
-        <span data-remote-row className="shrink-0"><Switch
-          data-tv-focus
-          data-zone-entry="true"
-          data-focus-key="setting-sync-playlists"
-          checked={enabled}
-          disabled={settings.isLoading || save.isPending}
-          onCheckedChange={toggle}
-          aria-label="Sync my playlists"
-        /></span>
-      </label>
-      <label className="flex cursor-pointer items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
-        <span>
-          <span className="flex items-center gap-2 font-semibold"><PauseCircle className="size-4 text-primary" /> Background updates</span>
-          <span className="mt-1 block text-sm text-muted-foreground">
-            When on, your channels, movies, shows, TV guide and title details update quietly in the background.
-            Turn off to stop all background updates — the app then uses what is already saved. The update buttons below still work when you press them.
-          </span>
-        </span>
-        <span data-remote-row className="shrink-0"><Switch
-          data-tv-focus
-          data-focus-key="setting-background-updates"
-          checked={current.backgroundUpdates}
-          disabled={settings.isLoading || save.isPending}
-          onCheckedChange={toggleBackground}
-          aria-label="Background updates"
-        /></span>
-      </label>
+      <SettingToggleCard
+        title="Sync my playlists"
+        description={<>
+          Continue watching follows you across your playlists. If you start a movie or episode on one playlist,
+          you can resume it at the same spot on another playlist that has the same title.
+        </>}
+        checked={enabled}
+        disabled={settings.isLoading || save.isPending}
+        onToggle={toggle}
+        focusKey="setting-sync-playlists"
+      />
+      <SettingToggleCard
+        icon={<PauseCircle className="size-4 text-primary" />}
+        title="Background updates"
+        description={<>
+          When on, your channels, movies, shows, TV guide and title details update quietly in the background.
+          Turn off to stop all background updates — the app then uses what is already saved. The update buttons below still work when you press them.
+        </>}
+        checked={current.backgroundUpdates}
+        disabled={settings.isLoading || save.isPending}
+        onToggle={toggleBackground}
+        focusKey="setting-background-updates"
+      />
       <div className="flex items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
         <span>
           <span className="flex items-center gap-2 font-semibold"><Film className="size-4 text-primary" /> Update movie &amp; show details</span>
