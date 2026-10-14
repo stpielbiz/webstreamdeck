@@ -33,6 +33,9 @@ import { progressForVariants } from "@/lib/watch-progress";
 
 type Kind = "movie" | "series";
 
+/** Sections opened this session, keyed by kind:category:sort. Not persisted. */
+const expandedStore = new Map<string, Set<string>>();
+
 export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolean }) {
   const { activeId, playlists } = usePlaylists();
   const navigate = useNavigate();
@@ -56,6 +59,24 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
   const limitFor = (label: string) => limits[label] ?? 180;
   const WINDOW = 500;
   const [visibleCount, setVisibleCount] = useState(WINDOW);
+  const genreTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (genreTimer.current) window.clearTimeout(genreTimer.current); }, []);
+  const [, setExpandTick] = useState(0);
+  const expandKey = `${kind}:${genre}:${sort}`;
+  const expandedSet = (): Set<string> => {
+    let set = expandedStore.get(expandKey);
+    if (!set) {
+      set = new Set(sort === "year" ? [String(new Date().getFullYear())] : []);
+      expandedStore.set(expandKey, set);
+    }
+    return set;
+  };
+  const toggleSection = (label: string) => {
+    const set = expandedSet();
+    if (set.has(label)) set.delete(label);
+    else set.add(label);
+    setExpandTick((value) => value + 1);
+  };
   useAppSearchFocus("catalog-search");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedVariants, setSelectedVariants] = useState<TitleVariant[]>([]);
@@ -308,6 +329,14 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     setPlaying(false);
   };
   const returnToHome = () => void navigate({ to: tv ? "/tv" : "/dashboard" });
+  const focusGenre = (label: string) => {
+    if (genreTimer.current) window.clearTimeout(genreTimer.current);
+    genreTimer.current = window.setTimeout(() => chooseGenre(label), 450);
+  };
+  const commitGenre = (label: string) => {
+    if (genreTimer.current) window.clearTimeout(genreTimer.current);
+    chooseGenre(label);
+  };
   const chooseGenre = (label: string) => {
     if (label === genre) return;
     previousGenre.current = genre;
@@ -416,8 +445,9 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
               data-focus-key="category-All"
               variant={genre === "All" ? "secondary" : "ghost"}
               className="h-10 w-40 shrink-0 justify-between px-3 text-left text-sm md:w-full"
-              onFocus={() => chooseGenre("All")}
-              onClick={() => chooseGenre("All")}
+              onFocus={() => focusGenre("All")}
+              onClick={() => commitGenre("All")}
+              onKeyDown={(event) => { if (event.key === "ArrowRight") commitGenre("All"); }}
             >
               <span className="truncate">All</span><span className="ml-2 text-xs text-muted-foreground">{(catalogue.data ?? []).length}</span>
             </Button>
@@ -429,8 +459,9 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
               data-focus-key={`category-${group.label}`}
               variant={group.label === genre ? "secondary" : "ghost"}
               className="h-10 w-40 shrink-0 justify-between px-3 text-left text-sm md:w-full"
-              onFocus={() => chooseGenre(group.label)}
-              onClick={() => chooseGenre(group.label)}
+              onFocus={() => focusGenre(group.label)}
+              onClick={() => commitGenre(group.label)}
+              onKeyDown={(event) => { if (event.key === "ArrowRight") commitGenre(group.label); }}
             >
               <span className="truncate">{group.label}</span><span className="ml-2 text-xs text-muted-foreground">{group.items.length}</span>
             </Button>
