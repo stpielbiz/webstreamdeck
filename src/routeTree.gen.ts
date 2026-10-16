@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DeviceLoginRouteImport } from './routes/device-login'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as GetAppRouteImport } from './routes/get-app'
+import { Route as RecentTilesProbeRouteImport } from './routes/recent-tiles-probe'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedConnectTvRouteImport } from './routes/_authenticated/connect-tv'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -68,6 +69,11 @@ const DownloadRoute = DownloadRouteImport.update({
 const GetAppRoute = GetAppRouteImport.update({
   id: '/get-app',
   path: '/get-app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecentTilesProbeRoute = RecentTilesProbeRouteImport.update({
+  id: '/recent-tiles-probe',
+  path: '/recent-tiles-probe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/device-login': typeof DeviceLoginRoute
   '/download': typeof DownloadRoute
   '/get-app': typeof GetAppRoute
+  '/recent-tiles-probe': typeof RecentTilesProbeRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/connect-tv': typeof AuthenticatedConnectTvRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -240,6 +247,7 @@ export interface FileRoutesByTo {
   '/device-login': typeof DeviceLoginRoute
   '/download': typeof DownloadRoute
   '/get-app': typeof GetAppRoute
+  '/recent-tiles-probe': typeof RecentTilesProbeRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/connect-tv': typeof AuthenticatedConnectTvRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -274,6 +282,7 @@ export interface FileRoutesById {
   '/device-login': typeof DeviceLoginRoute
   '/download': typeof DownloadRoute
   '/get-app': typeof GetAppRoute
+  '/recent-tiles-probe': typeof RecentTilesProbeRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/connect-tv': typeof AuthenticatedConnectTvRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -308,6 +317,7 @@ export interface FileRouteTypes {
     | '/device-login'
     | '/download'
     | '/get-app'
+    | '/recent-tiles-probe'
     | '/admin'
     | '/connect-tv'
     | '/dashboard'
@@ -340,6 +350,7 @@ export interface FileRouteTypes {
     | '/device-login'
     | '/download'
     | '/get-app'
+    | '/recent-tiles-probe'
     | '/admin'
     | '/connect-tv'
     | '/dashboard'
@@ -373,6 +384,7 @@ export interface FileRouteTypes {
     | '/device-login'
     | '/download'
     | '/get-app'
+    | '/recent-tiles-probe'
     | '/_authenticated/admin'
     | '/_authenticated/connect-tv'
     | '/_authenticated/dashboard'
@@ -407,6 +419,7 @@ export interface RootRouteChildren {
   DeviceLoginRoute: typeof DeviceLoginRoute
   DownloadRoute: typeof DownloadRoute
   GetAppRoute: typeof GetAppRoute
+  RecentTilesProbeRoute: typeof RecentTilesProbeRoute
   TvPairRoute: typeof TvPairRoute
   ApiPublicStreamRoute: typeof ApiPublicStreamRoute
 }
@@ -453,6 +466,13 @@ declare module '@tanstack/react-router' {
       path: '/get-app'
       fullPath: '/get-app'
       preLoaderRoute: typeof GetAppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recent-tiles-probe': {
+      id: '/recent-tiles-probe'
+      path: '/recent-tiles-probe'
+      fullPath: '/recent-tiles-probe'
+      preLoaderRoute: typeof RecentTilesProbeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -695,6 +715,7 @@ const rootRouteChildren: RootRouteChildren = {
   DeviceLoginRoute: DeviceLoginRoute,
   DownloadRoute: DownloadRoute,
   GetAppRoute: GetAppRoute,
+  RecentTilesProbeRoute: RecentTilesProbeRoute,
   TvPairRoute: TvPairRoute,
   ApiPublicStreamRoute: ApiPublicStreamRoute,
 }
