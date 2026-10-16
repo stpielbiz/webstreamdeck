@@ -390,7 +390,7 @@ export const getPlayback = createServerFn({ method: "POST" })
 export interface FavoriteRow {
   id: string;
   playlistId: string;
-  itemKind: "live" | "movie" | "series" | "episode";
+  itemKind: "live" | "movie" | "series" | "episode" | "live_category";
   itemId: string;
   title: string;
   logoUrl: string | null;
@@ -420,7 +420,7 @@ export const toggleFavorite = createServerFn({ method: "POST" })
     z
       .object({
         playlistId: z.string().uuid(),
-        itemKind: z.enum(["live", "movie", "series", "episode"]),
+        itemKind: z.enum(["live", "movie", "series", "episode", "live_category"]),
         itemId: z.string(),
         title: z.string(),
         logoUrl: z.string().nullish(),
@@ -487,7 +487,9 @@ export const listProgress = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return (data ?? []).map((row) => ({
       playlistId: row.playlist_id,
-      itemKind: row.item_kind,
+      // watch_progress only ever stores movie/episode rows; the item_kind enum
+      // also covers favourites-only kinds such as live_category.
+      itemKind: row.item_kind as ProgressRow["itemKind"],
       itemId: row.item_id,
       seriesId: row.series_id,
       season: row.season,

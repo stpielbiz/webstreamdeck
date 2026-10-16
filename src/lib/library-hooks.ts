@@ -36,7 +36,7 @@ export function useToggleFavorite() {
   return useMutation({
     mutationFn: (input: {
       playlistId: string;
-      itemKind: "live" | "movie" | "series" | "episode";
+      itemKind: "live" | "movie" | "series" | "episode" | "live_category";
       itemId: string;
       title: string;
       logoUrl?: string | null;

@@ -506,7 +506,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      item_kind: "live" | "movie" | "series" | "episode"
+      item_kind: "live" | "movie" | "series" | "episode" | "live_category"
       playlist_kind: "xtream" | "m3u"
     }
     CompositeTypes: {
@@ -636,7 +636,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      item_kind: ["live", "movie", "series", "episode"],
+      item_kind: ["live", "movie", "series", "episode", "live_category"],
       playlist_kind: ["xtream", "m3u"],
     },
   },

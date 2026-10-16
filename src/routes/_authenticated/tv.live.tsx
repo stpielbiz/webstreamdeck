@@ -83,6 +83,48 @@ function EmptyGuideButton({ onLongPress, ...props }: React.ComponentProps<typeof
   return <Button {...props} {...longPress} />;
 }
 
+/** A channel category in the rail: quick press opens it, hold OK stars it. */
+function LiveCategoryButton({
+  category,
+  starred,
+  active,
+  onOpen,
+  onToggleFavorite,
+  onPreview,
+}: {
+  category: { id: string; name: string };
+  starred: boolean;
+  active: boolean;
+  onOpen: () => void;
+  onToggleFavorite: () => void;
+  onPreview: () => void;
+}) {
+  const longPress = useLongPress(onToggleFavorite);
+  return (
+    <Button
+      data-tv-focus
+      data-focus-key={`live-category-${category.id}`}
+      variant={active ? "default" : "ghost"}
+      className="h-9 w-full justify-start truncate px-2 text-xs"
+      title={`${category.name} — hold OK to ${starred ? "remove from" : "add to"} favourite categories`}
+      onFocus={onPreview}
+      onClick={onOpen}
+      {...longPress}
+      onKeyDown={(event) => {
+        longPress.onKeyDown(event);
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          event.stopPropagation();
+          document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus();
+        }
+      }}
+    >
+      {starred && <Star className="size-3 shrink-0 fill-primary text-primary" />}
+      {category.name}
+    </Button>
+  );
+}
+
 function TvLive() {
   const navigate = useNavigate();
   const EVENT_CATEGORY = /\b(nhl|nba|nfl|mlb|mls|ufc|sports?|events?|ppv)\b/i;
@@ -363,6 +405,29 @@ function TvLive() {
     });
   };
 
+  const toggleCategoryFavorite = (category: { id: string; name: string }) => {
+    if (!activeId) return;
+    const starred = isFavorite(favorites.data, activeId, "live_category", category.id);
+    toggleFavorite.mutate(
+      { playlistId: activeId, itemKind: "live_category", itemId: category.id, title: category.name, logoUrl: null },
+      { onSuccess: () => toast.success(starred ? `Removed ${category.name} from favourite categories` : `Added ${category.name} to favourite categories`) },
+    );
+  };
+
+  // Favourite categories pin to the top of the rail, A–Z; the rest follow.
+  const favouriteCategoryIds = useMemo(
+    () => new Set((favorites.data ?? []).filter((row) => row.playlistId === activeId && row.itemKind === "live_category").map((row) => row.itemId)),
+    [favorites.data, activeId],
+  );
+  const favouriteCategories = useMemo(
+    () => (categories.data ?? []).filter((category) => favouriteCategoryIds.has(category.id)).sort((a, b) => compareTitles(a.name, b.name)),
+    [categories.data, favouriteCategoryIds],
+  );
+  const otherCategories = useMemo(
+    () => (categories.data ?? []).filter((category) => !favouriteCategoryIds.has(category.id)),
+    [categories.data, favouriteCategoryIds],
+  );
+
   const toggleChannelFavorite = (item: CatalogItem) => {
     if (!activeId) return;
     const starred = isFavorite(favorites.data, activeId, "live", item.id);
@@ -553,6 +618,17 @@ function TvLive() {
                 Recent
               </Button>
             )}
+            {favouriteCategories.map((category) => (
+              <LiveCategoryButton
+                key={category.id}
+                category={category}
+                starred
+                active={categoryId === category.id}
+                onOpen={() => chooseCategory(category.id)}
+                onToggleFavorite={() => toggleCategoryFavorite(category)}
+                onPreview={() => previewCategory(category.id)}
+              />
+            ))}
             <Button
               data-tv-focus
               data-focus-key="live-category-all"
@@ -565,20 +641,16 @@ function TvLive() {
             >
               All channels
             </Button>
-            {(categories.data ?? []).map((category) => (
-              <Button
+            {otherCategories.map((category) => (
+              <LiveCategoryButton
                 key={category.id}
-                data-tv-focus
-                data-focus-key={`live-category-${category.id}`}
-                variant={categoryId === category.id ? "default" : "ghost"}
-                className="h-9 w-full justify-start truncate px-2 text-xs"
-                onFocus={() => previewCategory(category.id)}
-                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); } }}
-
-                onClick={() => chooseCategory(category.id)}
-              >
-                {category.name}
-              </Button>
+                category={category}
+                starred={false}
+                active={categoryId === category.id}
+                onOpen={() => chooseCategory(category.id)}
+                onToggleFavorite={() => toggleCategoryFavorite(category)}
+                onPreview={() => previewCategory(category.id)}
+              />
             ))}
           </div>
         </aside>

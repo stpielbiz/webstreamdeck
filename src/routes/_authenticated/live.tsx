@@ -39,6 +39,34 @@ export const Route = createFileRoute("/_authenticated/live")({
   component: LivePage,
 });
 
+/** A category in the chooser: quick press opens it, hold stars it. */
+function CategoryPickButton({
+  category,
+  starred,
+  onOpen,
+  onToggleFavorite,
+}: {
+  category: { id: string; name: string };
+  starred: boolean;
+  onOpen: () => void;
+  onToggleFavorite: () => void;
+}) {
+  const longPress = useLongPress(onToggleFavorite);
+  return (
+    <Button
+      data-tv-focus
+      variant="ghost"
+      className="h-12 justify-start truncate px-4 text-base"
+      title={`${category.name} — hold to ${starred ? "remove from" : "add to"} favourite categories`}
+      onClick={onOpen}
+      {...longPress}
+    >
+      {starred && <Star className="size-4 shrink-0 fill-primary text-primary" />}
+      {category.name}
+    </Button>
+  );
+}
+
 function timeLabel(iso: string | null) {
   if (!iso) return "";
   const date = new Date(iso);
@@ -232,6 +260,29 @@ function LivePage() {
     staleTime: 60_000,
   });
 
+  const toggleCategoryFavorite = (category: { id: string; name: string }) => {
+    if (!activeId) return;
+    const starred = isFavorite(favorites.data, activeId, "live_category", category.id);
+    toggle.mutate(
+      { playlistId: activeId, itemKind: "live_category", itemId: category.id, title: category.name, logoUrl: null },
+      { onSuccess: () => toast.success(starred ? `Removed ${category.name} from favourite categories` : `Added ${category.name} to favourite categories`) },
+    );
+  };
+
+  // Favourite categories pin to the top of the chooser, A–Z; the rest follow.
+  const favouriteCategoryIds = useMemo(
+    () => new Set((favorites.data ?? []).filter((row) => row.playlistId === activeId && row.itemKind === "live_category").map((row) => row.itemId)),
+    [favorites.data, activeId],
+  );
+  const favouriteCategories = useMemo(
+    () => (categories.data ?? []).filter((category) => favouriteCategoryIds.has(category.id)).sort((a, b) => compareTitles(a.name, b.name)),
+    [categories.data, favouriteCategoryIds],
+  );
+  const otherCategories = useMemo(
+    () => (categories.data ?? []).filter((category) => !favouriteCategoryIds.has(category.id)),
+    [categories.data, favouriteCategoryIds],
+  );
+
   const toggleChannel = (item: CatalogItem) => {
     if (!activeId) return;
     const starred = isFavorite(favorites.data, activeId, "live", item.id);
@@ -278,11 +329,14 @@ function LivePage() {
             {recent.rows.length > 0 && (
               <Button data-tv-focus variant="ghost" className="h-12 justify-start px-4 text-base" onClick={() => { setCategoryId(RECENT_CATEGORY); setSelected(null); }}>Recent</Button>
             )}
+            {favouriteCategories.map((category) => (
+              <CategoryPickButton key={category.id} category={category} starred onOpen={() => { setCategoryId(category.id); setSelected(null); }} onToggleFavorite={() => toggleCategoryFavorite(category)} />
+            ))}
             <Button data-tv-focus variant="ghost" className="h-12 justify-between px-4 text-base" onClick={() => { setCategoryId(""); setSelected(null); }}>All channels</Button>
             {categories.isLoading
               ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />)
-              : (categories.data ?? []).map((category) => (
-                  <Button key={category.id} data-tv-focus variant="ghost" className="h-12 justify-start truncate px-4 text-base" onClick={() => { setCategoryId(category.id); setSelected(null); }}>{category.name}</Button>
+              : otherCategories.map((category) => (
+                  <CategoryPickButton key={category.id} category={category} starred={false} onOpen={() => { setCategoryId(category.id); setSelected(null); }} onToggleFavorite={() => toggleCategoryFavorite(category)} />
                 ))}
           </div>
         </div>
