@@ -19,7 +19,7 @@ import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks
 import { useLongPress } from "@/lib/use-long-press";
 import { toast } from "sonner";
 import { MultiView } from "@/components/multi-view";
-import { RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
+import { FAVOURITES_CATEGORY, RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 
 export const Route = createFileRoute("/_authenticated/live")({
   validateSearch: z.object({ channel: z.string().optional() }),
@@ -32,6 +32,8 @@ export const Route = createFileRoute("/_authenticated/live")({
       },
       { property: "og:title", content: "Live TV — Stream Deck" },
       { property: "og:description", content: "Your channel list with now and next." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: LivePage,
@@ -136,6 +138,7 @@ function LivePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id]);
   const isRecent = categoryId === RECENT_CATEGORY;
+  const isFavourites = categoryId === FAVOURITES_CATEGORY;
   const toggle = useToggleFavorite();
 
   const categories = useQuery({
@@ -146,13 +149,13 @@ function LivePage() {
   });
 
   const channels = useQuery({
-    queryKey: ["items", activeId, "live", isRecent ? "all" : (categoryId ?? "all"), search],
+    queryKey: ["items", activeId, "live", isRecent || isFavourites ? "all" : (categoryId ?? "all"), search],
     queryFn: () =>
       fetchItems({
         data: {
           playlistId: activeId!,
           kind: "live",
-          categoryId: search || isRecent ? undefined : (categoryId || undefined),
+          categoryId: search || isRecent || isFavourites ? undefined : (categoryId || undefined),
           search: search || undefined,
         },
       }),
@@ -161,8 +164,14 @@ function LivePage() {
   });
 
   const visible = useMemo(
-    () => (isRecent && !search ? orderByRecent(channels.data ?? [], recent.rows) : (channels.data ?? [])).slice(0, 400),
-    [channels.data, isRecent, search, recent.rows],
+    () => {
+      if (isFavourites && !search) {
+        const ids = new Set((favorites.data ?? []).filter((row) => row.playlistId === activeId && row.itemKind === "live").map((row) => row.itemId));
+        return (channels.data ?? []).filter((item) => ids.has(item.id)).slice(0, 400);
+      }
+      return (isRecent && !search ? orderByRecent(channels.data ?? [], recent.rows) : (channels.data ?? [])).slice(0, 400);
+    },
+    [channels.data, isRecent, isFavourites, search, recent.rows, favorites.data, activeId],
   );
 
   const epg = useQuery({
@@ -249,6 +258,7 @@ function LivePage() {
           <h1 className="font-display text-2xl font-bold">Live TV</h1>
           <p className="mt-1 text-sm text-muted-foreground">Choose a channel category</p>
           <div className="mt-5 flex flex-col gap-1">
+            <Button data-tv-focus variant="ghost" className="h-12 justify-start px-4 text-base" onClick={() => { setCategoryId(FAVOURITES_CATEGORY); setSelected(null); }}><Star className="size-4" /> Favourites</Button>
             {recent.rows.length > 0 && (
               <Button data-tv-focus variant="ghost" className="h-12 justify-start px-4 text-base" onClick={() => { setCategoryId(RECENT_CATEGORY); setSelected(null); }}>Recent</Button>
             )}
@@ -279,7 +289,7 @@ function LivePage() {
           />
         </div>
         <div className="scrollbar-thin flex-1 overflow-y-auto">
-          {channels.isLoading ? (
+          {channels.isLoading || (isFavourites && favorites.isLoading) ? (
             <div className="space-y-2 p-3">
               {Array.from({ length: 10 }).map((_, index) => (
                 <Skeleton key={index} className="h-12 w-full" />
@@ -290,7 +300,7 @@ function LivePage() {
               {(channels.error as Error).message}
             </p>
           ) : visible.length === 0 ? (
-            <p className="p-4 text-sm text-muted-foreground">No channels here.</p>
+            <p className="p-4 text-sm text-muted-foreground">{isFavourites ? "No favourite channels in this playlist yet." : "No channels here."}</p>
           ) : (
             visible.map((item) => (
               <ChannelRow

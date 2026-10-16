@@ -6,6 +6,7 @@ import type { CatalogItem } from "./iptv-types";
 import { listRecentChannels, touchRecentChannel, type RecentChannel } from "./recent-channels.functions";
 
 export const RECENT_CATEGORY = "__recent";
+export const FAVOURITES_CATEGORY = "__favourites";
 
 export function useRecentChannels(playlistId: string | null) {
   const fetchRecent = useServerFn(listRecentChannels);

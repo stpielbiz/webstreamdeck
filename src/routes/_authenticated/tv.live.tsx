@@ -20,7 +20,7 @@ import { useAppSearchFocus } from "@/lib/app-search";
 import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
 import { useLongPress } from "@/lib/use-long-press";
 import { MultiView } from "@/components/multi-view";
-import { RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
+import { FAVOURITES_CATEGORY, RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 import { toast } from "sonner";
 
 const GUIDE_HOURS = 12;
@@ -108,7 +108,7 @@ function TvLive() {
   useAppSearchFocus("live-search");
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   const searching = search.trim().length > 0;
-  const effectiveCategory = searching || categoryId === RECENT_CATEGORY ? "" : categoryId;
+  const effectiveCategory = searching || categoryId === RECENT_CATEGORY || categoryId === FAVOURITES_CATEGORY ? "" : categoryId;
   const recent = useRecentChannels(activeId);
   const touchRecent = useTouchRecent();
   const [multiOpen, setMultiOpen] = useState(false);
@@ -146,9 +146,13 @@ function TvLive() {
 
   const channels = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
+    if (!term && categoryId === FAVOURITES_CATEGORY) {
+      const ids = new Set((favorites.data ?? []).filter((row) => row.playlistId === activeId && row.itemKind === "live").map((row) => row.itemId));
+      return (items.data ?? []).filter((item) => ids.has(item.id));
+    }
     const source = !term && categoryId === RECENT_CATEGORY ? orderByRecent(items.data ?? [], recent.rows) : (items.data ?? []);
     return source.filter((item) => !term || item.name.toLocaleLowerCase().includes(term) || String(item.number ?? "").includes(term));
-  }, [items.data, search, categoryId, recent.rows]);
+  }, [items.data, search, categoryId, recent.rows, favorites.data, activeId]);
   const pageCount = Math.max(1, Math.ceil(channels.length / PAGE_SIZE));
   const visibleChannels = useMemo(
     () => channels.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
@@ -525,10 +529,21 @@ function TvLive() {
           </Button>
           <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Channel categories</p>
           <div data-tv-zone="live-categories" data-tv-zone-order="1" className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
+            <Button
+              data-tv-focus
+              data-focus-key={`live-category-${FAVOURITES_CATEGORY}`}
+              variant={categoryId === FAVOURITES_CATEGORY ? "default" : "ghost"}
+              className="h-9 w-full justify-start truncate px-2 text-xs"
+              onFocus={() => previewCategory(FAVOURITES_CATEGORY)}
+              onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); } }}
+              onClick={() => chooseCategory(FAVOURITES_CATEGORY)}
+            >
+              <Star className="size-3 shrink-0" /> Favourites
+            </Button>
             {recent.rows.length > 0 && (
               <Button
                 data-tv-focus
-                data-focus-key="live-category-recent"
+                data-focus-key={`live-category-${RECENT_CATEGORY}`}
                 variant={categoryId === RECENT_CATEGORY ? "default" : "ghost"}
                 className="h-9 w-full justify-start truncate px-2 text-xs"
                 onFocus={() => previewCategory(RECENT_CATEGORY)}
@@ -628,8 +643,8 @@ function TvLive() {
               </div>
             </div>
 
-            {items.isLoading && <p className="sticky left-0 p-6 text-muted-foreground">Loading channels…</p>}
-            {!items.isLoading && channels.length === 0 && <p className="sticky left-0 p-4 text-sm text-muted-foreground">{searching ? `No channels match “${search.trim()}”.` : "No channels in this category."}</p>}
+            {(items.isLoading || (categoryId === FAVOURITES_CATEGORY && favorites.isLoading)) && <p className="sticky left-0 p-6 text-muted-foreground">Loading channels…</p>}
+            {!items.isLoading && !(categoryId === FAVOURITES_CATEGORY && favorites.isLoading) && channels.length === 0 && <p className="sticky left-0 p-4 text-sm text-muted-foreground">{searching ? `No channels match “${search.trim()}”.` : categoryId === FAVOURITES_CATEGORY ? "No favourite channels in this playlist yet." : "No channels in this category."}</p>}
             {!items.isLoading && page > 0 && (
               <div data-guide-pagination className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
                 <Button variant="ghost" data-tv-focus data-zone-edge-left="true" onClick={() => setPage((value) => Math.max(0, value - 1))} className="sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start rounded-none border-r border-border bg-card px-2 text-xs">
