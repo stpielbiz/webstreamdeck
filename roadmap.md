@@ -1,6 +1,6 @@
 # Roadmap
 
-- [in progress] Favourites above Recent in Live TV, with favourite-channel guide listings on TV and web
+- [done] Favourites above Recent in Live TV, with favourite-channel guide listings on TV and web; real-channel verification unavailable because the test account has no playlist
 
 - [done] Press-and-hold confirm dialog before removing favourites / continue-watching items
 - [done] Keep the TV awake while the movie/show details update runs in Settings
