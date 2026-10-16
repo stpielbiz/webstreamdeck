@@ -141,6 +141,22 @@ function LivePage() {
   const isFavourites = categoryId === FAVOURITES_CATEGORY;
   const toggle = useToggleFavorite();
 
+  // The category list opens with focus on Favourites for accounts that have
+  // favourite channels, so the remote or mouse starts on their own list.
+  const focusedFavourites = useRef(false);
+  useEffect(() => {
+    if (focusedFavourites.current || categoryId !== null || favorites.isLoading || !activeId) return;
+    focusedFavourites.current = true;
+    const hasFavouriteChannels = (favorites.data ?? []).some(
+      (row) => row.playlistId === activeId && row.itemKind === "live",
+    );
+    if (!hasFavouriteChannels) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('[data-focus-key="live-category-favourites"]')?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [categoryId, favorites.isLoading, favorites.data, activeId]);
+
   const categories = useQuery({
     queryKey: ["categories", activeId, "live"],
     queryFn: () => fetchCategories({ data: { playlistId: activeId!, kind: "live" } }),
@@ -258,7 +274,7 @@ function LivePage() {
           <h1 className="font-display text-2xl font-bold">Live TV</h1>
           <p className="mt-1 text-sm text-muted-foreground">Choose a channel category</p>
           <div className="mt-5 flex flex-col gap-1">
-            <Button data-tv-focus variant="ghost" className="h-12 justify-start px-4 text-base" onClick={() => { setCategoryId(FAVOURITES_CATEGORY); setSelected(null); }}><Star className="size-4" /> Favourites</Button>
+            <Button data-tv-focus data-focus-key="live-category-favourites" variant="ghost" className="h-12 justify-start px-4 text-base" onClick={() => { setCategoryId(FAVOURITES_CATEGORY); setSelected(null); }}><Star className="size-4" /> Favourites</Button>
             {recent.rows.length > 0 && (
               <Button data-tv-focus variant="ghost" className="h-12 justify-start px-4 text-base" onClick={() => { setCategoryId(RECENT_CATEGORY); setSelected(null); }}>Recent</Button>
             )}
