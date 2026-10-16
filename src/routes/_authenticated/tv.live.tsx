@@ -83,6 +83,48 @@ function EmptyGuideButton({ onLongPress, ...props }: React.ComponentProps<typeof
   return <Button {...props} {...longPress} />;
 }
 
+/** A channel category in the rail: quick press opens it, hold OK stars it. */
+function LiveCategoryButton({
+  category,
+  starred,
+  active,
+  onOpen,
+  onToggleFavorite,
+  onPreview,
+}: {
+  category: { id: string; name: string };
+  starred: boolean;
+  active: boolean;
+  onOpen: () => void;
+  onToggleFavorite: () => void;
+  onPreview: () => void;
+}) {
+  const longPress = useLongPress(onToggleFavorite);
+  return (
+    <Button
+      data-tv-focus
+      data-focus-key={`live-category-${category.id}`}
+      variant={active ? "default" : "ghost"}
+      className="h-9 w-full justify-start truncate px-2 text-xs"
+      title={`${category.name} — hold OK to ${starred ? "remove from" : "add to"} favourite categories`}
+      onFocus={onPreview}
+      onClick={onOpen}
+      {...longPress}
+      onKeyDown={(event) => {
+        longPress.onKeyDown(event);
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          event.stopPropagation();
+          document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus();
+        }
+      }}
+    >
+      {starred && <Star className="size-3 shrink-0 fill-primary text-primary" />}
+      {category.name}
+    </Button>
+  );
+}
+
 function TvLive() {
   const navigate = useNavigate();
   const EVENT_CATEGORY = /\b(nhl|nba|nfl|mlb|mls|ufc|sports?|events?|ppv)\b/i;
