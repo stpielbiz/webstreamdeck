@@ -282,7 +282,6 @@ function TvLive() {
       .then((result) => {
         if (cancelled) return;
         setUrlFor(selected.id);
-        setUrlFor(selected.id);
         setUrl(result.url);
         setDirectUrl(result.directUrl);
       })
@@ -454,7 +453,6 @@ function TvLive() {
   const refreshPlayback = async () => {
     if (!activeId || !selected) return;
     const result = await resolve({ data: { playlistId: activeId, kind: "live", itemId: selected.id } });
-    setUrlFor(selected.id);
     setUrlFor(selected.id);
     setUrl(result.url);
     setDirectUrl(result.directUrl);
