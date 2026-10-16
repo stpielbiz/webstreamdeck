@@ -18,7 +18,10 @@ function Probe() {
       <button
         id="plain"
         type="button"
-        onKeyDown={() => push("plain-down")}
+        onKeyDown={(event) => {
+          push(`plain-down repeat=${event.repeat}`);
+          event.preventDefault();
+        }}
         onKeyUp={() => push("plain-up")}
         onClick={() => push("plain-click")}
       >
