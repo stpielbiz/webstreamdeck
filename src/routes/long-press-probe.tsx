@@ -11,27 +11,25 @@ function Probe() {
   const [log, setLog] = useState<string[]>([]);
   const push = (entry: string) => setLog((previous) => [...previous, entry]);
   const lp = useLongPress(() => push("favourite"));
-  const handlers = {
-    ...lp,
-    onKeyDown: (event: React.KeyboardEvent) => {
-      push(`keydown repeat=${event.repeat}`);
-      lp.onKeyDown(event);
-    },
-    onKeyUp: (event: React.KeyboardEvent) => {
-      push(`keyup repeat=${event.repeat}`);
-      lp.onKeyUp(event);
-    },
-  };
 
   return (
     <main>
       <h1>Long press probe</h1>
       <button
+        id="plain"
+        type="button"
+        onKeyDown={() => push("plain-down")}
+        onKeyUp={() => push("plain-up")}
+        onClick={() => push("plain-click")}
+      >
+        Plain
+      </button>
+      <button
         id="probe"
         type="button"
         data-tv-focus
         onClick={() => push("play")}
-        {...handlers}
+        {...lp}
       >
         Channel
       </button>
