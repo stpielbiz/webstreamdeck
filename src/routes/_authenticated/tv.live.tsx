@@ -376,13 +376,9 @@ function TvLive() {
     setFocusedId(item.id);
     lastChannel.current = item.id;
     touchRecent(activeId, item);
-    if (selected?.id === item.id) setFullscreen(true);
-    else {
-      // First press always starts the small in-page preview; a second press on
-      // the same channel goes full screen.
-      setSelected(item);
-      setFullscreen(false);
-    }
+    // Pressing a channel starts it full screen right away — no in-page preview.
+    setSelected(item);
+    setFullscreen(true);
   };
 
   const refreshPlayback = async () => {
@@ -603,22 +599,6 @@ function TvLive() {
             <Button data-tv-focus variant="secondary" size="sm" disabled={updatingChannels} onClick={() => void updateChannels()}>{updatingChannels ? "Updating…" : "Update channels"}</Button>
             <Button data-tv-focus variant="secondary" size="sm" onClick={() => setMultiOpen(true)}>Multi-view</Button>
           </div>
-          {selected && !fullscreen && (
-            <div className="mb-2 flex shrink-0 items-center gap-3 rounded-lg border border-border bg-card p-2" aria-label={`Preview of ${selected.name}`}>
-              <div className="w-64 shrink-0 overflow-hidden rounded bg-muted">
-                <VideoPlayer allowNative={false} onStop={closePlayer} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase text-primary">Preview</p>
-                <p className="truncate font-display text-base font-bold">{selected.name}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {(scheduleMap.get(selected.id) ?? []).find((p) => Date.parse(p.start ?? "") <= clock && Date.parse(p.end ?? "") > clock)?.title ?? "Live"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">Press OK again on this channel for full screen · Back to stop</p>
-              </div>
-            </div>
-          )}
-
           <div className="mb-1 flex min-h-10 shrink-0 items-center justify-between gap-2 border-b border-border pb-1">
             <div className="min-w-0">
               <p className="break-words font-display text-sm font-bold">{focused?.name ?? "Live TV guide"}</p>
