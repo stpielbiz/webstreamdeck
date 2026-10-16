@@ -1,3 +1,4 @@
+import { normalizeSchedule } from "./epg-normalize";
 /**
  * Provider layer: talks to Xtream Codes servers and parses M3U playlists,
  * normalising both into the shared shapes in iptv-types.ts.
@@ -264,7 +265,7 @@ async function xtreamShortEpg(playlist: PlaylistRow, channelId: string): Promise
       stream_id: channelId,
       limit: "4",
     })) as { epg_listings?: unknown };
-    const listings = asArray(data.epg_listings).map(
+    const listings = normalizeSchedule(asArray(data.epg_listings).map(
       (row) =>
         ({
           title: decodeEpgValue(row["title"]) ?? "No title",
@@ -272,7 +273,7 @@ async function xtreamShortEpg(playlist: PlaylistRow, channelId: string): Promise
           start: toIso(row["start_timestamp"] ?? row["start"]),
           end: toIso(row["stop_timestamp"] ?? row["end"]),
         }) satisfies Programme,
-    );
+    ));
     const now = Date.now();
     const current =
       listings.find((item) => {
@@ -299,7 +300,7 @@ export async function xtreamSchedule(
     action: "get_simple_data_table",
     stream_id: channelId,
   })) as { epg_listings?: unknown };
-  return asArray(data.epg_listings)
+  return normalizeSchedule(asArray(data.epg_listings)
     .map(
       (row) =>
         ({
@@ -309,7 +310,7 @@ export async function xtreamSchedule(
           end: toIso(row["stop_timestamp"] ?? row["end"]),
         }) satisfies Programme,
     )
-    .sort((a, b) => Date.parse(a.start ?? "") - Date.parse(b.start ?? ""));
+    .sort((a, b) => Date.parse(a.start ?? "") - Date.parse(b.start ?? "")));
 }
 
 /* --------------------------------------------------------------------- M3U */
