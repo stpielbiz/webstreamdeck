@@ -34,4 +34,4 @@
 - Account expiry is stored separately from roles; expired accounts retain only Home, Settings, and sign-out access — keeps subscription state out of privileges.
 - Provider calls use `device-provider.ts` hooks: Fire TV runs `iptv-provider.ts` on-device via `StreamDeckNative.fetchText`, else server — providers often blank our servers.
 - Multi-view: one player per screen (native `playMulti` / in-page grid); Recent channels capped at 10 per playlist.
-- Player recents bar: web pushes URLs via `StreamDeckNative.setRecentChannels`; native Down toggles, OK switches, reports back via `__streamDeckChannelSwitched`.
+- Player recents bar: `StreamDeckNative.setRecentChannels` feeds it; Down toggles, OK switches (reports `__streamDeckChannelSwitched`). Live-only: VOD keeps Down for seeking.
