@@ -641,20 +641,16 @@ function TvLive() {
             >
               All channels
             </Button>
-            {(categories.data ?? []).map((category) => (
-              <Button
+            {otherCategories.map((category) => (
+              <LiveCategoryButton
                 key={category.id}
-                data-tv-focus
-                data-focus-key={`live-category-${category.id}`}
-                variant={categoryId === category.id ? "default" : "ghost"}
-                className="h-9 w-full justify-start truncate px-2 text-xs"
-                onFocus={() => previewCategory(category.id)}
-                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); } }}
-
-                onClick={() => chooseCategory(category.id)}
-              >
-                {category.name}
-              </Button>
+                category={category}
+                starred={false}
+                active={categoryId === category.id}
+                onOpen={() => chooseCategory(category.id)}
+                onToggleFavorite={() => toggleCategoryFavorite(category)}
+                onPreview={() => previewCategory(category.id)}
+              />
             ))}
           </div>
         </aside>
