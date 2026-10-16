@@ -39,6 +39,34 @@ export const Route = createFileRoute("/_authenticated/live")({
   component: LivePage,
 });
 
+/** A category in the chooser: quick press opens it, hold stars it. */
+function CategoryPickButton({
+  category,
+  starred,
+  onOpen,
+  onToggleFavorite,
+}: {
+  category: { id: string; name: string };
+  starred: boolean;
+  onOpen: () => void;
+  onToggleFavorite: () => void;
+}) {
+  const longPress = useLongPress(onToggleFavorite);
+  return (
+    <Button
+      data-tv-focus
+      variant="ghost"
+      className="h-12 justify-start truncate px-4 text-base"
+      title={`${category.name} — hold to ${starred ? "remove from" : "add to"} favourite categories`}
+      onClick={onOpen}
+      {...longPress}
+    >
+      {starred && <Star className="size-4 shrink-0 fill-primary text-primary" />}
+      {category.name}
+    </Button>
+  );
+}
+
 function timeLabel(iso: string | null) {
   if (!iso) return "";
   const date = new Date(iso);
