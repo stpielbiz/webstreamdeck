@@ -487,7 +487,9 @@ export const listProgress = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return (data ?? []).map((row) => ({
       playlistId: row.playlist_id,
-      itemKind: row.item_kind,
+      // watch_progress only ever stores movie/episode rows; the item_kind enum
+      // also covers favourites-only kinds such as live_category.
+      itemKind: row.item_kind as ProgressRow["itemKind"],
       itemId: row.item_id,
       seriesId: row.series_id,
       season: row.season,
