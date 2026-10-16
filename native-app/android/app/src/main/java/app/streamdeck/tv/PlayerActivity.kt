@@ -302,6 +302,8 @@ class PlayerActivity : Activity() {
     }
 
     private fun showRecentBar() {
+        // Recent channels are a live-TV shortcut; movies and shows use Down for seeking.
+        if (!live) return
         if (!::recentBar.isInitialized) return
         recentRow.removeAllViews()
         val channels = recentChannels
@@ -393,8 +395,11 @@ class PlayerActivity : Activity() {
             if (::recentBar.isInitialized && recentBar.visibility == View.VISIBLE) {
                 recentBar.visibility = View.GONE
                 playerView.requestFocus()
-            } else {
+            } else if (live) {
+                // Only live channels get the recent-channels bar; VOD keeps Down for seeking.
                 showRecentBar()
+            } else {
+                return super.dispatchKeyEvent(event)
             }
             return true
         }

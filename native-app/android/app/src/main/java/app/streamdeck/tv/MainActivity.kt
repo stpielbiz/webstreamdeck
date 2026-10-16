@@ -169,6 +169,9 @@ class MainActivity : Activity() {
             val now = android.os.SystemClock.elapsedRealtime()
             if (PlayerActivity.isOpen || now - lastPlayRequestAt < 3000 || now - lastPlayerClosedAt < 1500) return
             lastPlayRequestAt = now
+            // Recent channels are a live-TV shortcut; drop them so a movie or show
+            // never inherits the previous Live TV session's list.
+            if (!request.optBoolean("live")) PlayerActivity.recentChannels = emptyList()
             val intent = Intent(this@MainActivity, PlayerActivity::class.java).apply {
                 putExtra(PlayerActivity.EXTRA_URL, url)
                 putExtra(PlayerActivity.EXTRA_TITLE, request.optString("title"))
