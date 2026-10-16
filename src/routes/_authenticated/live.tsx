@@ -329,11 +329,14 @@ function LivePage() {
             {recent.rows.length > 0 && (
               <Button data-tv-focus variant="ghost" className="h-12 justify-start px-4 text-base" onClick={() => { setCategoryId(RECENT_CATEGORY); setSelected(null); }}>Recent</Button>
             )}
+            {favouriteCategories.map((category) => (
+              <CategoryPickButton key={category.id} category={category} starred onOpen={() => { setCategoryId(category.id); setSelected(null); }} onToggleFavorite={() => toggleCategoryFavorite(category)} />
+            ))}
             <Button data-tv-focus variant="ghost" className="h-12 justify-between px-4 text-base" onClick={() => { setCategoryId(""); setSelected(null); }}>All channels</Button>
             {categories.isLoading
               ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />)
-              : (categories.data ?? []).map((category) => (
-                  <Button key={category.id} data-tv-focus variant="ghost" className="h-12 justify-start truncate px-4 text-base" onClick={() => { setCategoryId(category.id); setSelected(null); }}>{category.name}</Button>
+              : otherCategories.map((category) => (
+                  <CategoryPickButton key={category.id} category={category} starred={false} onOpen={() => { setCategoryId(category.id); setSelected(null); }} onToggleFavorite={() => toggleCategoryFavorite(category)} />
                 ))}
           </div>
         </div>
