@@ -2,11 +2,14 @@ package app.streamdeck.tv
 
 import android.app.Activity
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.text.TextUtils
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
@@ -50,6 +53,10 @@ class PlayerActivity : Activity() {
         private const val STALL_MS = 12_000L
         private const val GIVE_UP_MS = 180_000L
         private const val STEADY_MS = 60_000L
+        /** Side of a recent-channel tile, in dp. */
+        private const val TILE_DP = 160
+        /** Accent ring colour for a focused recent-channel tile. */
+        private val ACCENT = Color.rgb(59, 130, 246)
 
         @Volatile
         var listener: Listener? = null
@@ -153,15 +160,22 @@ class PlayerActivity : Activity() {
         // TiviMate-style bottom bar: recent channels, shown with Down.
         recentRow = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.HORIZONTAL
-            setPadding(32, 12, 32, 12)
+            setPadding(dp(24), dp(18), dp(24), dp(18))
+            // Focused tiles grow, so nothing in the chain may clip them.
+            clipChildren = false
+            clipToPadding = false
         }
         recentBar = android.widget.HorizontalScrollView(this).apply {
             addView(recentRow)
             setBackgroundColor(Color.argb(190, 0, 0, 0))
             visibility = View.GONE
             isHorizontalScrollBarEnabled = false
+            clipChildren = false
+            clipToPadding = false
         }
         val root = FrameLayout(this)
+        root.clipChildren = false
+        root.clipToPadding = false
         root.addView(playerView, FrameLayout.LayoutParams(-1, -1))
         root.addView(
             reconnectLabel,
@@ -295,14 +309,34 @@ class PlayerActivity : Activity() {
         channels.forEachIndexed { index, (title, channelUrl) ->
             val button = android.widget.Button(this).apply {
                 text = title
+                maxLines = 2
+                ellipsize = TextUtils.TruncateAt.END
+                isAllCaps = false
+                gravity = Gravity.CENTER
+                textSize = 15f
+                setTextColor(Color.WHITE)
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                minWidth = 0
+                minHeight = 0
+                stateListAnimator = null
                 isFocusable = true
+                background = tileBackground(false)
                 setOnClickListener { switchChannel(title, channelUrl) }
-                setOnFocusChangeListener { v, hasFocus ->
-                    v.setBackgroundColor(if (hasFocus) Color.argb(220, 60, 60, 60) else Color.argb(120, 30, 30, 30))
+                setOnFocusChangeListener { view, hasFocus ->
+                    view.background = tileBackground(hasFocus)
+                    view.elevation = if (hasFocus) dp(14).toFloat() else 0f
+                    view.animate()
+                        .scaleX(if (hasFocus) 1.08f else 1f)
+                        .scaleY(if (hasFocus) 1.08f else 1f)
+                        .setDuration(150)
+                        .start()
                     if (hasFocus) scheduleHideRecentBar()
                 }
             }
-            recentRow.addView(button)
+            recentRow.addView(
+                button,
+                android.widget.LinearLayout.LayoutParams(dp(TILE_DP), dp(TILE_DP)).apply { marginEnd = dp(16) },
+            )
             if (index == 0) button.requestFocus()
         }
         recentBar.visibility = View.VISIBLE
@@ -324,6 +358,20 @@ class PlayerActivity : Activity() {
         recentBar.visibility = View.GONE
         listener?.onChannelSwitched(title)
     }
+
+    /** Square recent-channel tile: muted fill with a hairline ring, accent ring when focused. */
+    private fun tileBackground(focused: Boolean) = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        cornerRadius = dp(14).toFloat()
+        setColor(if (focused) Color.argb(235, 22, 34, 54) else Color.argb(150, 26, 26, 26))
+        setStroke(dp(3), if (focused) ACCENT else Color.argb(90, 255, 255, 255))
+    }
+
+    private fun dp(value: Int) = TypedValue.applyDimension(
+        TypedValue.COMPLEX_UNIT_DIP,
+        value.toFloat(),
+        resources.displayMetrics,
+    ).toInt()
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.keyCode == KeyEvent.KEYCODE_BACK) {

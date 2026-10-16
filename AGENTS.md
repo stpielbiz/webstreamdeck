@@ -14,13 +14,13 @@
 - Selecting a Movie or Show opens a compact modal with details and preview playback; remote Back closes it before leaving the section.
 - Device pairing uses the public `/device-login` entry screen and returns there after authentication; legacy Firestick and TV-specific links redirect to it.
 - The TV home uses a persistent menu/details workspace: focus previews a section, OK opens it, and content rows remain independently remote-navigable.
-- Remote focus uses a shared inset :focus indicator and action-only targets; menus and annotated rows navigate by order, while dialogs isolate focus from the underlying workspace — this avoids clipped selection and repeated layout measurement on Fire TV.
+- Remote focus uses a shared inset :focus indicator and action-only targets; rows navigate by order, dialogs isolate focus — this keeps selection reliable without layout measurement. A control drawing its own focus look opts out with `data-focus-glow`.
 - Continue watching uses horizontal shelves; Home and Favourites share compact three-column channel/movie/show lists with action-only row focus and shared title dialogs.
 - The native Fire TV app checks GitHub release metadata at launch and on request through the JS bridge; manual checks report results and updates use Android's user-approved installer — this preserves device security while enabling in-app upgrades.
 - Navigation preserves device mode: TV routes and TV-opened shared screens return to `/tv`, while regular browser screens return to `/dashboard` — this prevents remote users from falling into the desktop shell.
 - Live TV is the single guide destination and uses a persistent category rail with a horizontally navigable programme timeline — this avoids duplicate Live TV and Guide workflows.
 - Native Back is consumed once on key release and routed to the website's layer-aware handler; player closure has a separate bridge callback from completion — this restores browsing without skipping layers or exiting the app.
-- Provider library data (categories, channels, catalogue, guide) is persisted on-device in IndexedDB via src/lib/device-cache.ts and refreshed by useLibrarySync in PlaylistProvider — menus render from saved data instantly and only stale parts are re-fetched.
+- Provider library data (categories, channels, catalogue, guide) is persisted on-device in IndexedDB (src/lib/device-cache.ts) and refreshed by useLibrarySync — menus render from saved data instantly and only stale parts are re-fetched.
 - Movies and Shows use shared route and catalogue loading placeholders only when saved data is unavailable — cold fetches get feedback without hiding cache.
 - TV section links show an immediate opening overlay until navigation unmounts the menu — remote clicks get feedback without depending on router pending-state timing.
 - Title details (genres, artwork, cast) are backfilled slowly in the background by `useTitleBackfill` into the shared `title_metadata` store — every user contributes, each title is resolved once, and browsing never waits on it.

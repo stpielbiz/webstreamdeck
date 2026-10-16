@@ -144,9 +144,11 @@
 
 /* Remote focus uses :focus, not browser-dependent :focus-visible heuristics.
    Inset borders remain visible inside clipped rails, shelves and TV overscan. */
-[data-tv-focus]:focus,
-[role="dialog"] button:focus,
-[role="dialog"] input:focus {
+/* Shared remote focus indicator. Controls that draw their own focus glow opt
+   out with data-focus-glow so their ring, colour and animation stay visible. */
+[data-tv-focus]:focus:not([data-focus-glow]),
+[role="dialog"] button:focus:not([data-focus-glow]),
+[role="dialog"] input:focus:not([data-focus-glow]) {
   outline: 3px solid var(--ring) !important;
   outline-offset: -3px !important;
   box-shadow: inset 0 0 0 5px var(--background) !important;
