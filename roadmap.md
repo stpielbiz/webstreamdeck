@@ -1,5 +1,6 @@
 # Roadmap
 
+- [done] Live TV opens with focus on Favourites (TV guide and web category list) when the account has favourite channels; otherwise focus still starts on All channels
 - [done] Favourites above Recent in Live TV, with favourite-channel guide listings on TV and web; real-channel verification unavailable because the test account has no playlist
 
 - [done] Press-and-hold confirm dialog before removing favourites / continue-watching items
