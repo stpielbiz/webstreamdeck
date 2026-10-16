@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Search, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 import type { CatalogItem } from "@/lib/iptv-types";
