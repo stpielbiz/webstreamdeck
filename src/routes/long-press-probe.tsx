@@ -14,11 +14,11 @@ function Probe() {
   const handlers = {
     ...lp,
     onKeyDown: (event: React.KeyboardEvent) => {
-      window.__rk?.push(`keydown repeat=${event.repeat}`);
+      push(`keydown repeat=${event.repeat}`);
       lp.onKeyDown(event);
     },
     onKeyUp: (event: React.KeyboardEvent) => {
-      window.__rk?.push(`keyup repeat=${event.repeat}`);
+      push(`keyup repeat=${event.repeat}`);
       lp.onKeyUp(event);
     },
   };
