@@ -390,7 +390,7 @@ export const getPlayback = createServerFn({ method: "POST" })
 export interface FavoriteRow {
   id: string;
   playlistId: string;
-  itemKind: "live" | "movie" | "series" | "episode";
+  itemKind: "live" | "movie" | "series" | "episode" | "live_category";
   itemId: string;
   title: string;
   logoUrl: string | null;
@@ -420,7 +420,7 @@ export const toggleFavorite = createServerFn({ method: "POST" })
     z
       .object({
         playlistId: z.string().uuid(),
-        itemKind: z.enum(["live", "movie", "series", "episode"]),
+        itemKind: z.enum(["live", "movie", "series", "episode", "live_category"]),
         itemId: z.string(),
         title: z.string(),
         logoUrl: z.string().nullish(),
