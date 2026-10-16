@@ -367,10 +367,10 @@ function TvLive() {
     touchRecent(activeId, item);
     if (selected?.id === item.id) setFullscreen(true);
     else {
+      // First press always starts the small in-page preview; a second press on
+      // the same channel goes full screen.
       setSelected(item);
-      // The Fire TV app can't preview in-page (the provider only serves the
-      // device player), so OK goes straight to its full-screen player.
-      setFullscreen(hasNativePlayer());
+      setFullscreen(false);
     }
   };
 
@@ -595,11 +595,7 @@ function TvLive() {
           {selected && !fullscreen && (
             <div className="mb-2 flex shrink-0 items-center gap-3 rounded-lg border border-border bg-card p-2" aria-label={`Preview of ${selected.name}`}>
               <div className="w-64 shrink-0 overflow-hidden rounded bg-muted">
-                {hasNativePlayer() ? (
-                  <div className="flex aspect-video w-full items-center justify-center text-xs text-muted-foreground">Press OK to watch</div>
-                ) : (
-                  <VideoPlayer allowNative={false} onStop={closePlayer} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
-                )}
+                <VideoPlayer allowNative={false} onStop={closePlayer} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase text-primary">Preview</p>
