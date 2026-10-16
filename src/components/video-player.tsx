@@ -267,7 +267,9 @@ export function VideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !activeSrc) return;
-    if (hasNativePlayer() && fallbackRef.current) return;
+    // Full-screen playback hands off to the TV app's player, but in-page
+    // players (Live TV preview, Multi-view screens) must attach their stream.
+    if (allowNative && hasNativePlayer() && fallbackRef.current) return;
 
     let destroyed = false;
     const attempt = ++sourceAttemptRef.current;
