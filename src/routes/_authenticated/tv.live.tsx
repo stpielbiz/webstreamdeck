@@ -144,6 +144,9 @@ function TvLive() {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [directUrl, setDirectUrl] = useState<string | null>(null);
+  // Which channel the resolved link belongs to, so a previous channel's link
+  // is never handed to the player while the new one is still resolving.
+  const [urlFor, setUrlFor] = useState<string | null>(null);
   const [clock, setClock] = useState(() => Date.now());
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
@@ -278,6 +281,7 @@ function TvLive() {
     void resolve({ data: { playlistId: activeId, kind: "live", itemId: selected.id } })
       .then((result) => {
         if (cancelled) return;
+        setUrlFor(selected.id);
         setUrl(result.url);
         setDirectUrl(result.directUrl);
       })
@@ -449,6 +453,7 @@ function TvLive() {
   const refreshPlayback = async () => {
     if (!activeId || !selected) return;
     const result = await resolve({ data: { playlistId: activeId, kind: "live", itemId: selected.id } });
+    setUrlFor(selected.id);
     setUrl(result.url);
     setDirectUrl(result.directUrl);
   };
@@ -785,7 +790,7 @@ function TvLive() {
               </div>
               <Button data-dialog-back data-tv-focus data-focus-key="live-player-close" variant="ghost" size="icon" aria-label="Exit full screen" onClick={exitFullscreen}><X className="size-5" /></Button>
             </div>
-            <VideoPlayer onStop={exitFullscreen} onRefreshSource={refreshPlayback} recents={recentList} onPickRecent={pickRecent} src={url} fallbackSrc={directUrl} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+            <VideoPlayer onStop={exitFullscreen} onRefreshSource={refreshPlayback} recents={recentList} onPickRecent={pickRecent} src={urlFor === selected.id ? url : null} fallbackSrc={urlFor === selected.id ? directUrl : null} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
           </div>
         </div>
       )}
