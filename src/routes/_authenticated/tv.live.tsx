@@ -17,7 +17,7 @@ import { VideoPlayer } from "@/components/video-player";
 import { hasNativePlayer, sendRecentChannels } from "@/lib/external-player";
 import { cn } from "@/lib/utils";
 import { useAppSearchFocus } from "@/lib/app-search";
-import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
+import { compareTitles, isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
 import { useLongPress } from "@/lib/use-long-press";
 import { MultiView } from "@/components/multi-view";
 import { FAVOURITES_CATEGORY, RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
@@ -148,7 +148,8 @@ function TvLive() {
     const term = search.trim().toLocaleLowerCase();
     if (!term && categoryId === FAVOURITES_CATEGORY) {
       const ids = new Set((favorites.data ?? []).filter((row) => row.playlistId === activeId && row.itemKind === "live").map((row) => row.itemId));
-      return (items.data ?? []).filter((item) => ids.has(item.id));
+      // Favourite channels read A–Z so the remote finds a name predictably.
+      return (items.data ?? []).filter((item) => ids.has(item.id)).sort((a, b) => compareTitles(a.name, b.name));
     }
     const source = !term && categoryId === RECENT_CATEGORY ? orderByRecent(items.data ?? [], recent.rows) : (items.data ?? []);
     return source.filter((item) => !term || item.name.toLocaleLowerCase().includes(term) || String(item.number ?? "").includes(term));

@@ -5,7 +5,7 @@ import { Clapperboard, MonitorPlay, Play, Star, Tv } from "lucide-react";
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
 import { TitleDetailsDialog } from "@/components/title-details-dialog";
-import { useFavorites, useToggleFavorite } from "@/lib/library-hooks";
+import { compareTitles, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
 import type { FavoriteRow } from "@/lib/iptv.functions";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { mediaMatchKey, variantsForItem } from "@/lib/title-variants";
@@ -133,7 +133,7 @@ export function FavouritesLists({ tv = false, home = false }: { tv?: boolean; ho
       {favorites.isLoading ? <p role="status" className="py-3 text-sm text-muted-foreground">Loading favourites…</p> : (
         <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-3">
           {GROUPS.map((group, column) => {
-            const items = rows.filter((row) => row.itemKind === group.kind);
+            const items = rows.filter((row) => row.itemKind === group.kind).sort((a, b) => compareTitles(a.title, b.title));
             const Icon = group.icon;
             return (
               <section key={group.kind} aria-label={`Favourite ${group.title.toLowerCase()}`} className="min-w-0">

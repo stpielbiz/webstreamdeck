@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/search-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
+import { compareTitles, isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
 import { useLongPress } from "@/lib/use-long-press";
 import { toast } from "sonner";
 import { MultiView } from "@/components/multi-view";
@@ -183,7 +183,7 @@ function LivePage() {
     () => {
       if (isFavourites && !search) {
         const ids = new Set((favorites.data ?? []).filter((row) => row.playlistId === activeId && row.itemKind === "live").map((row) => row.itemId));
-        return (channels.data ?? []).filter((item) => ids.has(item.id)).slice(0, 400);
+        return (channels.data ?? []).filter((item) => ids.has(item.id)).sort((a, b) => compareTitles(a.name, b.name)).slice(0, 400);
       }
       return (isRecent && !search ? orderByRecent(channels.data ?? [], recent.rows) : (channels.data ?? [])).slice(0, 400);
     },
