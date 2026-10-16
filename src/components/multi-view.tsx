@@ -3,10 +3,12 @@ import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 import type { CatalogItem } from "@/lib/iptv-types";
-import { useGetPlayback } from "@/lib/device-provider";
+import { useGetItems, useGetPlayback } from "@/lib/device-provider";
 import { hasNativePlayer } from "@/lib/external-player";
+import { isFavorite, useFavorites } from "@/lib/library-hooks";
 import { VideoPlayer } from "@/components/video-player";
 import { Button } from "@/components/ui/button";
+import { SearchField } from "@/components/search-field";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +21,9 @@ interface Screen {
 /**
  * Multi-view: choose up to four channels and watch them together. The Fire TV
  * app plays them in its native grid; browsers show an in-page grid where only
- * the selected screen has sound.
+ * the selected screen has sound. The picker lists favourites and recents first
+ * and can search the whole playlist, so channels from different categories can
+ * be combined.
  */
 export function MultiView({
   open,
@@ -35,13 +39,46 @@ export function MultiView({
   onClose: () => void;
 }) {
   const resolve = useGetPlayback();
+  const fetchItems = useGetItems();
+  const favorites = useFavorites();
   const [picked, setPicked] = useState<CatalogItem[]>([]);
   const [screens, setScreens] = useState<Screen[] | null>(null);
   const [starting, setStarting] = useState(false);
+  const [term, setTerm] = useState("");
+  const [results, setResults] = useState<CatalogItem[] | null>(null);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    if (open) setPicked(initial ? [initial] : []);
+    if (open) {
+      setPicked(initial ? [initial] : []);
+      setTerm("");
+      setResults(null);
+    }
   }, [open, initial]);
+
+  useEffect(() => {
+    const query = term.trim();
+    if (!open || !playlistId || !query) {
+      setResults(null);
+      setSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    fetchItems({ data: { playlistId, kind: "live", search: query } })
+      .then((items) => {
+        if (!cancelled) setResults(items);
+      })
+      .catch(() => {
+        if (!cancelled) setResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSearching(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, playlistId, term, fetchItems]);
 
   const toggle = (item: CatalogItem) =>
     setPicked((list) =>
@@ -77,7 +114,21 @@ export function MultiView({
     }
   };
 
-  const unique = [...new Map([...(initial ? [initial] : []), ...candidates].map((item) => [item.id, item])).values()].slice(0, 40);
+  // Without a search term: favourites of this playlist first, then the
+  // recent/category candidates the pages pass in. With a term: the search
+  // matches from the whole playlist.
+  const browsing = term.trim().length > 0;
+  const unique = browsing
+    ? (results ?? [])
+    : [
+        ...new Map(
+          [
+            ...(initial ? [initial] : []),
+            ...candidates.filter((item) => playlistId && isFavorite(favorites.data, playlistId, "live", item.id)),
+            ...candidates,
+          ].map((item) => [item.id, item]),
+        ).values(),
+      ].slice(0, 60);
 
   if (screens) return <MultiViewGrid screens={screens} onClose={() => { setScreens(null); onClose(); }} />;
 
@@ -88,8 +139,23 @@ export function MultiView({
         <DialogDescription>
           Pick 2 to 4 channels to watch together. Each screen uses one connection from your provider, so some plans may refuse extra screens.
         </DialogDescription>
+        <div data-remote-row>
+          <SearchField
+            value={term}
+            onValueChange={setTerm}
+            placeholder="Search all channels…"
+            aria-label="Search channels for Multi-view"
+            data-tv-focus
+            data-focus-key="multiview-search"
+          />
+        </div>
         <div className="scrollbar-thin max-h-[50vh] space-y-1 overflow-y-auto p-1">
-          {unique.length === 0 && <p className="text-sm text-muted-foreground">Watch or favourite a few channels first and they'll appear here.</p>}
+          {searching && <p className="text-sm text-muted-foreground">Searching…</p>}
+          {!searching && unique.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              {browsing ? "No channels match that search." : "Watch or favourite a few channels first and they'll appear here."}
+            </p>
+          )}
           {unique.map((item) => {
             const on = picked.some((row) => row.id === item.id);
             return (
