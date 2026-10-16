@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Star, Tv, X } from "lucide-react";
 import { z } from "zod";
+import { normalizeSchedule } from "@/lib/epg-normalize";
 
 import { getCategories, getItems, getPlayback, getSchedules } from "@/lib/iptv.functions";
 import type { CatalogItem, Programme } from "@/lib/iptv-types";
@@ -241,8 +242,8 @@ function TvLive() {
 
   const scheduleMap = useMemo(() => {
     const map = new Map<string, Programme[]>();
-    for (const [id, value] of Object.entries(guideStore.data ?? {})) map.set(id, value.p);
-    for (const entry of schedules.data ?? []) map.set(entry.channelId, entry.programmes);
+    for (const [id, value] of Object.entries(guideStore.data ?? {})) map.set(id, normalizeSchedule(value.p));
+    for (const entry of schedules.data ?? []) map.set(entry.channelId, normalizeSchedule(entry.programmes));
     return map;
   }, [schedules.data, guideStore.data]);
 
