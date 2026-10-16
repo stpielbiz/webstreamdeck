@@ -121,3 +121,8 @@ export function isFavorite(
       favorite.itemId === itemId,
   );
 }
+
+/** Favourite lists and categories read A–Z by title. */
+export function compareTitles(a: string, b: string) {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+}

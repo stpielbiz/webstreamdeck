@@ -1,5 +1,6 @@
 # Roadmap
 
+- [done] Favourites read A–Z everywhere: Live TV Favourites category (TV guide + web channel list) and the Channels/Movies/Shows favourites lists
 - [done] Live TV opens with focus on Favourites (TV guide and web category list) when the account has favourite channels; otherwise focus still starts on All channels
 - [done] Favourites above Recent in Live TV, with favourite-channel guide listings on TV and web; real-channel verification unavailable because the test account has no playlist
 
