@@ -251,12 +251,22 @@ function TvLive() {
     return () => window.clearInterval(timer);
   }, []);
 
+  // The guide opens with focus on Favourites so the remote lands on the
+  // user's own channels first; accounts without favourite channels still
+  // open on All channels.
+  const openedOnFavourites = useRef(false);
   useEffect(() => {
+    if (openedOnFavourites.current || favorites.isLoading || !activeId) return;
+    openedOnFavourites.current = true;
+    const hasFavouriteChannels = (favorites.data ?? []).some(
+      (row) => row.playlistId === activeId && row.itemKind === "live",
+    );
+    const focusKey = hasFavouriteChannels ? `live-category-${FAVOURITES_CATEGORY}` : "live-category-all";
     const frame = window.requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>('[data-focus-key="live-category-all"]')?.focus();
+      document.querySelector<HTMLElement>(`[data-focus-key="${focusKey}"]`)?.focus();
     });
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [favorites.isLoading, favorites.data, activeId]);
 
   useEffect(() => {
     if (!fullscreen) return;

@@ -2,7 +2,7 @@ import { useGetCategories, useGetItems, useGetNowNext, useGetPlayback } from "@/
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, Star, Tv } from "lucide-react";
 import { z } from "zod";
 
