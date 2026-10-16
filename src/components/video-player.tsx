@@ -654,10 +654,9 @@ export function VideoPlayer({
                   key={entry.title}
                   type="button"
                   data-tv-focus
-                  tabIndex={controlsVisible || !playing ? 0 : -1}
-                  onClick={() => onPickRecent(entry.title)}
+                  data-focus-glow
                   title={entry.title}
-                  className="grid size-40 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 px-3 text-center text-sm font-semibold leading-snug text-white outline-none transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out hover:bg-white/20 focus:scale-105 focus:border-primary focus:bg-primary focus:text-primary-foreground focus:shadow-[0_0_28px_-2px_var(--color-primary)] focus:ring-4 focus:ring-primary/70"
+                  className="grid size-40 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 px-3 text-center text-sm font-semibold leading-snug text-white outline-none transition-all duration-150 ease-out hover:bg-white/20 focus:scale-105 focus:border-primary focus:bg-primary focus:text-primary-foreground focus:shadow-[0_0_28px_-2px_var(--color-primary)] focus:ring-4 focus:ring-primary/70"
                 >
                   <span className="line-clamp-2 break-words">{entry.title}</span>
                 </button>
