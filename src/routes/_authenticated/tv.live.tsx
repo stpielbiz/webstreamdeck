@@ -420,13 +420,6 @@ function TvLive() {
     restoreChannelFocus();
   };
 
-  const closePlayer = () => {
-    setFullscreen(false);
-    setSelected(null);
-    setUrl(null);
-    setDirectUrl(null);
-    restoreChannelFocus();
-  };
 
   // Resolve the recent channels' links while a channel plays full screen:
   // the native player's bottom bar (Down on the remote, TiviMate-style) and
