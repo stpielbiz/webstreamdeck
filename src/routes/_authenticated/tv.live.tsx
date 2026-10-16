@@ -618,6 +618,17 @@ function TvLive() {
                 Recent
               </Button>
             )}
+            {favouriteCategories.map((category) => (
+              <LiveCategoryButton
+                key={category.id}
+                category={category}
+                starred
+                active={categoryId === category.id}
+                onOpen={() => chooseCategory(category.id)}
+                onToggleFavorite={() => toggleCategoryFavorite(category)}
+                onPreview={() => previewCategory(category.id)}
+              />
+            ))}
             <Button
               data-tv-focus
               data-focus-key="live-category-all"
