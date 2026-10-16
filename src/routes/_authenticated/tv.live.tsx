@@ -405,6 +405,29 @@ function TvLive() {
     });
   };
 
+  const toggleCategoryFavorite = (category: { id: string; name: string }) => {
+    if (!activeId) return;
+    const starred = isFavorite(favorites.data, activeId, "live_category", category.id);
+    toggleFavorite.mutate(
+      { playlistId: activeId, itemKind: "live_category", itemId: category.id, title: category.name, logoUrl: null },
+      { onSuccess: () => toast.success(starred ? `Removed ${category.name} from favourite categories` : `Added ${category.name} to favourite categories`) },
+    );
+  };
+
+  // Favourite categories pin to the top of the rail, A–Z; the rest follow.
+  const favouriteCategoryIds = useMemo(
+    () => new Set((favorites.data ?? []).filter((row) => row.playlistId === activeId && row.itemKind === "live_category").map((row) => row.itemId)),
+    [favorites.data, activeId],
+  );
+  const favouriteCategories = useMemo(
+    () => (categories.data ?? []).filter((category) => favouriteCategoryIds.has(category.id)).sort((a, b) => compareTitles(a.name, b.name)),
+    [categories.data, favouriteCategoryIds],
+  );
+  const otherCategories = useMemo(
+    () => (categories.data ?? []).filter((category) => !favouriteCategoryIds.has(category.id)),
+    [categories.data, favouriteCategoryIds],
+  );
+
   const toggleChannelFavorite = (item: CatalogItem) => {
     if (!activeId) return;
     const starred = isFavorite(favorites.data, activeId, "live", item.id);
