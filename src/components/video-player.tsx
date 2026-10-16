@@ -648,7 +648,7 @@ export function VideoPlayer({
           )}
         >
           {recents && recents.length > 0 && onPickRecent && (
-            <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
+            <div className="mb-2 flex gap-3 overflow-x-auto px-1 py-2">
               {recents.map((entry) => (
                 <button
                   key={entry.title}
@@ -656,9 +656,10 @@ export function VideoPlayer({
                   data-tv-focus
                   tabIndex={controlsVisible || !playing ? 0 : -1}
                   onClick={() => onPickRecent(entry.title)}
-                  className="shrink-0 rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white outline-none hover:bg-white/20 focus:bg-primary focus:text-primary-foreground"
+                  title={entry.title}
+                  className="grid size-40 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 px-3 text-center text-sm font-semibold leading-snug text-white outline-none transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out hover:bg-white/20 focus:scale-105 focus:border-primary focus:bg-primary focus:text-primary-foreground focus:shadow-[0_0_28px_-2px_var(--color-primary)] focus:ring-4 focus:ring-primary/70"
                 >
-                  {entry.title}
+                  <span className="line-clamp-2 break-words">{entry.title}</span>
                 </button>
               ))}
             </div>
