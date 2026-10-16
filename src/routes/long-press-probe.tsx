@@ -10,7 +10,18 @@ export const Route = createFileRoute("/long-press-probe")({
 function Probe() {
   const [log, setLog] = useState<string[]>([]);
   const push = (entry: string) => setLog((previous) => [...previous, entry]);
-  const longPress = useLongPress(() => push("favourite"));
+  const lp = useLongPress(() => push("favourite"));
+  const handlers = {
+    ...lp,
+    onKeyDown: (event: React.KeyboardEvent) => {
+      window.__rk?.push(`keydown repeat=${event.repeat}`);
+      lp.onKeyDown(event);
+    },
+    onKeyUp: (event: React.KeyboardEvent) => {
+      window.__rk?.push(`keyup repeat=${event.repeat}`);
+      lp.onKeyUp(event);
+    },
+  };
 
   return (
     <main>
@@ -20,7 +31,7 @@ function Probe() {
         type="button"
         data-tv-focus
         onClick={() => push("play")}
-        {...longPress}
+        {...handlers}
       >
         Channel
       </button>
