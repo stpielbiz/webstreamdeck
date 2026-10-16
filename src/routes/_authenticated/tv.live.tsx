@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GUIDE_TTL, guideKey, mergeGuide, type GuideStore } from "@/lib/library-sync";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Play, Star, Tv, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Star, Tv, X } from "lucide-react";
 import { z } from "zod";
 
 import { getCategories, getItems, getPlayback, getSchedules } from "@/lib/iptv.functions";
@@ -619,7 +619,6 @@ function TvLive() {
             </div>
             <div className="flex shrink-0 items-center gap-3">
               {pageCount > 1 && <span className="text-xs tabular-nums text-muted-foreground">Channels {page * PAGE_SIZE + 1}–{Math.min(channels.length, (page + 1) * PAGE_SIZE)}</span>}
-              {focused && <p className="flex items-center gap-2 text-sm font-semibold text-primary"><Play className="size-4 fill-current" /> OK to watch</p>}
             </div>
           </div>
 
