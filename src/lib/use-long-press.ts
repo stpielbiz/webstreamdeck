@@ -1,11 +1,14 @@
 import { useCallback, useRef } from "react";
 
 /**
- * How long after a hold the element's normal activation stays swallowed. The
- * device can dispatch the click for the same OK press after we have already
+ * How long after a press ends the element's normal activation stays swallowed.
+ * The device can dispatch the click for the same OK press after we have already
  * acted on the hold, so the block has to outlast the release.
  */
-const SUPPRESS_MS = 300;
+const SUPPRESS_MS = 400;
+
+/** Safety net: a press that never reported its release stops blocking after this. */
+const HOLD_CAP_MS = 10_000;
 
 /** Keys a remote OK (or a keyboard) uses to activate a focused element. */
 function isActivateKey(key: string) {
@@ -15,31 +18,39 @@ function isActivateKey(key: string) {
 /**
  * Press-and-hold detection that works with a Fire TV remote (held OK sends
  * repeated Enter keydowns), a mouse, and touch. A quick press still triggers
- * the element's normal click; once the hold fires, every later activation of
- * the element is swallowed — including the click a device dispatches when the
- * button is released — so holding a channel only changes favourites and never
- * starts the stream.
+ * the element's normal click. Once the hold fires, the element's normal click
+ * is swallowed for as long as the button is still held down and briefly after
+ * it is released — including a click the device dispatches on its own — so
+ * holding a channel only changes favourites and never starts the stream.
  */
 export function useLongPress(onLongPress: () => void, ms = 600) {
   const timer = useRef<number | null>(null);
   const fired = useRef(false);
+  const firedAt = useRef(0);
   const suppressUntil = useRef(0);
 
-  const blocked = useCallback(() => Date.now() < suppressUntil.current, []);
+  /** True while the activation of this press must be ignored. */
+  const blocked = useCallback(
+    () =>
+      (fired.current && Date.now() - firedAt.current < HOLD_CAP_MS) ||
+      Date.now() < suppressUntil.current,
+    [],
+  );
 
   const fire = useCallback(() => {
     timer.current = null;
     fired.current = true;
+    firedAt.current = Date.now();
     suppressUntil.current = Date.now() + SUPPRESS_MS;
     onLongPress();
   }, [onLongPress]);
 
   const start = useCallback(() => {
     if (timer.current !== null) return; // already holding (key repeat)
-    if (Date.now() < suppressUntil.current) return; // tail of a previous hold
+    if (blocked()) return; // tail of a previous hold
     fired.current = false;
     timer.current = window.setTimeout(fire, ms);
-  }, [fire, ms]);
+  }, [blocked, fire, ms]);
 
   /** End of a press: stop the timer and cover the click that may still come. */
   const release = useCallback(() => {
@@ -66,7 +77,8 @@ export function useLongPress(onLongPress: () => void, ms = 600) {
       if (!isActivateKey(event.key)) return;
       event.preventDefault();
       if (fired.current) {
-        // Still held: keep swallowing until the button actually comes up.
+        // Still held down: keep swallowing until the button actually comes up.
+        firedAt.current = Date.now();
         suppressUntil.current = Date.now() + SUPPRESS_MS;
         return;
       }
