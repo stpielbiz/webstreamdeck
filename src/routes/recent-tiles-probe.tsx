@@ -24,7 +24,7 @@ function Probe() {
         live
         recents={RECENTS}
         onPickRecent={(title) => {
-          document.documentElement.dataset.picked = title;
+          document.documentElement.setAttribute("data-picked", title);
         }}
         className="aspect-video w-full"
       />
