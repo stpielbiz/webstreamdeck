@@ -480,7 +480,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
                 event.preventDefault(); event.stopPropagation();
-                document.querySelector<HTMLElement>('[data-grid-entry="true"] [data-tv-focus]')?.focus();
+                document.querySelector<HTMLElement>(':is([data-grid-entry="true"] [data-tv-focus], [data-grid-entry="true"][data-tv-focus])')?.focus();
               }
             }}
           />
@@ -491,7 +491,7 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
             onClick={() => setSort((value) => value === "year" ? "az" : "year")}
             onKeyDown={(event) => {
               if (event.key === "ArrowLeft") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="catalog-search"]')?.focus(); }
-              if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-grid-entry="true"] [data-tv-focus]')?.focus(); }
+              if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>(':is([data-grid-entry="true"] [data-tv-focus], [data-grid-entry="true"][data-tv-focus])')?.focus(); }
             }}
           >
             {sort === "year" ? <CalendarArrowDown className="size-4" /> : <ArrowDownAZ className="size-4" />}

@@ -137,7 +137,13 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
                 : dx;
         if (forward <= 4) continue;
 
-        const drift = direction === "up" || direction === "down" ? Math.abs(dx) : Math.abs(dy);
+        // Wide targets (full-width headings, search bars) overlap the current
+        // element's span, so horizontal/vertical offset shouldn't penalise them.
+        const overlaps =
+          direction === "up" || direction === "down"
+            ? rect.left < current.rect.right && rect.right > current.rect.left
+            : rect.top < current.rect.bottom && rect.bottom > current.rect.top;
+        const drift = overlaps ? 0 : direction === "up" || direction === "down" ? Math.abs(dx) : Math.abs(dy);
         const score = forward + drift * 2;
         if (!best || score < best.score) best = { element, score };
       }
