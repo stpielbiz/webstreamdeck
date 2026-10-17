@@ -23,6 +23,7 @@ import { useSpatialNav } from "@/lib/use-spatial-nav";
 import { useSavedFranchises } from "@/lib/saved-franchises";
 import { useTvScreenSize } from "@/lib/playlist-sync";
 import { useAccountAccess } from "@/lib/account-access";
+import { signedOutPath } from "@/lib/fire-tv-device";
 import {
   Select,
   SelectContent,
@@ -91,7 +92,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: signedOutPath(), replace: true });
   };
 
   const layeredPath = ["/dashboard", "/live", "/movies", "/series", "/favorites", "/franchises"].some(
