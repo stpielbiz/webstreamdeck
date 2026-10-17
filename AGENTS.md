@@ -12,7 +12,7 @@
 - Native Fire TV app lives in `native-app/android/` (Kotlin WebView + Media3 player, JS bridge `window.StreamDeckNative`) and is built by `.github/workflows/android.yml` — providers block server/browser playback, so device-side playback is required.
 - Movies and Shows use sections → persistent 20/80 category/content browsing across TV and web, with zone-bound focus and compact preview playback — this keeps remote navigation deterministic without hiding context.
 - Selecting a Movie or Show opens a compact modal with details and preview playback; remote Back closes it before leaving the section.
-- Device pairing uses the public `/device-login` entry screen and returns there after authentication; legacy Firestick and TV-specific links redirect to it.
+- Device pairing uses the public `/device-login` entry screen and returns there after authentication; legacy Firestick and TV-specific links redirect to it. Signed-out Fire TV goes to `/tv/pair` via `signedOutPath()`.
 - The TV home uses a persistent menu/details workspace: focus previews a section, OK opens it, and content rows remain independently remote-navigable.
 - Remote focus uses a shared inset :focus indicator and action-only targets; rows navigate by order, dialogs isolate focus — this keeps selection reliable without layout measurement. A control drawing its own focus look opts out with `data-focus-glow`.
 - Continue watching uses horizontal shelves; Home and Favourites share compact three-column channel/movie/show lists with action-only row focus and shared title dialogs.
@@ -35,4 +35,3 @@
 - Provider calls use `device-provider.ts` hooks: Fire TV runs `iptv-provider.ts` on-device via `StreamDeckNative.fetchText`, else server — providers often blank our servers.
 - Multi-view: one player per screen (native `playMulti` / in-page grid); Recent channels capped at 10 per playlist.
 - Player recents bar: `StreamDeckNative.setRecentChannels` feeds it; Down toggles, OK switches (reports `__streamDeckChannelSwitched`). Live-only: VOD keeps Down for seeking.
-- Signed-out redirects use signedOutPath() (src/lib/fire-tv-device.ts): Fire TV goes to /tv/pair, browsers to /auth — remote users can't type passwords easily.
