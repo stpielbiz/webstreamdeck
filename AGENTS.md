@@ -29,9 +29,9 @@
 - Franchise lists are resolved once per title key into the shared franchise_lookups table and matched to catalogues on-device — avoids repeat AI lookups.
 - All title details entry points use the shared inline franchise panel and a title history within one dialog — related titles keep variant selection and Back returns to the previous title without stacking dialogs.
 - Saved franchise collections are account-owned and the Franchise navigation is conditional on at least one saved collection — empty accounts are not given a dead-end menu.
-- All search inputs use the shared SearchField with local draft state and confirmation on Enter, blur or keyboard dismissal; native Back is consumed before page navigation — prevents per-letter requests and keeps remote typing on the current screen.
-- Fire TV display density is an account setting applied through the shared TV shell and root sizing selectors, never browser zoom — keeps focus geometry deterministic.
-- Account expiry is stored separately from roles; expired accounts retain only Home, Settings, and sign-out access — keeps subscription state out of privileges.
+- All search inputs use the shared SearchField with local draft state and confirmation on Enter, blur or keyboard dismissal; native Back is consumed before page navigation — no per-letter requests.
+- Fire TV display density is an account setting applied through the shared TV shell and root sizing selectors, never browser zoom — stable focus geometry.
+- Account expiry is stored separately from roles; expired accounts retain only Home, Settings, and sign-out access.
 - Provider calls use `device-provider.ts` hooks: Fire TV runs `iptv-provider.ts` on-device via `StreamDeckNative.fetchText`, else server — providers often blank our servers.
 - Multi-view: one player per screen (native `playMulti` / in-page grid); Recent channels capped at 10 per playlist.
 - Player recents bar: `StreamDeckNative.setRecentChannels` feeds it; Down toggles, OK switches (reports `__streamDeckChannelSwitched`). Live-only: VOD keeps Down for seeking.
