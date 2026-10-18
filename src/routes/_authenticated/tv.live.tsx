@@ -21,6 +21,7 @@ import { useAppSearchFocus } from "@/lib/app-search";
 import { compareTitles, isFavorite, useFavorites, useToggleFavorite } from "@/lib/library-hooks";
 import { useLongPress } from "@/lib/use-long-press";
 import { MultiView } from "@/components/multi-view";
+import { ChannelActionMenu, type ProgrammeInfo } from "@/components/channel-action-menu";
 import { FAVOURITES_CATEGORY, RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 import { toast } from "sonner";
 
@@ -68,9 +69,10 @@ function ChannelNameButton({
       variant="ghost"
       tabIndex={-1}
       onClick={onPlay}
-      title={`${label} — hold OK to ${starred ? "remove from" : "add to"} favourites`}
+      title={`${label} — hold OK or right-click for favourites and recording`}
       aria-label={label}
       {...longPress}
+      onContextMenu={(event) => { event.preventDefault(); onToggleFavorite(); }}
       className={className}
     >
       {children}
@@ -81,7 +83,7 @@ function ChannelNameButton({
 
 function EmptyGuideButton({ onLongPress, ...props }: React.ComponentProps<typeof Button> & { onLongPress: () => void }) {
   const longPress = useLongPress(onLongPress);
-  return <Button {...props} {...longPress} />;
+  return <Button {...props} {...longPress} onContextMenu={(event) => { event.preventDefault(); onLongPress(); }} />;
 }
 
 /** A channel category in the rail: quick press opens it, hold OK stars it. */
@@ -137,6 +139,7 @@ function TvLive() {
   const resolve = useGetPlayback();
   const favorites = useFavorites();
   const toggleFavorite = useToggleFavorite();
+  const [menuItem, setMenuItem] = useState<CatalogItem | null>(null);
 
   const [categoryId, setCategoryId] = useState("");
   const [selected, setSelected] = useState<CatalogItem | null>(null);
@@ -725,7 +728,7 @@ function TvLive() {
                     label={item.name}
                     starred={isFavorite(favorites.data, activeId, "live", item.id)}
                     onPlay={() => playChannel(item)}
-                    onToggleFavorite={() => toggleChannelFavorite(item)}
+                    onToggleFavorite={() => setMenuItem(item)}
                     className={cn(
                       "sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start gap-2 whitespace-normal rounded-none border-r border-border bg-card px-2 text-left focus-visible:z-30",
                       focusedId === item.id && "bg-secondary",
@@ -740,7 +743,7 @@ function TvLive() {
                       {Array.from({ length: 24 }).map((_, marker) => <span key={marker} className="border-r border-border/60" />)}
                     </div>
                     {programmes.length === 0 ? (
-                      <EmptyGuideButton onLongPress={() => toggleChannelFavorite(item)}
+                      <EmptyGuideButton onLongPress={() => setMenuItem(item)}
                         variant="ghost"
                         data-tv-focus
                         data-zone-edge-left="true"
@@ -766,7 +769,7 @@ function TvLive() {
                         zoneEntry={index === 0 && programmeIndex === 0}
                         onFocus={(element) => { setFocusedId(item.id); revealCell(element, programmeIndex === 0); }}
                         onSelect={() => playChannel(item)}
-                        onLongPress={() => toggleChannelFavorite(item)}
+                        onLongPress={() => setMenuItem(item)}
                       />
                     ))}
                     {clock >= windowStart && clock <= windowEnd && (
@@ -802,6 +805,23 @@ function TvLive() {
           </div>
         </div>
       )}
+      <ChannelActionMenu
+        tv
+        channel={menuItem}
+        starred={!!menuItem && isFavorite(favorites.data, activeId, "live", menuItem.id)}
+        onToggleFavorite={() => { if (menuItem) toggleChannelFavorite(menuItem); }}
+        onClose={() => { if (menuItem) lastChannel.current = menuItem.id; setMenuItem(null); restoreChannelFocus(); }}
+        programmeAt={(time): ProgrammeInfo | null => {
+          if (!menuItem) return null;
+          const hit = (scheduleMap.get(menuItem.id) ?? []).find((p) => Date.parse(p.start ?? "") <= time && Date.parse(p.end ?? "") > time);
+          return hit ? { title: hit.title, end: Date.parse(hit.end ?? "") } : null;
+        }}
+        getStreamUrl={async () => {
+          if (!activeId || !menuItem) return null;
+          const result = await resolve({ data: { playlistId: activeId, kind: "live", itemId: menuItem.id } });
+          return result.directUrl ?? result.url;
+        }}
+      />
       <MultiView
         open={multiOpen}
         playlistId={activeId}
@@ -861,6 +881,7 @@ function ProgrammeCell({
       onFocus={(event) => onFocus(event.currentTarget)}
       onClick={onSelect}
       {...longPress}
+      onContextMenu={(event) => { event.preventDefault(); onLongPress(); }}
       className="absolute inset-y-1 z-10 h-auto justify-start overflow-hidden rounded border border-border bg-secondary px-3 text-left focus-visible:z-20 focus-visible:bg-primary focus-visible:text-primary-foreground"
       style={{ left, width: Math.max(64, width - 4) }}
       title={programme.description ?? programme.title}

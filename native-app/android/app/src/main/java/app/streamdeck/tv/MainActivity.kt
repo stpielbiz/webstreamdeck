@@ -88,6 +88,12 @@ class MainActivity : Activity() {
         else webView.loadUrl(BuildConfig.START_URL)
         webView.requestFocus()
         appUpdater.checkAtLaunch()
+        RecordingManager.onChange = {
+            runOnUiThread {
+                if (::webView.isInitialized) webView.evaluateJavascript("window.__streamDeckRecordingUpdate && window.__streamDeckRecordingUpdate()", null)
+            }
+        }
+        Thread { RecordingManager.reschedule(applicationContext) }.start()
     }
 
     private var pausedAt = 0L
@@ -137,6 +143,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         PlayerActivity.listener = null
+        RecordingManager.onChange = null
         if (::appUpdater.isInitialized) appUpdater.close()
         webView.destroy()
         super.onDestroy()
@@ -247,6 +254,42 @@ class MainActivity : Activity() {
             runOnUiThread {
                 if (enabled) webView.keepScreenOn = true else webView.keepScreenOn = false
             }
+        }
+
+        /** Records a live channel: JSON {title, programme, url, startAt, endAt} (ms). Returns the id, or "". */
+        @JavascriptInterface
+        fun startRecording(json: String): String = try {
+            RecordingManager.add(applicationContext, json)
+        } catch (_: Exception) {
+            ""
+        }
+
+        @JavascriptInterface
+        fun cancelRecording(id: String) = RecordingManager.cancel(applicationContext, id)
+
+        @JavascriptInterface
+        fun deleteRecording(id: String) = RecordingManager.delete(applicationContext, id)
+
+        @JavascriptInterface
+        fun listRecordings(): String = RecordingManager.listJson(applicationContext)
+
+        @JavascriptInterface
+        fun getStorageInfo(): String = RecordingManager.storageJson(applicationContext)
+
+        /** Plays a saved recording in the built-in player. */
+        @JavascriptInterface
+        fun playRecording(id: String) {
+            val file = RecordingManager.filePath(applicationContext, id) ?: return
+            val entry = RecordingManager.find(applicationContext, id)
+            if (PlayerActivity.isOpen) return
+            PlayerActivity.recentChannels = emptyList()
+            val intent = Intent(this@MainActivity, PlayerActivity::class.java).apply {
+                putExtra(PlayerActivity.EXTRA_URL, android.net.Uri.fromFile(file).toString())
+                putExtra(PlayerActivity.EXTRA_TITLE, entry?.optString("title") ?: "Recording")
+                putExtra(PlayerActivity.EXTRA_LIVE, false)
+                putExtra(PlayerActivity.EXTRA_START, 0.0)
+            }
+            runOnUiThread { startActivity(intent) }
         }
 
     }

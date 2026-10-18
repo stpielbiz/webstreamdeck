@@ -11,8 +11,7 @@ import {
   Settings,
   ShieldCheck,
   Star,
-  Tv,
-} from "lucide-react";
+  Tv,, CircleDot } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +37,7 @@ const NAV = [
   { to: "/movies", label: "Movies", icon: Clapperboard },
   { to: "/series", label: "Series", icon: MonitorPlay },
   { to: "/favorites", label: "Favourites", icon: Star },
+  { to: "/recordings", label: "Recordings", icon: CircleDot },
   { to: "/playlists", label: "Playlists", icon: ListVideo },
   { to: "/settings", label: "Settings", icon: Settings },
   { to: "/device-login", label: "Log in another device", icon: LogIn },

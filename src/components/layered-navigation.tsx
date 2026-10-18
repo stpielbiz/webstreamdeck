@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Clapperboard, Download, Home, Layers, ListVideo, Loader2, MonitorPlay, RefreshCw, Settings, ShieldCheck, Star, Tv } from "lucide-react";
+import { CircleDot, Clapperboard, Download, Home, Layers, ListVideo, Loader2, MonitorPlay, RefreshCw, Settings, ShieldCheck, Star, Tv } from "lucide-react";
 import { useIsAdmin } from "@/lib/use-admin";
 import { useEffect, useRef, useState, type FocusEvent } from "react";
 
@@ -15,6 +15,7 @@ const SECTIONS = [
   { to: "/movies", tvTo: "/tv/movies", label: "Movies", icon: Clapperboard },
   { to: "/series", tvTo: "/tv/series", label: "Shows", icon: MonitorPlay },
   { to: "/favorites", tvTo: "/tv/favorites", label: "Favourites", icon: Star },
+  { to: "/recordings", tvTo: "/tv/recordings", label: "Recordings", icon: CircleDot },
 ] as const;
 
 export function useLayerFocus(layer: BrowseLayer, key?: string | null) {

@@ -1,6 +1,6 @@
 import { hardReload } from "@/lib/hard-reload";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Clapperboard, Download, ListVideo, MonitorPlay, Settings, ShieldCheck, Star, Tv } from "lucide-react";
+import { Clapperboard, Download, ListVideo, MonitorPlay, Settings, ShieldCheck, Star, Tv, CircleDot } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { syncedResumeRows, useSyncPlaylists } from "@/lib/playlist-sync";
@@ -231,6 +231,7 @@ const PREVIEWS = {
   Movies: { icon: Clapperboard, title: "Movies", body: "Browse your movie library by system category, year, or title.", to: "/tv/movies", action: "Browse movies" },
   Shows: { icon: MonitorPlay, title: "Shows", body: "Find series, seasons, and episodes from your playlist.", to: "/tv/series", action: "Browse shows" },
   Favourites: { icon: Star, title: "Favourites", body: "Your saved channels, movies, and shows in one place.", to: "/tv/favorites", action: "Open favourites" },
+  Recordings: { icon: CircleDot, title: "Recordings", body: "Live TV you recorded on this Fire TV. Hold OK on a channel in Live TV to record.", to: "/tv/recordings", action: "Open recordings" },
   Settings: { icon: Settings, title: "Settings", body: "Sync my playlists and other preferences.", to: "/settings", action: "Open settings" },
   Playlists: { icon: ListVideo, title: "Playlists", body: "Add or switch the IPTV source used by Stream Deck.", to: "/playlists", action: "Manage playlists" },
   "Get the TV app": { icon: Download, title: "Get the TV app", body: "Download the latest Stream Deck app for Fire TV.", to: "/download", action: "Open download page" },

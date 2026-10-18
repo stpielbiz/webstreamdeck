@@ -19,6 +19,7 @@ import { compareTitles, isFavorite, useFavorites, useToggleFavorite } from "@/li
 import { useLongPress } from "@/lib/use-long-press";
 import { toast } from "sonner";
 import { MultiView } from "@/components/multi-view";
+import { ChannelActionMenu } from "@/components/channel-action-menu";
 import { FAVOURITES_CATEGORY, RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 
 export const Route = createFileRoute("/_authenticated/live")({
@@ -81,8 +82,10 @@ function ChannelRow({
   starred,
   onSelect,
   onToggleFavorite,
+  onMenu,
   selected,
 }: {
+  onMenu: () => void;
   item: CatalogItem;
   entry: { now: { start: string | null; title: string } | null } | undefined;
   starred: boolean;
@@ -90,7 +93,7 @@ function ChannelRow({
   onSelect: () => void;
   onToggleFavorite: () => void;
 }) {
-  const longPress = useLongPress(onToggleFavorite);
+  const longPress = useLongPress(onMenu);
   return (
     <div
       className={cn(
@@ -102,8 +105,9 @@ function ChannelRow({
         type="button"
         data-tv-focus
         onClick={onSelect}
-        title={`${item.name} — press and hold to ${starred ? "remove from" : "add to"} favourites`}
+        title={`${item.name} — right-click or press and hold for favourites and recording`}
         {...longPress}
+        onContextMenu={(event) => { event.preventDefault(); onMenu(); }}
         className="flex min-w-0 flex-1 items-center gap-3 text-left"
       >
         {item.image ? (
@@ -168,6 +172,7 @@ function LivePage() {
   const isRecent = categoryId === RECENT_CATEGORY;
   const isFavourites = categoryId === FAVOURITES_CATEGORY;
   const toggle = useToggleFavorite();
+  const [menuItem, setMenuItem] = useState<CatalogItem | null>(null);
 
   // The category list opens with focus on Favourites for accounts that have
   // favourite channels, so the remote or mouse starts on their own list.
@@ -381,6 +386,7 @@ function LivePage() {
                 selected={selected?.id === item.id}
                 onSelect={() => setSelected(item)}
                 onToggleFavorite={() => toggleChannel(item)}
+                onMenu={() => setMenuItem(item)}
               />
             ))
           )}
@@ -457,6 +463,18 @@ function LivePage() {
           </div>
         </div>
       </section>
+      <ChannelActionMenu
+        channel={menuItem}
+        starred={!!menuItem && isFavorite(favorites.data, activeId, "live", menuItem.id)}
+        onToggleFavorite={() => { if (menuItem) toggleChannel(menuItem); }}
+        onClose={() => setMenuItem(null)}
+        programmeAt={() => null}
+        getStreamUrl={async () => {
+          if (!activeId || !menuItem) return null;
+          const result = await fetchPlayback({ data: { playlistId: activeId, kind: "live", itemId: menuItem.id } });
+          return result.directUrl ?? result.url;
+        }}
+      />
       <MultiView
         open={multiOpen}
         playlistId={activeId}
