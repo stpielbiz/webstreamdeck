@@ -136,14 +136,14 @@ class MainActivity : Activity() {
                     null,
                 )
             }
-        PlayerActivity.listener = null
-        RecordingManager.onChange = null
+            return true
         }
         return super.dispatchKeyEvent(event)
     }
 
     override fun onDestroy() {
         PlayerActivity.listener = null
+        RecordingManager.onChange = null
         if (::appUpdater.isInitialized) appUpdater.close()
         webView.destroy()
         super.onDestroy()
