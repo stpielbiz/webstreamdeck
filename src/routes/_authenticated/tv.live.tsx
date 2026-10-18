@@ -405,12 +405,26 @@ function TvLive() {
     if (id) document.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
   };
 
+  // Index of the channel row when the menu opened — used when that row disappears (e.g. unfavourited inside Favourites).
+  const lastChannelIndex = useRef(0);
+  const channelRows = () => Array.from(document.querySelectorAll<HTMLElement>('[data-focus-key^="channel-"]'));
+  const openMenu = (item: CatalogItem) => {
+    lastChannelIndex.current = Math.max(0, channelRows().findIndex((row) => row.dataset["focusKey"] === `channel-${item.id}`));
+    setMenuItem(item);
+  };
   const restoreChannelFocus = () => {
-    window.requestAnimationFrame(() => {
-      const row = document.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(lastChannel.current ?? "")}"]`);
+    const attempt = (tries: number) => window.requestAnimationFrame(() => {
+      let row = document.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(lastChannel.current ?? "")}"]`);
+      if (!row) {
+        const rows = channelRows();
+        row = rows[Math.min(lastChannelIndex.current, rows.length - 1)] ?? null;
+      }
+      if (!row && tries > 0) { attempt(tries - 1); return; }
+      row ??= document.querySelector<HTMLElement>('[data-focus-key^="category-"], [data-tv-focus]');
       row?.focus({ preventScroll: true });
       row?.scrollIntoView({ block: "center" });
     });
+    attempt(3);
   };
 
   const toggleCategoryFavorite = (category: { id: string; name: string }) => {
