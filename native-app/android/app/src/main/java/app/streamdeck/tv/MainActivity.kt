@@ -136,7 +136,8 @@ class MainActivity : Activity() {
                     null,
                 )
             }
-            return true
+        PlayerActivity.listener = null
+        RecordingManager.onChange = null
         }
         return super.dispatchKeyEvent(event)
     }
