@@ -55,6 +55,13 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
       if (typing && (direction === "left" || direction === "right")) return;
 
       const active = document.activeElement as HTMLElement | null;
+      // Selection lost (its item was removed): pick the first visible target instead of doing nothing.
+      if (!active || active === document.body || !active.isConnected) {
+        const scopeRoot = document.querySelector<HTMLElement>('[role="dialog"]') ?? document;
+        const first = Array.from(scopeRoot.querySelectorAll<HTMLElement>(SELECTOR)).find((element) => element.offsetParent !== null);
+        if (first) { event.preventDefault(); first.focus({ preventScroll: true }); first.scrollIntoView({ block: "nearest" }); }
+        return;
+      }
       const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
       // A portal is outside the workspace: never navigate into the page behind it.
       const root = dialog ?? document;
