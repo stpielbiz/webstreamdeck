@@ -67,6 +67,13 @@ export function ChannelActionMenu({
     };
   }, [channel]);
 
+  // Length step opens on the confirm button: the default already ends with the programme.
+  useEffect(() => {
+    if (step !== "length") return;
+    const id = window.setTimeout(() => document.querySelector<HTMLElement>("[data-record-confirm]")?.focus(), 30);
+    return () => window.clearTimeout(id);
+  }, [step]);
+
   const swallow = (event: React.SyntheticEvent) => {
     if (armed.current) return;
     event.preventDefault();
@@ -211,7 +218,7 @@ export function ChannelActionMenu({
               </div>
               <Stepper label="Custom" value={`${minutes} min`} onMinus={() => setEnd((value) => Math.max(start + 15 * 60_000, value - 15 * 60_000))} onPlus={() => setEnd((value) => Math.min(start + 12 * 3600_000, value + 15 * 60_000))} />
               <div data-remote-row className="flex flex-col">
-                <Button data-tv-focus className="mt-2 h-12" disabled={busy} onClick={() => void save()}>
+                <Button data-tv-focus data-record-confirm className="mt-2 h-12" disabled={busy} onClick={() => void save()}>
                   {start > Date.now() + 60_000 ? "Schedule recording" : "Start recording"}
                 </Button>
               </div>
