@@ -67,6 +67,13 @@ export function ChannelActionMenu({
     };
   }, [channel]);
 
+  // Length step opens on the confirm button: the default already ends with the programme.
+  useEffect(() => {
+    if (step !== "length") return;
+    const id = window.setTimeout(() => document.querySelector<HTMLElement>("[data-record-confirm]")?.focus(), 30);
+    return () => window.clearTimeout(id);
+  }, [step]);
+
   const swallow = (event: React.SyntheticEvent) => {
     if (armed.current) return;
     event.preventDefault();
@@ -149,24 +156,32 @@ export function ChannelActionMenu({
         <div className="mt-2 flex flex-col gap-2">
           {step === "menu" && (
             <>
-              <Button data-tv-focus variant="secondary" className={btn} onClick={() => { onToggleFavorite(); onClose(); }}>
-                <Star className={starred ? "size-5 fill-primary text-primary" : "size-5"} />
-                {starred ? "Remove from favourites" : "Add to favourites"}
-              </Button>
-              <Button data-tv-focus variant="secondary" className={btn} onClick={() => setStep(canRecord() ? "when" : "unsupported")}>
-                <CircleDot className="size-5 text-destructive" /> Record
-              </Button>
+              <div data-remote-row className="flex flex-col">
+                <Button data-tv-focus variant="secondary" className={btn} onClick={() => { onToggleFavorite(); onClose(); }}>
+                  <Star className={starred ? "size-5 fill-primary text-primary" : "size-5"} />
+                  {starred ? "Remove from favourites" : "Add to favourites"}
+                </Button>
+              </div>
+              <div data-remote-row className="flex flex-col">
+                <Button data-tv-focus variant="secondary" className={btn} onClick={() => setStep(canRecord() ? "when" : "unsupported")}>
+                  <CircleDot className="size-5 text-destructive" /> Record
+                </Button>
+              </div>
             </>
           )}
 
           {step === "when" && (
             <>
-              <Button data-tv-focus variant="secondary" className={btn} onClick={chooseNow}>
-                <CircleDot className="size-5 text-destructive" /> Now
-              </Button>
-              <Button data-tv-focus variant="secondary" className={btn} onClick={chooseLater}>
-                <Clock className="size-5" /> Later
-              </Button>
+              <div data-remote-row className="flex flex-col">
+                <Button data-tv-focus variant="secondary" className={btn} onClick={chooseNow}>
+                  <CircleDot className="size-5 text-destructive" /> Now
+                </Button>
+              </div>
+              <div data-remote-row className="flex flex-col">
+                <Button data-tv-focus variant="secondary" className={btn} onClick={chooseLater}>
+                  <Clock className="size-5" /> Later
+                </Button>
+              </div>
             </>
           )}
 
@@ -176,7 +191,9 @@ export function ChannelActionMenu({
               <Stepper label="Hour" value={fmtTime(start)} onMinus={() => shiftStart(-3600_000)} onPlus={() => shiftStart(3600_000)} />
               <Stepper label="Minutes" value={fmtTime(start)} onMinus={() => shiftStart(-5 * 60_000)} onPlus={() => shiftStart(5 * 60_000)} />
               {programmeAt(start) && <p className="text-sm text-muted-foreground">On then: {programmeAt(start)?.title}</p>}
-              <Button data-tv-focus className="mt-2 h-12" onClick={confirmLater}>Next</Button>
+              <div data-remote-row className="flex flex-col">
+                <Button data-tv-focus className="mt-2 h-12" onClick={confirmLater}>Next</Button>
+              </div>
             </>
           )}
 
@@ -186,9 +203,11 @@ export function ChannelActionMenu({
                 {fmtDay(start)} · {fmtTime(start)} – {fmtTime(end)} ({minutes} min)
               </p>
               {programmeEnd && programmeEnd > start + 60_000 && (
-                <Button data-tv-focus variant={end === programmeEnd ? "default" : "secondary"} className={btn} onClick={() => setEnd(programmeEnd)}>
-                  Until the programme ends ({fmtTime(programmeEnd)})
-                </Button>
+                <div data-remote-row className="flex flex-col">
+                  <Button data-tv-focus variant={end === programmeEnd ? "default" : "secondary"} className={btn} onClick={() => setEnd(programmeEnd)}>
+                    Until the programme ends ({fmtTime(programmeEnd)})
+                  </Button>
+                </div>
               )}
               <div className="grid grid-cols-4 gap-2" data-remote-row>
                 {LENGTHS.map((length) => (
@@ -198,9 +217,11 @@ export function ChannelActionMenu({
                 ))}
               </div>
               <Stepper label="Custom" value={`${minutes} min`} onMinus={() => setEnd((value) => Math.max(start + 15 * 60_000, value - 15 * 60_000))} onPlus={() => setEnd((value) => Math.min(start + 12 * 3600_000, value + 15 * 60_000))} />
-              <Button data-tv-focus className="mt-2 h-12" disabled={busy} onClick={() => void save()}>
-                {start > Date.now() + 60_000 ? "Schedule recording" : "Start recording"}
-              </Button>
+              <div data-remote-row className="flex flex-col">
+                <Button data-tv-focus data-record-confirm className="mt-2 h-12" disabled={busy} onClick={() => void save()}>
+                  {start > Date.now() + 60_000 ? "Schedule recording" : "Start recording"}
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">Some providers allow only one connection at a time, so watching another channel while recording may not work.</p>
             </>
           )}
@@ -212,16 +233,20 @@ export function ChannelActionMenu({
               </p>
               <p>What you need: a Fire TV Stick with the latest Stream Deck app, and some free storage on it.</p>
               {!tv && (
-                <Button asChild data-tv-focus variant="secondary" className="h-11">
-                  <Link to="/download">Get the Fire TV app</Link>
-                </Button>
+                <div data-remote-row className="flex flex-col">
+                  <Button asChild data-tv-focus variant="secondary" className="h-11">
+                    <Link to="/download">Get the Fire TV app</Link>
+                  </Button>
+                </div>
               )}
             </div>
           )}
 
-          <Button data-tv-focus data-dialog-back variant="ghost" className="mt-1 h-11" onClick={back}>
-            {step === "menu" || step === "unsupported" ? "Close" : "Back"}
-          </Button>
+          <div data-remote-row className="flex flex-col">
+            <Button data-tv-focus data-dialog-back variant="ghost" className="mt-1 h-11" onClick={back}>
+              {step === "menu" || step === "unsupported" ? "Close" : "Back"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
