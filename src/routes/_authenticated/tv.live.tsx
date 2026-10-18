@@ -495,22 +495,22 @@ function TvLive() {
   // Resolve the recent channels' links while a channel plays full screen:
   // the native player's bottom bar (Down on the remote, TiviMate-style) and
   // the web player's recents strip both use this list.
-  const [recentList, setRecentList] = useState<{ title: string; url: string }[]>([]);
+  const [recentList, setRecentList] = useState<{ itemId: string; title: string; url: string }[]>([]);
   useEffect(() => {
     if (!fullscreen || !activeId || !selected) {
       setRecentList([]);
       return;
     }
     let cancelled = false;
-    const candidates = orderByRecent(items.data ?? [], recent.rows)
-      .filter((item) => item.id !== selected.id)
-      .slice(0, 9);
+    // Order straight from the Recent rows so channels from other categories
+    // keep their true position instead of dropping out of the list.
+    const candidates = recent.rows.filter((row) => row.itemId !== selected.id).slice(0, 9);
     void (async () => {
-      const list: { title: string; url: string }[] = [];
-      for (const item of candidates) {
+      const list: { itemId: string; title: string; url: string }[] = [];
+      for (const row of candidates) {
         try {
-          const result = await resolve({ data: { playlistId: activeId, kind: "live", itemId: item.id } });
-          list.push({ title: item.name, url: result.directUrl ?? result.url });
+          const result = await resolve({ data: { playlistId: activeId, kind: "live", itemId: row.itemId } });
+          list.push({ itemId: row.itemId, title: row.title, url: result.directUrl ?? result.url });
         } catch {
           // Skip channels whose link couldn't be resolved.
         }
@@ -523,10 +523,13 @@ function TvLive() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fullscreen, selected?.id, activeId]);
+  }, [fullscreen, selected?.id, activeId, recent.rows]);
 
   const pickRecent = (title: string) => {
-    const item = (items.data ?? []).find((entry) => entry.name === title);
+    const entry = recentList.find((recentItem) => recentItem.title === title);
+    const item =
+      (entry && (items.data ?? []).find((channel) => channel.id === entry.itemId)) ??
+      (entry ? { id: entry.itemId, name: entry.title, image: null } : (items.data ?? []).find((channel) => channel.name === title));
     if (item) playChannel(item);
   };
 
