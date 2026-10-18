@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CircleDot, Clock, Minus, Plus, Star } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -49,10 +49,32 @@ export function ChannelActionMenu({
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(0);
   const [busy, setBusy] = useState(false);
+  // The menu opens while OK is still held: ignore activation until it is released.
+  const armed = useRef(false);
 
   useEffect(() => {
-    if (channel) setStep("menu");
+    if (!channel) return;
+    setStep("menu");
+    armed.current = false;
+    const arm = (event: KeyboardEvent) => {
+      if (event.key === "Enter" || event.key === " " || event.key === "Select") window.setTimeout(() => { armed.current = true; }, 50);
+    };
+    const timer = window.setTimeout(() => { armed.current = true; }, 500);
+    window.addEventListener("keyup", arm, true);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("keyup", arm, true);
+    };
   }, [channel]);
+
+  const swallow = (event: React.SyntheticEvent) => {
+    if (armed.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  const swallowKey = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " " || event.key === "Select") swallow(event);
+  };
 
   const back = () => {
     if (step === "menu" || step === "unsupported") onClose();
@@ -106,8 +128,15 @@ export function ChannelActionMenu({
 
   return (
     <Dialog open={!!channel} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-md" data-tv-zone="channel-actions" onEscapeKeyDown={(event) => { event.preventDefault(); back(); }}>
-        <DialogTitle className="truncate">{channel?.name}</DialogTitle>
+      <DialogContent
+        className="max-w-md"
+        data-tv-zone="channel-actions"
+        onKeyDownCapture={swallowKey}
+        onKeyUpCapture={swallowKey}
+        onClickCapture={swallow}
+        onOpenAutoFocus={(event) => { event.preventDefault(); (event.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>("[data-menu-heading]")?.focus(); }}
+        onEscapeKeyDown={(event) => { event.preventDefault(); back(); }}>
+        <DialogTitle data-menu-heading tabIndex={-1} className="truncate outline-none">{channel?.name}</DialogTitle>
         <DialogDescription>
           {step === "menu" && "Choose what to do with this channel."}
           {step === "when" && "When should the recording start?"}
