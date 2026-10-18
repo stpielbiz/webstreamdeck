@@ -10,22 +10,22 @@
 <!-- LOVABLE:END -->
 
 - Native Fire TV app lives in `native-app/android/` (Kotlin WebView + Media3 player, JS bridge `window.StreamDeckNative`) and is built by `.github/workflows/android.yml` — providers block server/browser playback, so device-side playback is required.
-- Movies and Shows use sections → persistent 20/80 category/content browsing across TV and web, with zone-bound focus and compact preview playback — this keeps remote navigation deterministic without hiding context.
+- Movies/Shows: persistent 20/80 category/content browsing, zone-bound focus — deterministic remote nav.
 - Selecting a Movie or Show opens a compact modal with details and preview playback; remote Back closes it before leaving the section.
 - Device pairing uses the public `/device-login` entry screen and returns there after authentication; legacy Firestick and TV-specific links redirect to it. Signed-out Fire TV goes to `/tv/pair` via `signedOutPath()`.
 - The TV home uses a persistent menu/details workspace: focus previews a section, OK opens it, and content rows remain independently remote-navigable.
 - Remote focus uses a shared inset :focus indicator and action-only targets; rows navigate by order, dialogs isolate focus — reliable selection. A control drawing its own focus look opts out with `data-focus-glow`.
 - Continue watching uses horizontal shelves; Home and Favourites share compact three-column channel/movie/show lists with action-only row focus and shared title dialogs.
-- The native Fire TV app checks GitHub release metadata at launch and on request through the JS bridge; manual checks report results and updates use Android's user-approved installer — this preserves device security while enabling in-app upgrades.
+- Native app checks GitHub releases at launch/on request; installs via Android's user-approved installer — secure in-app upgrades.
 - Navigation preserves device mode: TV routes and TV-opened shared screens return to `/tv`, while regular browser screens return to `/dashboard` — keeps remote users out of the desktop shell.
 - Live TV is the single guide destination and uses a persistent category rail with a horizontally navigable programme timeline — no duplicate Guide.
-- Native Back is consumed once on key release and routed to the website's layer-aware handler; player closure has a separate bridge callback from completion — this restores browsing without skipping layers or exiting the app.
+- Native Back is consumed once on key release and routed to the site's layer-aware handler; player close and completion have separate callbacks — no skipped layers.
 - Provider library data (categories, channels, catalogue, guide) is persisted on-device in IndexedDB (src/lib/device-cache.ts) and refreshed by useLibrarySync — menus render from saved data instantly and only stale parts are re-fetched.
 - Movies and Shows use shared route and catalogue loading placeholders only when saved data is unavailable — cold fetches get feedback without hiding cache.
 - TV section links show an immediate opening overlay until navigation unmounts the menu — remote clicks get feedback without depending on router pending-state timing.
 - Title details (genres, artwork, cast) are backfilled slowly in the background by `useTitleBackfill` into the shared `title_metadata` store — every user contributes, each title is resolved once, and browsing never waits on it.
 - Cross-playlist resume is opt-in per account (`user_settings.sync_playlists`) and matches titles by normalised name (+ season/episode) through `src/lib/playlist-sync.ts` — provider item IDs differ between playlists.
-- Movie/show catalogues keep raw provider entries cached but derive grouped title views with shared provider-title cleanup and selectable stream variants — this matches episode-formatted catalogue entries and hides duplicate quality copies without losing playable provider IDs.
+- Catalogues cache raw provider entries and derive grouped titles with selectable stream variants — hides duplicate quality copies, keeps playable IDs.
 - Franchise lists are resolved once per title key into the shared franchise_lookups table and matched to catalogues on-device — avoids repeat AI lookups.
 - All title details entry points use the shared inline franchise panel and a title history within one dialog — related titles keep variant selection and Back returns to the previous title without stacking dialogs.
 - Saved franchise collections are account-owned and the Franchise navigation is conditional on at least one saved collection — empty accounts are not given a dead-end menu.
@@ -33,6 +33,7 @@
 - Fire TV display density is an account setting applied through the shared TV shell and root sizing selectors, never browser zoom — stable focus geometry.
 - Account expiry is stored separately from roles; expired accounts retain only Home, Settings, and sign-out access.
 - Provider calls use `device-provider.ts` hooks: Fire TV runs `iptv-provider.ts` on-device via `StreamDeckNative.fetchText`, else server — providers often blank our servers.
-- Multi-view: one player per screen (native `playMulti` / in-page grid); Recent channels capped at 10 per playlist.
+- Multi-view: one player per screen; Recents capped at 10/playlist.
+- Recordings are device-only: native `RecordingManager` (foreground service + alarms) saves .ts files and its index on the Fire TV; web reads them via bridge — browsers can't record in background.
 - Player recents bar: `StreamDeckNative.setRecentChannels` feeds it; Down toggles, OK switches (reports `__streamDeckChannelSwitched`). Live-only: VOD keeps Down for seeking.
 - Public homepage copy, actions and feature cards live in src/content/homepage.ts — edit content without touching layout.

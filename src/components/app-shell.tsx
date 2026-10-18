@@ -11,7 +11,9 @@ import {
   Settings,
   ShieldCheck,
   Star,
-  Tv,, CircleDot } from "lucide-react";
+  Tv,
+  CircleDot,
+} from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -95,7 +97,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate({ to: signedOutPath(), replace: true });
   };
 
-  const layeredPath = ["/dashboard", "/live", "/movies", "/series", "/favorites", "/franchises"].some(
+  const layeredPath = ["/dashboard", "/live", "/movies", "/series", "/favorites", "/franchises", "/recordings"].some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   if (layeredPath) {
