@@ -810,7 +810,7 @@ function TvLive() {
         channel={menuItem}
         starred={!!menuItem && isFavorite(favorites.data, activeId, "live", menuItem.id)}
         onToggleFavorite={() => { if (menuItem) toggleChannelFavorite(menuItem); }}
-        onClose={() => { setMenuItem(null); restoreChannelFocus(); }}
+        onClose={() => { if (menuItem) lastChannel.current = menuItem.id; setMenuItem(null); restoreChannelFocus(); }}
         programmeAt={(time): ProgrammeInfo | null => {
           if (!menuItem) return null;
           const hit = (scheduleMap.get(menuItem.id) ?? []).find((p) => Date.parse(p.start ?? "") <= time && Date.parse(p.end ?? "") > time);
