@@ -27,6 +27,10 @@ export function useTouchRecent() {
         ...old.filter((row) => !(row.playlistId === input.playlistId && row.itemId === input.itemId)),
       ]);
     },
+    onSettled: () => {
+      // Re-sync with the server so every screen sees the same order.
+      void queryClient.invalidateQueries({ queryKey: ["recent-channels"] });
+    },
   });
   return useCallback(
     (playlistId: string | null, item: CatalogItem) => {
