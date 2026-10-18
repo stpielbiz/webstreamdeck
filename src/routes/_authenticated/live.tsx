@@ -19,6 +19,7 @@ import { compareTitles, isFavorite, useFavorites, useToggleFavorite } from "@/li
 import { useLongPress } from "@/lib/use-long-press";
 import { toast } from "sonner";
 import { MultiView } from "@/components/multi-view";
+import { ChannelActionMenu } from "@/components/channel-action-menu";
 import { FAVOURITES_CATEGORY, RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 
 export const Route = createFileRoute("/_authenticated/live")({
@@ -462,6 +463,18 @@ function LivePage() {
           </div>
         </div>
       </section>
+      <ChannelActionMenu
+        channel={menuItem}
+        starred={!!menuItem && isFavorite(favorites.data, activeId, "live", menuItem.id)}
+        onToggleFavorite={() => { if (menuItem) toggleChannel(menuItem); }}
+        onClose={() => setMenuItem(null)}
+        programmeAt={() => null}
+        getStreamUrl={async () => {
+          if (!activeId || !menuItem) return null;
+          const result = await fetchPlayback({ data: { playlistId: activeId, kind: "live", itemId: menuItem.id } });
+          return result.directUrl ?? result.url;
+        }}
+      />
       <MultiView
         open={multiOpen}
         playlistId={activeId}
