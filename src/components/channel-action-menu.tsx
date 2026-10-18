@@ -135,6 +135,7 @@ export function ChannelActionMenu({
         onKeyUpCapture={swallowKey}
         onClickCapture={swallow}
         onOpenAutoFocus={(event) => { event.preventDefault(); (event.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>("[data-menu-heading]")?.focus(); }}
+        onCloseAutoFocus={(event) => event.preventDefault()}
         onEscapeKeyDown={(event) => { event.preventDefault(); back(); }}>
         <DialogTitle data-menu-heading tabIndex={-1} className="truncate outline-none">{channel?.name}</DialogTitle>
         <DialogDescription>
