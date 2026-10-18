@@ -33,6 +33,7 @@
 - Fire TV display density is an account setting applied through the shared TV shell and root sizing selectors, never browser zoom — stable focus geometry.
 - Account expiry is stored separately from roles; expired accounts retain only Home, Settings, and sign-out access.
 - Provider calls use `device-provider.ts` hooks: Fire TV runs `iptv-provider.ts` on-device via `StreamDeckNative.fetchText`, else server — providers often blank our servers.
-- Multi-view: one player per screen (native `playMulti` / in-page grid); Recent channels capped at 10 per playlist.
+- Multi-view: one player per screen; Recents capped at 10/playlist.
+- Recordings are device-only: native `RecordingManager` (foreground service + alarms) saves .ts files and its index on the Fire TV; web reads them via bridge — browsers can't record in background.
 - Player recents bar: `StreamDeckNative.setRecentChannels` feeds it; Down toggles, OK switches (reports `__streamDeckChannelSwitched`). Live-only: VOD keeps Down for seeking.
 - Public homepage copy, actions and feature cards live in src/content/homepage.ts — edit content without touching layout.
