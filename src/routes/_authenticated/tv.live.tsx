@@ -529,7 +529,7 @@ function TvLive() {
     const entry = recentList.find((recentItem) => recentItem.title === title);
     const item =
       (entry && (items.data ?? []).find((channel) => channel.id === entry.itemId)) ??
-      (entry ? { id: entry.itemId, name: entry.title, image: null } : (items.data ?? []).find((channel) => channel.name === title));
+      (entry ? { id: entry.itemId, name: entry.title, image: null, categoryId: null } : (items.data ?? []).find((channel) => channel.name === title));
     if (item) playChannel(item);
   };
 
@@ -540,7 +540,7 @@ function TvLive() {
       const entry = recentList.find((recentItem) => recentItem.title === title);
       const item =
         (entry && (items.data ?? []).find((channel) => channel.id === entry.itemId)) ??
-        (entry ? { id: entry.itemId, name: entry.title, image: null } : (items.data ?? []).find((channel) => channel.name === title));
+        (entry ? { id: entry.itemId, name: entry.title, image: null, categoryId: null } : (items.data ?? []).find((channel) => channel.name === title));
       if (!item) return;
       lastChannel.current = item.id;
       setSelected(item);
@@ -798,7 +798,7 @@ function TvLive() {
               </div>
               <Button data-dialog-back data-tv-focus data-focus-key="live-player-close" variant="ghost" size="icon" aria-label="Exit full screen" onClick={exitFullscreen}><X className="size-5" /></Button>
             </div>
-            <VideoPlayer onStop={exitFullscreen} onRefreshSource={refreshPlayback} recents={recentList} onPickRecent={pickRecent} src={urlFor === selected.id ? url : null} fallbackSrc={urlFor === selected.id ? directUrl : null} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
+            <VideoPlayer onStop={exitFullscreen} onRefreshSource={refreshPlayback} recents={recentList.map(({ title, url }) => ({ title, url }))} onPickRecent={pickRecent} src={urlFor === selected.id ? url : null} fallbackSrc={urlFor === selected.id ? directUrl : null} title={selected.name} poster={selected.image} live className="aspect-video w-full" />
           </div>
         </div>
       )}
