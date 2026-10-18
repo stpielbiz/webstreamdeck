@@ -536,7 +536,11 @@ function TvLive() {
   // The native bottom bar switched channel: keep the page and Recent in sync.
   useEffect(() => {
     window.__streamDeckChannelSwitched = (title) => {
-      const item = (items.data ?? []).find((entry) => entry.name === title);
+      // Match by the id we handed the player, so same-name channels can't swap places.
+      const entry = recentList.find((recentItem) => recentItem.title === title);
+      const item =
+        (entry && (items.data ?? []).find((channel) => channel.id === entry.itemId)) ??
+        (entry ? { id: entry.itemId, name: entry.title, image: null } : (items.data ?? []).find((channel) => channel.name === title));
       if (!item) return;
       lastChannel.current = item.id;
       setSelected(item);
@@ -546,7 +550,7 @@ function TvLive() {
       window.__streamDeckChannelSwitched = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.data, activeId]);
+  }, [items.data, activeId, recentList]);
 
   const focused = channels.find((item) => item.id === focusedId) ?? null;
   const focusedProgrammes = focused ? scheduleMap.get(focused.id) ?? [] : [];
