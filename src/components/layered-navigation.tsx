@@ -3,9 +3,10 @@ import { CircleDot, Clapperboard, Download, Home, Layers, ListVideo, Loader2, Mo
 import { useIsAdmin } from "@/lib/use-admin";
 import { useEffect, useRef, useState, type FocusEvent } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useSavedFranchises } from "@/lib/saved-franchises";
 import { useAccountAccess } from "@/lib/account-access";
+import { cn } from "@/lib/utils";
 
 export type BrowseLayer = "sections" | "categories" | "content";
 
@@ -67,11 +68,7 @@ export function SectionMenu({
     const label = item?.dataset['sectionLabel'];
     if (label) onFocusItem?.(label);
   };
-  // On the home screen itself the Home entry points at the screen you're already
-  // on, so it's a dead link — drop it there and lead with Live TV.
-  const items = [...SECTIONS, ...(savedFranchises.data?.length ? [{ to: "/franchises" as const, tvTo: "/tv/franchises" as const, label: "Franchise", icon: Layers }] : [])].filter(
-    (item) => item.label !== "Home" || current !== "Home",
-  );
+  const items = [...SECTIONS, ...(savedFranchises.data?.length ? [{ to: "/franchises" as const, tvTo: "/tv/franchises" as const, label: "Franchise", icon: Layers }] : [])];
   return (
     <>
       <section
