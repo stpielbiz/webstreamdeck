@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { debugLog, describeElement, isDebugEnabled } from "@/lib/debug-log";
+import { debugLog, describeElement } from "@/lib/debug-log";
 
 const SELECTOR = ":is(button,a[href],input,select,textarea)[data-tv-focus]:not([disabled]):not([tabindex='-1'])";
 
@@ -45,14 +45,6 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
     };
 
     const handler = (event: KeyboardEvent) => {
-      if (isDebugEnabled() && /^(Arrow|Enter|Escape|Backspace)/.test(event.key) && !event.repeat) {
-        debugLog("keys", event.key, {
-          active: describeElement(document.activeElement),
-          prevented: event.defaultPrevented,
-          dialogs: document.querySelectorAll('[role="dialog"]').length,
-          nativeOverlay: !!document.querySelector("[data-native-overlay]"),
-        });
-      }
       if (event.defaultPrevented) return;
       if (/^Arrow|^Escape$|^Backspace$/.test(event.key) && clearStalePlayerLayer()) {
         event.preventDefault();
