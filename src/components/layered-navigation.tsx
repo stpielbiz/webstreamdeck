@@ -85,6 +85,25 @@ export function SectionMenu({
         {items.map(({ to, tvTo, label, icon: Icon }) => {
           const destination = tv ? tvTo : to;
           const disabled = expired && label !== "Home";
+          // On the home screen the Home entry is the screen you're already on.
+          // It stays visible as the current place, but nothing can select it.
+          if (label === "Home" && current === "Home") {
+            return (
+              <div
+                key={label}
+                aria-current="page"
+                aria-disabled="true"
+                tabIndex={-1}
+                className={cn(
+                  buttonVariants({ variant: focused === label || (!focused && current === label) ? "default" : "ghost" }),
+                  "pointer-events-none cursor-default select-none",
+                  compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg",
+                )}
+              >
+                <Icon className="size-5 shrink-0" /> {label}
+              </div>
+            );
+          }
           return (
             <Button key={label} asChild={!disabled} disabled={disabled} variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
             {disabled ? <span aria-disabled="true"><Icon className="size-5 shrink-0" /> {label}</span> : <Link to={destination} preload={tv ? false : "intent"} onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
