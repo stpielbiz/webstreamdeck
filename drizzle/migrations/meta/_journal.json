@@ -64,6 +64,13 @@
       "when": 1791934189177,
       "tag": "0008_recent_channels",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792448461196,
+      "tag": "0009_sports_package",
+      "breakpoints": true
     }
   ]
 }

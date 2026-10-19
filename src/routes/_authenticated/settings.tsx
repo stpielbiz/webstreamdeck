@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Film, Monitor, PauseCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Film, Monitor, PauseCircle, RefreshCw, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { SettingToggleCard } from "@/components/setting-toggle-card";
+import { SPORTS_LEAGUES } from "@/lib/sports-leagues";
 import { useSaveSettings, useSettings } from "@/lib/playlist-sync";
 import { usePlaylists } from "@/components/playlist-context";
 import { requestLibraryRefresh, runBulkRefresh, stopBulkRefresh, useBulkRefreshState, getBulkRefreshState, useLibraryRefreshStatus } from "@/lib/library-sync";
@@ -40,6 +41,8 @@ function SettingsPage() {
     syncPlaylists: settings.data?.syncPlaylists ?? false,
     screenSize: settings.data?.screenSize ?? "large",
     backgroundUpdates: settings.data?.backgroundUpdates ?? true,
+    sportsEnabled: settings.data?.sportsEnabled ?? false,
+    sportsLeagues: settings.data?.sportsLeagues ?? [],
   };
   const enabled = current.syncPlaylists;
   const screenSize = current.screenSize;
@@ -147,6 +150,36 @@ function SettingsPage() {
           focusKey="setting-background-updates"
         />
       </div>
+      <div data-remote-row>
+        <SettingToggleCard
+          icon={<Trophy className="size-4 text-primary" />}
+          title="Sports package"
+          description={<>Adds a "today" category in Live TV for each league you pick, listing its games with start times and the channels in your playlist that may show them.</>}
+          checked={current.sportsEnabled}
+          disabled={settings.isLoading || save.isPending}
+          onToggle={(value) => update({ sportsEnabled: value }, value ? "Sports package is on" : "Sports package is off", "Could not save the setting. Try again.")}
+          focusKey="setting-sports"
+        />
+      </div>
+      {current.sportsEnabled && (
+        <div className="grid grid-cols-2 gap-3 pl-4 sm:grid-cols-3">
+          {SPORTS_LEAGUES.map((league) => {
+            const on = current.sportsLeagues.includes(league.key);
+            return (
+              <div key={league.key} data-remote-row>
+                <SettingToggleCard
+                  title={league.label}
+                  description={on ? "Shown in Live TV" : "Hidden"}
+                  checked={on}
+                  disabled={settings.isLoading || save.isPending}
+                  onToggle={(value) => update({ sportsLeagues: value ? [...current.sportsLeagues, league.key] : current.sportsLeagues.filter((k) => k !== league.key) }, value ? `${league.label} added to Live TV` : `${league.label} removed`, "Could not save the setting. Try again.")}
+                  focusKey={`setting-league-${league.key}`}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div className="flex items-start justify-between gap-6 rounded-xl border border-border bg-card p-5">
         <span>
           <span className="flex items-center gap-2 font-semibold"><Film className="size-4 text-primary" /> Update movie &amp; show details</span>

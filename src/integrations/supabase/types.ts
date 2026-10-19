@@ -397,6 +397,8 @@ export type Database = {
         Row: {
           background_updates: boolean
           screen_size: string
+          sports_enabled: boolean
+          sports_leagues: string[]
           sync_playlists: boolean
           updated_at: string
           user_id: string
@@ -404,6 +406,8 @@ export type Database = {
         Insert: {
           background_updates?: boolean
           screen_size?: string
+          sports_enabled?: boolean
+          sports_leagues?: string[]
           sync_playlists?: boolean
           updated_at?: string
           user_id: string
@@ -411,6 +415,8 @@ export type Database = {
         Update: {
           background_updates?: boolean
           screen_size?: string
+          sports_enabled?: boolean
+          sports_leagues?: string[]
           sync_playlists?: boolean
           updated_at?: string
           user_id?: string

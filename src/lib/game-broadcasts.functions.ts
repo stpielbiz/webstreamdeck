@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { GameInfo } from "@/lib/channel-suggest";
+import { SPORTS_LEAGUES, type ScheduledGame } from "@/lib/sports-leagues";
 
 const LEAGUES: [string, string][] = [
   ["hockey/nhl", "NHL"], ["basketball/nba", "NBA"], ["football/nfl", "NFL"], ["baseball/mlb", "MLB"],
@@ -59,4 +60,48 @@ export const findGameBroadcasts = createServerFn({ method: "GET" })
     }
     cache.set(q, { at: Date.now(), value: found });
     return found;
+  });
+
+const scheduleCache = new Map<string, { at: number; value: Record<string, ScheduledGame[]> }>();
+
+/** Today's (and early tomorrow's) games for the picked leagues, with broadcasters. */
+export const getLeagueSchedule = createServerFn({ method: "GET" })
+  .inputValidator((input: { leagues: string[] }) => ({ leagues: (input?.leagues ?? []).filter((k) => SPORTS_LEAGUES.some((l) => l.key === k)).slice(0, 20) }))
+  .handler(async ({ data }): Promise<Record<string, ScheduledGame[]>> => {
+    const cacheKey = [...data.leagues].sort().join(",");
+    const hit = scheduleCache.get(cacheKey);
+    if (hit && Date.now() - hit.at < 5 * 60_000) return hit.value;
+    const now = new Date();
+    const range = `${ymd(new Date(now.getTime() - 8 * 3600_000))}-${ymd(new Date(now.getTime() + 30 * 3600_000))}`;
+    const out: Record<string, ScheduledGame[]> = {};
+    await Promise.all(SPORTS_LEAGUES.filter((l) => data.leagues.includes(l.key)).map(async (league) => {
+      const lists = await Promise.all(league.paths.map(async (path) => {
+        try {
+          const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${range}`);
+          if (!res.ok) return [];
+          const json = await res.json() as { events?: { id: string; name: string; date: string; status?: { type?: { state?: string; shortDetail?: string } }; competitions?: { competitors?: { team: Team; score?: string }[]; broadcasts?: { names?: string[] }[]; geoBroadcasts?: { media?: { shortName?: string } }[] }[] }[] };
+          return (json.events ?? []).map((e): ScheduledGame => {
+            const comp = e.competitions?.[0];
+            const teams = (comp?.competitors ?? []).map((c) => c.team);
+            const names = [...(comp?.broadcasts ?? []).flatMap((b) => b.names ?? []), ...(comp?.geoBroadcasts ?? []).map((g) => g.media?.shortName ?? "")];
+            if (league.key === "NHL") for (const t of teams) names.push(...(CANADIAN_NHL[(t.name ?? "").toLowerCase()] ?? []));
+            if (league.key === "RUGBY" && !names.filter(Boolean).length) names.push(...RUGBY_DEFAULT);
+            const state = e.status?.type?.state === "in" ? "in" : e.status?.type?.state === "post" ? "post" : "pre";
+            const score = (comp?.competitors ?? []).map((c) => c.score).filter(Boolean).join("–");
+            return {
+              id: `${path}:${e.id}`, matchup: e.name, startsAt: e.date, state,
+              detail: state === "in" ? [score, e.status?.type?.shortDetail].filter(Boolean).join(" · ") : "",
+              endedAt: null,
+              teams: teams.flatMap((t) => [t.displayName ?? "", t.name ?? ""]).filter(Boolean),
+              broadcasts: [...new Set(names.filter(Boolean))],
+            };
+          });
+        } catch { return []; }
+      }));
+      // Keep only games from today (local-ish window) onwards, ordered by start.
+      const cutoff = now.getTime() + 30 * 3600_000;
+      out[league.key] = lists.flat().filter((g) => Date.parse(g.startsAt) < cutoff && Date.parse(g.startsAt) > now.getTime() - 12 * 3600_000).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+    }));
+    scheduleCache.set(cacheKey, { at: Date.now(), value: out });
+    return out;
   });

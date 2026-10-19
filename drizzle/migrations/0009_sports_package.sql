@@ -1,0 +1,1 @@
+ALTER TABLE public.user_settings ADD COLUMN IF NOT EXISTS sports_enabled boolean NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS sports_leagues text[] NOT NULL DEFAULT '{}';
