@@ -81,6 +81,15 @@ class PlayerActivity : Activity() {
     private var live = false
     private var ended = false
     private var closing = false
+    private var closedNotified = false
+
+    /** Tell the website right away; Android may destroy this activity seconds later. */
+    private fun notifyClosed() {
+        if (closedNotified || ended) return
+        closedNotified = true
+        isOpen = false
+        listener?.onClosed()
+    }
     private var candidates: MutableList<String> = mutableListOf()
     private var candidateIndex = 0
 
@@ -246,6 +255,8 @@ class PlayerActivity : Activity() {
                 "Your provider stopped this channel" + (reason?.let { " ($it)" } ?: "") + ".",
                 Toast.LENGTH_LONG,
             ).show()
+            closing = true
+            notifyClosed()
             finish()
             return
         }
@@ -388,6 +399,7 @@ class PlayerActivity : Activity() {
                 handler.removeCallbacks(reconnectRunnable)
                 reportProgress()
                 if (::player.isInitialized) player.pause()
+                notifyClosed()
                 finish()
             }
             return true
@@ -447,7 +459,7 @@ class PlayerActivity : Activity() {
         closing = true
         handler.removeCallbacksAndMessages(null)
         if (::player.isInitialized) player.release()
-        if (isFinishing && !ended) listener?.onClosed()
+        if (isFinishing) notifyClosed()
         super.onDestroy()
     }
 }

@@ -106,6 +106,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (::appUpdater.isInitialized) appUpdater.onResume()
+        if (::webView.isInitialized) webView.evaluateJavascript("window.__streamDeckResumed && window.__streamDeckResumed()", null)
         val now = android.os.SystemClock.elapsedRealtime()
         val sincePlayer = now - lastPlayerClosedAt
         // Returning after a long absence (not from our own player): load the newest site.
@@ -150,6 +151,9 @@ class MainActivity : Activity() {
     }
 
     inner class Bridge {
+        @JavascriptInterface
+        fun isPlayerOpen(): Boolean = PlayerActivity.isOpen
+
         /** Open Multi-view with up to four live channels: JSON array of {url,title}. */
         @JavascriptInterface
         fun playMulti(json: String) {
