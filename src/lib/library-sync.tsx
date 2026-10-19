@@ -81,7 +81,13 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
       const [family, owner] = event.query.queryKey;
       if (owner !== playlistId || !["system-catalogue", "cached-title-metadata", "tv-live-items", "device-guide"].includes(String(family))) return;
       if (event.type !== "updated" || event.action.type !== "success" || timer) return;
-      timer = setTimeout(() => { timer = undefined; setRevision((value) => value + 1); }, 500);
+      // Recounting walks the whole library: batch updates and wait until the remote is idle.
+      const tick = () => {
+        if (backgroundBusy()) { timer = setTimeout(tick, 3_000); return; }
+        timer = undefined;
+        setRevision((value) => value + 1);
+      };
+      timer = setTimeout(tick, 5_000);
     });
     return () => { unsubscribe(); if (timer) clearTimeout(timer); };
   }, [client, playlistId]);
@@ -92,15 +98,19 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
       const key = ["system-catalogue", playlistId, kind] as const;
       const items = client.getQueryData<CatalogItem[]>(key);
       const names = new Set((items ?? []).map((item) => item.name));
-      const metadata: Record<string, TitleMetadata> = {};
-      let metadataUpdatedAt = 0;
-      for (const [queryKey, data] of client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) {
-        Object.assign(metadata, data ?? {});
-        metadataUpdatedAt = Math.max(metadataUpdatedAt, client.getQueryState(queryKey)?.dataUpdatedAt ?? 0);
+      const started = performance.now();
+      // The summary already links every catalogue name to its details (built by the fill-in).
+      const summaryKey = ["cached-title-metadata", playlistId, kind, "summary"] as const;
+      const summary = client.getQueryData<Record<string, TitleMetadata>>(summaryKey);
+      let metadata: Record<string, TitleMetadata> = summary ?? {};
+      let metadataUpdatedAt = client.getQueryState(summaryKey)?.dataUpdatedAt ?? 0;
+      if (!summary) {
+        metadata = {};
+        for (const [queryKey, data] of client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) {
+          Object.assign(metadata, data ?? {});
+          metadataUpdatedAt = Math.max(metadataUpdatedAt, client.getQueryState(queryKey)?.dataUpdatedAt ?? 0);
+        }
       }
-      const byKey = new Map<string, TitleMetadata>();
-      for (const value of Object.values(metadata)) if (value?.key) byKey.set(value.key, value);
-      for (const name of names) if (!metadata[name]) { const hit = byKey.get(lookupKeyFor(name).key); if (hit) metadata[name] = hit; }
       const enriched = [...names].filter((name) => metadata[name]);
       const genres = new Map<string, number>();
       for (const name of enriched) {
@@ -110,7 +120,7 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
       // After a completed details update every title has been looked up; the
       // rest simply had no information available, so count them as checked.
       const checked = total && detailsDoneCount(playlistId, kind) >= total ? total : enriched.length;
-      return {
+      const result: LibrarySectionStatus = {
         total,
         updated: enriched.length,
         checked,
@@ -121,6 +131,9 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
         updatedAt: Math.max(client.getQueryState(key)?.dataUpdatedAt ?? 0, metadataUpdatedAt),
         loaded: items !== undefined,
       };
+      const took = performance.now() - started;
+      if (took > 300) debugLog("perf", `Library status (${kind}) took ${Math.round(took)} ms`);
+      return result;
     };
     const liveKey = ["tv-live-items", playlistId, ""] as const;
     const channels = client.getQueryData<CatalogItem[]>(liveKey);
