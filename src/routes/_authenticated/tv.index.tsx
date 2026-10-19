@@ -81,17 +81,20 @@ function TvHome() {
     document.querySelector<HTMLElement>('[data-tv-zone="home-content"] [data-zone-entry="true"]:not(input)');
 
   // The menu has no Home entry on this screen, so the remote opens on the home
-  // content itself. That content arrives a beat after the page does, so keep
-  // looking for a moment — and never steal focus the remote already moved to.
+  // content itself. That content swaps in a few times while the playlist and
+  // library load, so keep the opening selection applied — and hand over the
+  // moment a remote button is pressed.
   useEffect(() => {
+    let touched = false;
+    const mark = () => { touched = true; };
+    window.addEventListener("keydown", mark, { once: true });
     let attempts = 0;
     const timer = window.setInterval(() => {
-      const idle = !document.activeElement || document.activeElement === document.body;
-      const entry = homeEntry();
-      if (entry && idle) { entry.focus(); window.clearInterval(timer); return; }
-      if (++attempts > 12) window.clearInterval(timer);
+      const idle = !touched && (!document.activeElement || document.activeElement === document.body);
+      if (idle) homeEntry()?.focus();
+      if (touched || ++attempts > 32) window.clearInterval(timer);
     }, 250);
-    return () => window.clearInterval(timer);
+    return () => { window.clearInterval(timer); window.removeEventListener("keydown", mark); };
   }, []);
 
   const returnToMenu = () => {
