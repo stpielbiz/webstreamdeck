@@ -678,7 +678,7 @@ function TvLive() {
                 variant={categoryId === SPORTS_CATEGORY_PREFIX + league.key ? "default" : "ghost"}
                 className="h-9 w-full justify-start truncate px-2 text-xs"
                 onFocus={() => previewCategory(SPORTS_CATEGORY_PREFIX + league.key)}
-                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="channel-sports-first"], [data-focus-key="live-search"]')?.focus(); } }}
+                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="sports-first-card"], [data-focus-key="live-search"]')?.focus(); } }}
                 onClick={() => chooseCategory(SPORTS_CATEGORY_PREFIX + league.key)}
               >
                 {league.label} today
@@ -724,7 +724,7 @@ function TvLive() {
         <section className="flex min-h-0 min-w-0 flex-col">
           <div data-tv-zone="live-actions" data-tv-zone-order="2" data-remote-row className="mb-2 flex shrink-0 items-center gap-2">
             <div className="relative min-w-0 flex-1">
-              <SearchField aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-app-search="true" data-focus-key="live-search" data-zone-entry="true" className="h-9 text-sm" onValueChange={(value) => { setSearch(value); setPage(0); }} onKeyDown={(event) => { if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]')?.focus(); } }} />
+              <SearchField aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-app-search="true" data-focus-key="live-search" data-zone-entry="true" className="h-9 text-sm" onValueChange={(value) => { setSearch(value); setPage(0); }} onKeyDown={(event) => { if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); (document.querySelector<HTMLElement>('[data-focus-key="sports-first-card"]') ?? guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]'))?.focus(); } }} />
             </div>
             <Button data-tv-focus size="sm" variant="secondary" onClick={jumpToNow}>Now</Button>
             <Button data-tv-focus variant="secondary" size="sm" disabled={updatingChannels} onClick={() => void updateChannels()}>{updatingChannels ? "Updating…" : "Update channels"}</Button>
@@ -741,7 +741,7 @@ function TvLive() {
             </div>
           </div>
 
-          {sportsLeague && <SportsSchedulePanel leagueKey={sportsLeague} channels={items.data} onPlay={playChannel} />}
+          {sportsLeague && <SportsSchedulePanel leagueKey={sportsLeague} channels={items.data} onPlay={playChannel} onExitLeft={focusCategory} onExitUp={() => document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus()} />}
           <div
             ref={guideRef}
             hidden={!!sportsLeague}
