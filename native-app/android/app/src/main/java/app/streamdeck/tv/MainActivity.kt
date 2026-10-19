@@ -44,11 +44,11 @@ class MainActivity : Activity() {
             if (isResumed && ::webView.isInitialized && !PlayerActivity.isOpen && !MultiViewActivity.isOpen) {
                 val now = SystemClock.elapsedRealtime()
                 val stuck = now - lastPong > STUCK_MS || slowPongs >= SLOW_PONGS_LIMIT
-                if (stuck && reloadedAt > 0 && now - reloadedAt > STUCK_MS) {
-                    // The reload didn't help: the page's process itself is stuck.
+                if (stuck && ((reloadedAt > 0 && now - reloadedAt > STUCK_MS) || now - lastRecovery < RECOVERY_COOLDOWN_MS)) {
+                    // A reload didn't help (or it froze again soon after): restart the app.
                     restartApp()
                     return
-                } else if (stuck && now - lastRecovery > RECOVERY_COOLDOWN_MS) {
+                } else if (stuck) {
                     lastRecovery = now
                     reloadedAt = now
                     lastPong = now
