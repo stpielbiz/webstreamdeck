@@ -7,7 +7,7 @@ import { suggestChannels } from "@/lib/channel-suggest";
 import type { CatalogItem } from "@/lib/iptv-types";
 
 /** "Game on today" card: looks the team up online and suggests playlist channels. */
-export function GameSuggestionCard({ query, channels, onPlay }: { query: string; channels?: CatalogItem[]; onPlay: (item: CatalogItem) => void }) {
+export function GameSuggestionCard({ query, channels, onPlay }: { query: string; channels?: CatalogItem[] | undefined; onPlay: (item: CatalogItem) => void }) {
   const lookup = useServerFn(findGameBroadcasts);
   const term = query.trim();
   const game = useQuery({
