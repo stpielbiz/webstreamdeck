@@ -422,9 +422,14 @@ function TvLive() {
     lastChannelIndex.current = Math.max(0, channelRows().findIndex((row) => row.dataset["focusKey"] === `channel-${item.id}`));
     setMenuItem(item);
   };
+  // Sports cards (league "today" lists, "Game on") return focus to the exact card that started playback.
+  const lastSportCard = useRef<string | null>(null);
   const restoreChannelFocus = () => {
     const attempt = (tries: number) => window.requestAnimationFrame(() => {
-      let row = document.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(lastChannel.current ?? "")}"]`);
+      const sportKey = lastSportCard.current;
+      let row = sportKey ? document.querySelector<HTMLElement>(`[data-focus-key="${CSS.escape(sportKey)}"]`) : null;
+      if (!row && sportKey && tries > 0) { attempt(tries - 1); return; }
+      row ??= document.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(lastChannel.current ?? "")}"]`);
       if (!row) {
         const rows = channelRows();
         row = rows[Math.min(lastChannelIndex.current, rows.length - 1)] ?? null;
@@ -437,7 +442,7 @@ function TvLive() {
       trace("Guide: selection restored", describeElement(document.activeElement));
       debugLog("guide", "Selection restored", { target: describeElement(row), active: describeElement(document.activeElement), dialogs: document.querySelectorAll('[role="dialog"]').length });
     });
-    attempt(3);
+    attempt(lastSportCard.current ? 20 : 3);
   };
 
   const toggleCategoryFavorite = (category: { id: string; name: string }) => {
@@ -477,6 +482,7 @@ function TvLive() {
     trace("Guide: starting channel", { channel: item.id });
     setFocusedId(item.id);
     lastChannel.current = item.id;
+    lastSportCard.current = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>("[data-sport-card]")?.dataset["focusKey"] ?? null;
     touchRecent(activeId, item);
     // Pressing a channel starts it full screen right away — no in-page preview.
     setSelected(item);
