@@ -70,8 +70,29 @@ export function debugLog(scope: string, message: string, detail?: unknown) {
   }
   entries = [...entries.slice(-(MAX - 1)), entry];
   dirty = true;
-  persistSoon();
+  // Anything but key presses is saved straight away: a page that dies a moment
+  // later (e.g. while the TV app's player is open) must still leave its trail.
+  if (scope === "keys") persistSoon();
+  else persistNow();
   emit();
+}
+
+function persistNow() {
+  if (typeof window === "undefined") return;
+  if (persistTimer !== null) { window.clearTimeout(persistTimer); persistTimer = null; }
+  try { window.localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries)); } catch { /* storage full */ }
+}
+
+/** The TV app's own event log (lifecycle, recoveries, key delivery), merged into uploads. */
+function nativeEntries(): DebugEntry[] {
+  try {
+    const raw = typeof window !== "undefined" ? window.StreamDeckNative?.nativeLog?.() : undefined;
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Array<{ at: number; message: string }>;
+    return parsed.map((item) => ({ at: new Date(item.at).toISOString(), scope: "app", message: item.message }));
+  } catch {
+    return [];
+  }
 }
 
 /** Short description of an element for logs (never its text content). */
@@ -123,8 +144,13 @@ export function formatDebugLog(): string {
  */
 let uploading = false;
 let uploadStarted = false;
+let lastNativeAt = "";
 async function uploadSnapshot() {
-  if (!enabled || !dirty || uploading || entries.length === 0) return;
+  if (!enabled || uploading) return;
+  const native = nativeEntries();
+  const nativeAt = native[native.length - 1]?.at ?? "";
+  if (!dirty && nativeAt === lastNativeAt) return;
+  if (entries.length === 0 && native.length === 0) return;
   uploading = true;
   try {
     const { supabase } = await import("@/integrations/supabase/client");
@@ -134,13 +160,16 @@ async function uploadSnapshot() {
     const userId = data.session?.user.id;
     if (!userId) return;
     dirty = false;
+    lastNativeAt = nativeAt;
+    const merged = [...entries, ...native].sort((a, b) => a.at.localeCompare(b.at)).slice(-500);
     const code = "AUTO-" + Date.now().toString(36).toUpperCase().slice(-6) + Math.random().toString(36).slice(2, 4).toUpperCase();
     const { error } = await timeout(supabase.from("stream_logs").insert({
-      code, user_id: userId, device: navigator.userAgent.slice(0, 300), entries: entries as never,
+      code, user_id: userId, device: navigator.userAgent.slice(0, 300), entries: merged as never,
     }));
-    if (error) dirty = true;
+    if (error) { dirty = true; lastNativeAt = ""; }
   } catch {
     dirty = true;
+    lastNativeAt = "";
   } finally {
     uploading = false;
   }
@@ -153,6 +182,16 @@ function startAutoUpload() {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") void uploadSnapshot();
   });
+  // Every remote press that reaches the page, logged before any screen can
+  // swallow it — tells "the page got the press" apart from "it never arrived".
+  window.addEventListener("keydown", (event) => {
+    if (event.repeat || !/^(Arrow|Enter$|Escape$|Backspace$)/.test(event.key)) return;
+    debugLog("keys", event.key, {
+      active: describeElement(document.activeElement),
+      dialogs: document.querySelectorAll('[role="dialog"]').length,
+      nativeOverlay: !!document.querySelector("[data-native-overlay]"),
+    });
+  }, true);
   // A page that stops responding shows up as a long gap between ticks.
   let last = Date.now();
   window.setInterval(() => {
@@ -168,6 +207,7 @@ function startAutoUpload() {
   window.addEventListener("focus", () => debugLog("page", "Window focused", describeElement(document.activeElement)));
   window.addEventListener("blur", () => debugLog("page", "Window lost focus"));
   document.addEventListener("visibilitychange", () => debugLog("page", `Page ${document.visibilityState}`));
+  debugLog("page", `Page loaded: ${window.location.pathname}`);
 }
 
 if (enabled && typeof window !== "undefined") startAutoUpload();

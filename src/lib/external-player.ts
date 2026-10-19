@@ -25,6 +25,8 @@ interface StreamDeckNativeBridge {
   setRecentChannels?: (json: string) => void;
   /** True while the native full-screen player is showing. */
   isPlayerOpen?: () => boolean;
+  /** Newer apps: the app's own event log (JSON array of {at, message}), kept across restarts. */
+  nativeLog?: () => string;
 }
 
 declare global {

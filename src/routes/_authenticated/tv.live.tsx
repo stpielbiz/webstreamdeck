@@ -466,6 +466,7 @@ function TvLive() {
   };
 
   const playChannel = (item: CatalogItem) => {
+    debugLog("guide", "Starting channel full screen", { channel: item.id });
     setFocusedId(item.id);
     lastChannel.current = item.id;
     touchRecent(activeId, item);
