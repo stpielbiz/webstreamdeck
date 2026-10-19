@@ -191,7 +191,7 @@ function AdminPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="font-display text-lg font-semibold">Connection & stream logs</h2>
-            <p className="text-sm text-muted-foreground">Turn on for this device. A Logs button appears bottom-left; press Save to store them with a code.</p>
+            <p className="text-sm text-muted-foreground">Turn on for this device. While on, logs save here automatically every 20 seconds (codes start with AUTO); a Logs button bottom-left can also Save now.</p>
           </div>
           <Switch data-tv-focus checked={debug.enabled} onCheckedChange={setDebugEnabled} aria-label="Connection and stream logs" />
         </div>

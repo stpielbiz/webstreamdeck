@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { debugLog, describeElement, isDebugEnabled } from "@/lib/debug-log";
 
 const SELECTOR = ":is(button,a[href],input,select,textarea)[data-tv-focus]:not([disabled]):not([tabindex='-1'])";
 
@@ -29,8 +30,34 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
   useEffect(() => {
     if (!enabled) return;
 
+    // Safety net: the page still thinks the TV app's player is showing, but it
+    // has closed. Clear that layer instead of letting it swallow every press.
+    const clearStalePlayerLayer = () => {
+      const overlay = document.querySelector<HTMLElement>("[data-native-overlay]");
+      const isOpen = window.StreamDeckNative?.isPlayerOpen;
+      if (!overlay || !isOpen || isOpen()) return false;
+      if (Date.now() - Number(overlay.dataset["startedAt"] ?? 0) < 2500) return false;
+      const back = overlay.closest<HTMLElement>('[role="dialog"]')?.querySelector<HTMLElement>("[data-dialog-back]");
+      debugLog("keys", "Cleared a leftover player layer", { hasBack: !!back });
+      if (!back) return false;
+      back.click();
+      return true;
+    };
+
     const handler = (event: KeyboardEvent) => {
+      if (isDebugEnabled() && /^(Arrow|Enter|Escape|Backspace)/.test(event.key) && !event.repeat) {
+        debugLog("keys", event.key, {
+          active: describeElement(document.activeElement),
+          prevented: event.defaultPrevented,
+          dialogs: document.querySelectorAll('[role="dialog"]').length,
+          nativeOverlay: !!document.querySelector("[data-native-overlay]"),
+        });
+      }
       if (event.defaultPrevented) return;
+      if (/^Arrow|^Escape$|^Backspace$/.test(event.key) && clearStalePlayerLayer()) {
+        event.preventDefault();
+        return;
+      }
       const target = event.target as HTMLElement | null;
       const typing =
         target &&
@@ -174,6 +201,7 @@ export function useSpatialNav(options?: { onBack?: () => void; enabled?: boolean
 
     const nativeBack = (event: Event) => {
       event.preventDefault();
+      debugLog("keys", "Remote Back", { active: describeElement(document.activeElement), dialogs: document.querySelectorAll('[role="dialog"]').length });
       const back = document.querySelector<HTMLElement>('[role="dialog"] [data-dialog-back]');
       if (back) back.click();
       else onBack?.();

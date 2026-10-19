@@ -106,6 +106,7 @@ export function VideoPlayer({
   const externalLaunchRef = useRef(onExternalLaunch);
   externalLaunchRef.current = onExternalLaunch;
   const [nativeActive, setNativeActive] = useState(false);
+  const nativeStartedAt = useRef(0);
   const [copied, setCopied] = useState(false);
   const [autoLaunched, setAutoLaunched] = useState(false);
   const autoLaunchRef = useRef<string | null>(null);
@@ -166,22 +167,24 @@ export function VideoPlayer({
     };
     window.__streamDeckEnded = () => endedRef.current?.();
     let closed = false;
-    const close = () => {
+    const close = (reason = "app reported close") => {
+      debugLog("native", `Player closed (${reason})`, { alreadyClosed: closed, hasStop: !!stopRef.current });
       if (closed) return;
       closed = true;
       setNativeActive(false);
       if (stopRef.current) stopRef.current();
       else window.dispatchEvent(new CustomEvent("streamdeck-back", { cancelable: true }));
     };
-    window.__streamDeckClosed = close;
+    window.__streamDeckClosed = () => close();
     // Backup: the app can report the close late, leaving our layer over the page.
     const openedAt = Date.now();
     let wasHidden = false;
     const checkReturn = () => {
-      if (Date.now() - openedAt < 1500) return;
       const isOpen = window.StreamDeckNative?.isPlayerOpen;
-      if (isOpen) { if (!isOpen()) close(); return; }
-      if (wasHidden) window.setTimeout(close, 300);
+      debugLog("native", "App resumed", { sinceOpenMs: Date.now() - openedAt, closed, playerOpen: isOpen ? isOpen() : "unknown" });
+      if (Date.now() - openedAt < 1500) return;
+      if (isOpen) { if (!isOpen()) close("resume check"); return; }
+      if (wasHidden) window.setTimeout(() => close("resume fallback"), 300);
     };
     window.__streamDeckResumed = checkReturn;
     const onVisibility = () => {
@@ -190,6 +193,7 @@ export function VideoPlayer({
     };
     document.addEventListener("visibilitychange", onVisibility);
     const started = startNative();
+    nativeStartedAt.current = Date.now();
     setNativeActive(started);
     if (!started) closed = true;
     return () => {
@@ -553,7 +557,7 @@ export function VideoPlayer({
       )}
 
       {nativeActive && (
-        <div className="absolute inset-0 z-10 grid place-items-center bg-black/90 px-6 text-center">
+        <div data-native-overlay data-started-at={nativeStartedAt.current} className="absolute inset-0 z-10 grid place-items-center bg-black/90 px-6 text-center">
           <div>
             <Tv className="mx-auto size-8 text-primary" />
             <p className="mt-3 text-sm font-medium text-white">Playing in the Stream Deck player</p>

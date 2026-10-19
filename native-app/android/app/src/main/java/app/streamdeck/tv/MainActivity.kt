@@ -106,7 +106,11 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (::appUpdater.isInitialized) appUpdater.onResume()
-        if (::webView.isInitialized) webView.evaluateJavascript("window.__streamDeckResumed && window.__streamDeckResumed()", null)
+        if (::webView.isInitialized) {
+            // Hand the remote back to the page: without Android focus the WebView gets no arrow/OK presses.
+            webView.requestFocus()
+            webView.evaluateJavascript("window.__streamDeckResumed && window.__streamDeckResumed()", null)
+        }
         val now = android.os.SystemClock.elapsedRealtime()
         val sincePlayer = now - lastPlayerClosedAt
         // Returning after a long absence (not from our own player): load the newest site.
@@ -115,6 +119,11 @@ class MainActivity : Activity() {
             webView.reload()
         }
         pausedAt = 0L
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && ::webView.isInitialized && !webView.hasFocus()) webView.requestFocus()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

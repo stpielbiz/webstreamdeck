@@ -24,6 +24,7 @@ import { MultiView } from "@/components/multi-view";
 import { ChannelActionMenu, type ProgrammeInfo } from "@/components/channel-action-menu";
 import { FAVOURITES_CATEGORY, RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 import { toast } from "sonner";
+import { debugLog, describeElement } from "@/lib/debug-log";
 
 const GUIDE_HOURS = 12;
 const GUIDE_WIDTH = 2880;
@@ -423,6 +424,7 @@ function TvLive() {
       row ??= document.querySelector<HTMLElement>('[data-focus-key^="category-"], [data-tv-focus]');
       row?.focus({ preventScroll: true });
       row?.scrollIntoView({ block: "center" });
+      debugLog("guide", "Selection restored", { target: describeElement(row), active: describeElement(document.activeElement), dialogs: document.querySelectorAll('[role="dialog"]').length });
     });
     attempt(3);
   };
@@ -504,6 +506,7 @@ function TvLive() {
   };
 
   const exitFullscreen = () => {
+    debugLog("guide", "Leaving full screen", { channel: lastChannel.current });
     setFullscreen(false);
     restoreChannelFocus();
   };
