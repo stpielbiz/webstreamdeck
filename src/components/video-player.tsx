@@ -1,4 +1,4 @@
-import { debugLog, redactUrl } from "@/lib/debug-log";
+import { debugLog, redactUrl, trace } from "@/lib/debug-log";
 import { markPlayerOpen } from "@/lib/background-gate";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {

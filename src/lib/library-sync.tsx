@@ -132,6 +132,7 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
         loaded: items !== undefined,
       };
       const took = performance.now() - started;
+      trace(`Library status (${kind}): done in ${Math.round(took)} ms`);
       if (took > 300) debugLog("perf", `Library status (${kind}) took ${Math.round(took)} ms`);
       return result;
     };
@@ -270,7 +271,9 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
       const flush = () => {
         if (!collected.length) return;
         const started = performance.now();
+        trace("Guide merge: start");
         mergeGuide(client, playlistId, collected);
+        trace(`Guide merge: done in ${Math.round(performance.now() - started)} ms`);
         collected = [];
         const took = performance.now() - started;
         if (took > 300) debugLog("perf", `Guide merge took ${Math.round(took)} ms`);
@@ -408,6 +411,7 @@ export function useTitleBackfill(playlistId: string | null) {
         break;
       }
       const took = performance.now() - stepStarted;
+      trace(`Details fill-in step: done in ${Math.round(took)} ms`);
       if (took > 300) debugLog("perf", `Details fill-in step took ${Math.round(took)} ms (incl. network)`);
       timer = window.setTimeout(step, BACKFILL_PAUSE);
     };
@@ -493,7 +497,9 @@ export async function runBulkRefresh(
     pendingResults = {};
     lastMerge = Date.now();
     const started = performance.now();
+    trace(`Details update merge (${kind}): start`);
     client.setQueriesData<Record<string, unknown>>({ queryKey: ["cached-title-metadata", playlistId, kind] }, (old) => Object.assign({}, old ?? {}, result));
+    trace(`Details update merge (${kind}): done in ${Math.round(performance.now() - started)} ms`);
     const took = performance.now() - started;
     if (took > 300) debugLog("perf", `Details update merge took ${Math.round(took)} ms`);
   };

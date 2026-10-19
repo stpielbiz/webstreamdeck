@@ -87,9 +87,11 @@ export async function writeEntry(queryKey: QueryKey, data: unknown, at = Date.no
   if (!db) return;
   try {
     const started = performance.now();
+    trace(`Save ${String(queryKey[0])} to device: start`);
     // put() copies the whole value on the page's thread — big lists can take seconds on a Fire Stick.
     db.transaction(STORE, "readwrite").objectStore(STORE).put({ key: JSON.stringify(queryKey), queryKey, data, at, v: CACHE_VERSION });
     const took = performance.now() - started;
+    trace(`Save ${String(queryKey[0])} to device: done in ${Math.round(took)} ms`);
     if (took > 300) debugLog("perf", `Saving ${String(queryKey[0])} took ${Math.round(took)} ms`);
   } catch {
     /* quota or serialisation issue — skip */
