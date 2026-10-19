@@ -22,3 +22,14 @@ describe("game channel suggestions", () => {
     expect(names).toEqual(["ZA: SS Rugby HD", "NZ | Sky Sport 1", "Rugby Pass"]);
   });
 });
+
+import { channelsByNetwork as byNet, suggestChannels as sugg } from "./channel-suggest";
+test("mix shows every network and demotes ESPN+ event feeds", () => {
+  const ch = ["US (ESPN+ 001) | Football", "US (ESPN+ 002) | Golf", "CA: Sportsnet East HD", "CA: TSN 1", "CA: RDS"].map((name, i) => ({ id: String(i), name }));
+  const game = { matchup: "x", startsAt: "", league: "NHL", teams: [], broadcasts: ["ESPN+", "Sportsnet", "RDS", "TSN"] };
+  const names = sugg(game, ch, 4).map((c) => c.name);
+  expect(names).toContain("CA: Sportsnet East HD");
+  expect(names).toContain("CA: TSN 1");
+  expect(names).toContain("CA: RDS");
+  expect(byNet(game, ch)[1].items.map((c) => c.name)).toEqual(["CA: Sportsnet East HD"]);
+});
