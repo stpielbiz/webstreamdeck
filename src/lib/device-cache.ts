@@ -1,4 +1,6 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import { backgroundBusy } from "@/lib/background-gate";
+import { debugLog } from "@/lib/debug-log";
 
 /**
  * On-device library cache (IndexedDB). Saved provider data is loaded into the
@@ -23,6 +25,9 @@ const PERSISTED = new Set([
   "global-search-series",
   "device-guide",
 ]);
+
+/** Large values: saving them is expensive, so it is batched and deferred. */
+const HEAVY = new Set(["system-catalogue", "cached-title-metadata", "device-guide", "global-search-movie", "global-search-series"]);
 
 interface Entry { key: string; queryKey: QueryKey; data: unknown; at: number; v?: number }
 
@@ -63,7 +68,11 @@ export async function writeEntry(queryKey: QueryKey, data: unknown, at = Date.no
   const db = await openDb();
   if (!db) return;
   try {
+    const started = performance.now();
+    // put() copies the whole value on the page's thread — big lists can take seconds on a Fire Stick.
     db.transaction(STORE, "readwrite").objectStore(STORE).put({ key: JSON.stringify(queryKey), queryKey, data, at, v: CACHE_VERSION });
+    const took = performance.now() - started;
+    if (took > 300) debugLog("perf", `Saving ${String(queryKey[0])} took ${Math.round(took)} ms`);
   } catch {
     /* quota or serialisation issue — skip */
   }
@@ -88,18 +97,25 @@ export function hydrateDeviceCache(client: QueryClient): Promise<void> {
       const outdated = entry.queryKey[0] === "system-catalogue" && ((entry.v ?? 1) < CACHE_VERSION || isTruncatedCatalogue(entry.queryKey, entry.data));
       client.setQueryData(entry.queryKey, entry.data, { updatedAt: outdated ? 1 : entry.at });
     }
+    // Small lists save quickly; big ones (titles' details, full catalogues,
+    // guide) save at most once a minute and never while the remote is busy.
     const pending = new Map<string, number>();
-    client.getQueryCache().subscribe((event) => {
-      if (event.type !== "updated" || event.action.type !== "success") return;
-      const { queryKey, state } = event.query;
-      if (!shouldPersist(queryKey)) return;
-      const id = JSON.stringify(queryKey);
+    const schedule = (query: { queryKey: QueryKey; state: { data: unknown; dataUpdatedAt: number } }, delay: number) => {
+      const id = JSON.stringify(query.queryKey);
+      if (pending.has(id) && HEAVY.has(String(query.queryKey[0]))) return; // already queued; latest data is read at save time
       const timer = pending.get(id);
       if (timer) window.clearTimeout(timer);
       pending.set(id, window.setTimeout(() => {
+        if (backgroundBusy()) { pending.delete(id); schedule(query, 5_000); return; }
         pending.delete(id);
-        void writeEntry(queryKey, state.data, state.dataUpdatedAt);
-      }, 500));
+        void writeEntry(query.queryKey, query.state.data, query.state.dataUpdatedAt);
+      }, delay));
+    };
+    client.getQueryCache().subscribe((event) => {
+      if (event.type !== "updated" || event.action.type !== "success") return;
+      const query = event.query;
+      if (!shouldPersist(query.queryKey)) return;
+      schedule(query, HEAVY.has(String(query.queryKey[0])) ? 60_000 : 500);
     });
   })().catch(() => undefined);
   return hydrated;
