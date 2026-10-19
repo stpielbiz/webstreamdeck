@@ -33,6 +33,14 @@ function splitChannelName(name: string) {
   return rest.length ? { badge: head ?? "", title: rest.join(" | ") } : { badge: "", title: name };
 }
 
+function dayLabel(iso: string) {
+  const d = new Date(iso);
+  const start = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((start(d) - start(new Date())) / 86_400_000);
+  const date = d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+  return diff === 0 ? `Today · ${date}` : diff === 1 ? `Tomorrow · ${date}` : diff === -1 ? `Yesterday · ${date}` : date;
+}
+
 /** Today's games for one league; each suggested channel is a remote-friendly card. */
 export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, onExitUp }: { leagueKey: string; channels?: CatalogItem[] | undefined; onPlay: (item: CatalogItem) => void; onExitLeft: () => void; onExitUp: () => void }) {
   const schedule = useLeagueSchedule([leagueKey]);
@@ -67,7 +75,16 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
     <div data-tv-zone="live-guide" data-tv-zone-order="3" data-sports-panel onKeyDown={onKeyDown} className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-auto rounded border border-border bg-card p-3" aria-label={`${label} today`}>
       {schedule.isLoading && <p className="p-4 text-sm text-muted-foreground">Checking today's {label} games…</p>}
       {!schedule.isLoading && games.length === 0 && <p className="p-4 text-sm text-muted-foreground">No {label} games today.</p>}
-      {games.map((game, gi) => <GameBlock key={game.id} game={game} label={label} first={gi === 0} channels={channels} onPlay={onPlay} />)}
+      {games.map((game, gi) => {
+        const day = dayLabel(game.startsAt);
+        const showDay = gi === 0 || dayLabel(games[gi - 1]!.startsAt) !== day;
+        return (
+          <div key={game.id} className="space-y-3">
+            {showDay && <h2 className="sticky top-0 z-10 -mx-3 bg-card px-3 py-1 font-display text-sm font-bold uppercase tracking-wide text-primary">{day}</h2>}
+            <GameBlock game={game} label={label} first={gi === 0} channels={channels} onPlay={onPlay} />
+          </div>
+        );
+      })}
     </div>
   );
 }
