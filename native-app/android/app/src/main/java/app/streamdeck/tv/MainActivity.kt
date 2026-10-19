@@ -46,9 +46,11 @@ class MainActivity : Activity() {
                 val stuck = now - lastPong > STUCK_MS || slowPongs >= SLOW_PONGS_LIMIT
                 if (stuck && ((reloadedAt > 0 && now - reloadedAt > STUCK_MS) || now - lastRecovery < RECOVERY_COOLDOWN_MS)) {
                     // A reload didn't help (or it froze again soon after): restart the app.
+                    NativeLog.add("Watchdog: page still stuck after reload, restarting app")
                     restartApp()
                     return
                 } else if (stuck) {
+                    NativeLog.add("Watchdog: page not answering for ${now - lastPong} ms (slow answers: $slowPongs), reloading")
                     lastRecovery = now
                     reloadedAt = now
                     lastPong = now
@@ -63,6 +65,7 @@ class MainActivity : Activity() {
                         val answered = SystemClock.elapsedRealtime()
                         lastPong = answered
                         slowPongs = if (answered - sentAt > SLOW_PONG_MS) slowPongs + 1 else 0
+                        if (slowPongs > 0) NativeLog.add("Watchdog: page answered after ${answered - sentAt} ms")
                         if (slowPongs == 0) reloadedAt = 0L
                     }
                 }
@@ -123,6 +126,7 @@ class MainActivity : Activity() {
         // The page crashed or ran out of memory: start it again instead of
         // leaving a dead screen (or letting Android close the app).
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+            NativeLog.add("Page process ended (crashed=${detail.didCrash()}, priority=${detail.rendererPriorityAtExit()}, playerOpen=${PlayerActivity.isOpen}), rebuilding")
             runOnUiThread { rebuildWebView() }
             return true
         }
@@ -147,6 +151,11 @@ class MainActivity : Activity() {
         }
         view.webViewClient = Client()
         view.webChromeClient = WebChromeClient()
+        // Keep the page's process important while the full-screen player covers
+        // it, so Android doesn't kill it first when memory runs low.
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            view.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
+        }
         view.addJavascriptInterface(Bridge(), "StreamDeckNative")
         return view
     }
@@ -165,6 +174,8 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        NativeLog.init(applicationContext)
+        NativeLog.add("App started (${BuildConfig.VERSION_NAME})${if (savedInstanceState != null) " — restored" else ""}")
         webView = createWebView()
         setContentView(webView)
         appUpdater = AppUpdater(this)
@@ -187,6 +198,7 @@ class MainActivity : Activity() {
 
             override fun onClosed() {
                 lastPlayerClosedAt = android.os.SystemClock.elapsedRealtime()
+                NativeLog.add("Player closed")
                 runOnUiThread {
                     webView.evaluateJavascript("window.__streamDeckClosed && window.__streamDeckClosed()", null)
                     webView.requestFocus()
@@ -221,9 +233,15 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         super.onPause()
+        NativeLog.add("App paused (playerOpen=${PlayerActivity.isOpen})")
         isResumed = false
         watchdog.removeCallbacks(ping)
         pausedAt = android.os.SystemClock.elapsedRealtime()
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        NativeLog.add("Android asked to free memory (level $level, playerOpen=${PlayerActivity.isOpen})")
     }
 
     override fun onResume() {
@@ -235,7 +253,9 @@ class MainActivity : Activity() {
         if (::appUpdater.isInitialized) appUpdater.onResume()
         if (::webView.isInitialized) {
             // Hand the remote back to the page: without Android focus the WebView gets no arrow/OK presses.
+            val hadFocus = webView.hasFocus()
             webView.requestFocus()
+            NativeLog.add("App resumed (page had focus=$hadFocus, has focus=${webView.hasFocus()})")
             webView.evaluateJavascript("window.__streamDeckResumed && window.__streamDeckResumed()", null)
         }
         val now = android.os.SystemClock.elapsedRealtime()
@@ -258,6 +278,8 @@ class MainActivity : Activity() {
         webView.saveState(outState)
     }
 
+    private var keysLoggedAfterClose = 0
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.keyCode == KeyEvent.KEYCODE_SEARCH || event.keyCode == KeyEvent.KEYCODE_VOICE_ASSIST) {
             if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) {
@@ -265,15 +287,30 @@ class MainActivity : Activity() {
             }
             return true
         }
+        val sinceClose = android.os.SystemClock.elapsedRealtime() - lastPlayerClosedAt
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+            if (sinceClose > 30_000) keysLoggedAfterClose = 0
+            else if (keysLoggedAfterClose < 12) {
+                keysLoggedAfterClose += 1
+                NativeLog.add("Key ${KeyEvent.keyCodeToString(event.keyCode)} ${sinceClose} ms after player closed (page focus=${webView.hasFocus()}, focused view=${currentFocus?.javaClass?.simpleName})")
+            }
+        }
         if (event.keyCode == KeyEvent.KEYCODE_BACK) {
             if (event.action == KeyEvent.ACTION_UP && !event.isCanceled &&
-                android.os.SystemClock.elapsedRealtime() - lastPlayerClosedAt > 600) {
+                sinceClose > 600) {
                 webView.evaluateJavascript(
                     "(() => { const e = new CustomEvent('streamdeck-back', {cancelable:true}); if (window.dispatchEvent(e)) { const close = document.querySelector('[data-dialog-back]'); if (close) close.click(); else if (location.pathname !== '/tv' && location.pathname !== '/tv/') location.assign('/tv'); } })()",
                     null,
                 )
             }
             return true
+        }
+        // The page lost Android focus (e.g. after the player): give it back and
+        // hand it this press directly, so the remote never goes dead.
+        if (::webView.isInitialized && !webView.hasFocus()) {
+            NativeLog.add("Page didn't have focus for ${KeyEvent.keyCodeToString(event.keyCode)}, handing it over")
+            webView.requestFocus()
+            if (webView.dispatchKeyEvent(event)) return true
         }
         return super.dispatchKeyEvent(event)
     }
@@ -289,6 +326,9 @@ class MainActivity : Activity() {
     inner class Bridge {
         @JavascriptInterface
         fun isPlayerOpen(): Boolean = PlayerActivity.isOpen
+
+        @JavascriptInterface
+        fun nativeLog(): String = NativeLog.json()
 
         /** Open Multi-view with up to four live channels: JSON array of {url,title}. */
         @JavascriptInterface
@@ -314,8 +354,12 @@ class MainActivity : Activity() {
             // Ignore repeat requests while a player is open or just closed, so a
             // misbehaving page can never stack players and freeze the device.
             val now = android.os.SystemClock.elapsedRealtime()
-            if (PlayerActivity.isOpen || now - lastPlayRequestAt < 3000 || now - lastPlayerClosedAt < 1500) return
+            if (PlayerActivity.isOpen || now - lastPlayRequestAt < 3000 || now - lastPlayerClosedAt < 1500) {
+                NativeLog.add("Play request ignored (player open=${PlayerActivity.isOpen})")
+                return
+            }
             lastPlayRequestAt = now
+            NativeLog.add("Opening player (live=${request.optBoolean("live")})")
             // Recent channels are a live-TV shortcut; drop them so a movie or show
             // never inherits the previous Live TV session's list.
             if (!request.optBoolean("live")) PlayerActivity.recentChannels = emptyList()
