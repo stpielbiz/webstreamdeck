@@ -43,7 +43,7 @@ object NativeLog {
         // slows the page or the remote down.
         if (!writePending) {
             writePending = true
-            writer.schedule({ flush() }, 300, TimeUnit.MILLISECONDS)
+            writer.schedule(Runnable { flush() }, 300, TimeUnit.MILLISECONDS)
         }
     }
 

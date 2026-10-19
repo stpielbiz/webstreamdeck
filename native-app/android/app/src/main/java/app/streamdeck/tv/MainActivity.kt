@@ -271,6 +271,8 @@ class MainActivity : Activity() {
         NativeLog.add("App paused (playerOpen=${PlayerActivity.isOpen})")
         isResumed = false
         watchdog.removeCallbacks(ping)
+        // Keep checking the page's heartbeat while the player covers it.
+        watchdog.postDelayed(ping, 3_000)
         pausedAt = android.os.SystemClock.elapsedRealtime()
     }
 
