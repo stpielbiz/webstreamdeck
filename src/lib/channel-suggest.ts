@@ -82,7 +82,7 @@ export function suggestChannels(game: GameInfo, channels: CatalogItem[], max = 1
   const league = normalizeChannel(game.league).trim();
   channels.filter((item) => teams.some((t) => has(normalizeChannel(item.name), t)))
     .sort((a, b) => a.name.localeCompare(b.name)).forEach(push);
-  if (!out.length) {
+  {
     channels.filter((item) => { const n = normalizeChannel(item.name); return (!!league && has(n, league)) || (league === "rugby" && has(n, "rugby")); })
       .sort((a, b) => a.name.localeCompare(b.name)).forEach(push);
   }
