@@ -85,23 +85,26 @@ export function SectionMenu({
         {items.map(({ to, tvTo, label, icon: Icon }) => {
           const destination = tv ? tvTo : to;
           const disabled = expired && label !== "Home";
-          // On the home screen the Home entry is the screen you're already on.
-          // It stays visible as the current place, but nothing can select it.
+          // On the home screen Home can be selected (to show Continue watching),
+          // but pressing it does nothing — you're already there.
           if (label === "Home" && current === "Home") {
             return (
-              <div
+              <button
                 key={label}
+                type="button"
                 aria-current="page"
-                aria-disabled="true"
-                tabIndex={-1}
+                data-tv-focus
+                data-section-label={label}
+                data-focus-key={`section-${label}`}
+                onClick={(event) => event.preventDefault()}
                 className={cn(
                   buttonVariants({ variant: focused === label || (!focused && current === label) ? "default" : "ghost" }),
-                  "pointer-events-none cursor-default select-none",
+                  "cursor-default",
                   compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg",
                 )}
               >
                 <Icon className="size-5 shrink-0" /> {label}
-              </div>
+              </button>
             );
           }
           return (
