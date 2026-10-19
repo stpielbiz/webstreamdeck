@@ -180,6 +180,7 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
                 data-tv-focus
                 data-sport-item
                 data-sport-card
+                data-focus-key={`sport-${game.id}-${item.id}`}
                 onClick={() => onPlay(item)}
                 className="flex h-20 min-w-0 items-center gap-2 rounded-lg border border-border bg-secondary p-2 text-left outline-none transition-transform focus:scale-[1.03] focus:border-primary focus:bg-primary focus:text-primary-foreground"
               >
