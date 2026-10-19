@@ -7,12 +7,16 @@ export interface UserSettings {
   syncPlaylists: boolean;
   screenSize: "large" | "medium" | "small";
   backgroundUpdates: boolean;
+  sportsEnabled: boolean;
+  sportsLeagues: string[];
 }
 
 const settingsInput = z.object({
   syncPlaylists: z.boolean(),
   screenSize: z.enum(["large", "medium", "small"]),
   backgroundUpdates: z.boolean(),
+  sportsEnabled: z.boolean().default(false),
+  sportsLeagues: z.array(z.string().max(20)).max(30).default([]),
 });
 
 export const getSettings = createServerFn({ method: "GET" })
@@ -20,7 +24,7 @@ export const getSettings = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<UserSettings> => {
     const { data, error } = await context.supabase
       .from("user_settings")
-      .select("sync_playlists, screen_size, background_updates")
+      .select("sync_playlists, screen_size, background_updates, sports_enabled, sports_leagues")
       .eq("user_id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -29,6 +33,8 @@ export const getSettings = createServerFn({ method: "GET" })
       syncPlaylists: data?.sync_playlists ?? false,
       screenSize: parsedScreenSize,
       backgroundUpdates: data?.background_updates ?? true,
+      sportsEnabled: data?.sports_enabled ?? false,
+      sportsLeagues: data?.sports_leagues ?? [],
     };
   });
 
@@ -42,6 +48,8 @@ export const saveSettings = createServerFn({ method: "POST" })
         sync_playlists: data.syncPlaylists,
         screen_size: data.screenSize,
         background_updates: data.backgroundUpdates,
+        sports_enabled: data.sportsEnabled,
+        sports_leagues: data.sportsLeagues,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" },
