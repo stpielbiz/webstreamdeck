@@ -80,10 +80,10 @@ function TvHome() {
   const homeEntry = () =>
     document.querySelector<HTMLElement>('[data-tv-zone="home-content"] [data-zone-entry="true"]:not(input)');
 
-  // The menu has no Home entry on this screen, so the remote opens on the home
-  // content itself. That content swaps in a few times while the playlist and
-  // library load, so keep the opening selection applied — and hand over the
-  // moment a remote button is pressed.
+  // The menu's Home entry only marks this screen — it can't be selected — so the
+  // remote opens on the home content itself. That content swaps in a few times
+  // while the playlist and library load, so keep the opening selection applied
+  // and hand over the moment a remote button is pressed.
   useEffect(() => {
     let touched = false;
     const mark = () => { touched = true; };
@@ -104,8 +104,8 @@ function TvHome() {
         ?? document.querySelector<HTMLElement>('[data-tv-zone="sections"] [data-tv-focus]');
       item?.focus();
     } else if (activeZone === "sections") {
-      // Back from the menu brings the home content back — nothing else does now
-      // that the menu's own Home entry is gone here.
+      // Back from the menu brings the home content back — the Home entry only
+      // marks the screen, so it can't be used to return here.
       setFocusedSection("Home");
       window.requestAnimationFrame(() => homeEntry()?.focus());
     }
