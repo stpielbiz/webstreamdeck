@@ -70,8 +70,29 @@ export function debugLog(scope: string, message: string, detail?: unknown) {
   }
   entries = [...entries.slice(-(MAX - 1)), entry];
   dirty = true;
-  persistSoon();
+  // Anything but key presses is saved straight away: a page that dies a moment
+  // later (e.g. while the TV app's player is open) must still leave its trail.
+  if (scope === "keys") persistSoon();
+  else persistNow();
   emit();
+}
+
+function persistNow() {
+  if (typeof window === "undefined") return;
+  if (persistTimer !== null) { window.clearTimeout(persistTimer); persistTimer = null; }
+  try { window.localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries)); } catch { /* storage full */ }
+}
+
+/** The TV app's own event log (lifecycle, recoveries, key delivery), merged into uploads. */
+function nativeEntries(): DebugEntry[] {
+  try {
+    const raw = typeof window !== "undefined" ? window.StreamDeckNative?.nativeLog?.() : undefined;
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Array<{ at: number; message: string }>;
+    return parsed.map((item) => ({ at: new Date(item.at).toISOString(), scope: "app", message: item.message }));
+  } catch {
+    return [];
+  }
 }
 
 /** Short description of an element for logs (never its text content). */
