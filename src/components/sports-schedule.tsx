@@ -44,7 +44,9 @@ function dayLabel(iso: string) {
 /** Today's games for one league; each suggested channel is a remote-friendly card. */
 export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, onExitUp }: { leagueKey: string; channels?: CatalogItem[] | undefined; onPlay: (item: CatalogItem) => void; onExitLeft: () => void; onExitUp: () => void }) {
   const schedule = useLeagueSchedule([leagueKey]);
-  const label = SPORTS_LEAGUES.find((l) => l.key === leagueKey)?.label ?? leagueKey;
+  const leagueInfo = SPORTS_LEAGUES.find((l) => l.key === leagueKey);
+  const label = leagueInfo?.label ?? leagueKey;
+  const logo = leagueInfo?.logo;
   const games = useMemo(() => visibleGames(schedule.data?.[leagueKey] ?? []), [schedule.data, leagueKey]);
 
   // Explicit remote movement over network buttons and channel cards by screen position.
@@ -73,7 +75,15 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
 
   return (
     <div data-tv-zone="live-guide" data-tv-zone-order="3" data-sports-panel onKeyDown={onKeyDown} className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-auto rounded border border-border bg-card p-3" aria-label={`${label} today`}>
-      {schedule.isLoading && <p className="p-4 text-sm text-muted-foreground">Checking today's {label} games…</p>}
+      {schedule.isLoading && (
+        <div className="flex flex-col items-center gap-4 p-6" role="status">
+          {logo ? <img src={logo} alt="" className="size-20 animate-pulse object-contain drop-shadow-lg" /> : <span className="size-12 animate-spin rounded-full border-4 border-muted border-t-primary" />}
+          <p className="text-sm font-semibold text-muted-foreground">Loading today's {label} games…</p>
+          <div className="grid w-full grid-cols-4 gap-2">
+            {Array.from({ length: 8 }, (_, i) => <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" style={{ animationDelay: `${i * 90}ms` }} />)}
+          </div>
+        </div>
+      )}
       {!schedule.isLoading && games.length === 0 && <p className="p-4 text-sm text-muted-foreground">No {label} games today.</p>}
       {games.map((game, gi) => {
         const day = dayLabel(game.startsAt);
@@ -81,7 +91,7 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
         return (
           <div key={game.id} className="space-y-3">
             {showDay && <h2 className="sticky top-0 z-10 -mx-3 bg-card px-3 py-1 font-display text-sm font-bold uppercase tracking-wide text-primary">{day}</h2>}
-            <GameBlock game={game} label={label} first={gi === 0} channels={channels} onPlay={onPlay} />
+            <GameBlock game={game} logo={logo} label={label} first={gi === 0} channels={channels} onPlay={onPlay} />
           </div>
         );
       })}
@@ -90,7 +100,7 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
 }
 
 
-function GameBlock({ game, label, first, channels, onPlay }: { game: ScheduledGame; label: string; first: boolean; channels?: CatalogItem[] | undefined; onPlay: (item: CatalogItem) => void }) {
+function GameBlock({ game, logo, label, first, channels, onPlay }: { game: ScheduledGame; logo?: string | undefined; label: string; first: boolean; channels?: CatalogItem[] | undefined; onPlay: (item: CatalogItem) => void }) {
   const [network, setNetwork] = useState<string | null>(null);
   const groups = useMemo(() => (channels ? channelsByNetwork({ ...game, league: label }, channels) : []), [channels, game, label]);
   const mix = useMemo(() => (channels ? suggestChannels({ ...game, league: label }, channels, 8) : []), [channels, game, label]);
@@ -98,7 +108,8 @@ function GameBlock({ game, label, first, channels, onPlay }: { game: ScheduledGa
   const status = gameStatusLabel(game);
   const chip = "h-9 rounded-full border px-3 text-xs font-semibold outline-none transition-transform focus:scale-105 focus:border-primary focus:ring-2 focus:ring-primary";
   return (
-    <section data-sport-row className="rounded-lg border border-border bg-background/40 p-3">
+    <section data-sport-row className="relative isolate overflow-hidden rounded-lg border border-border bg-background/40 p-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {logo && <img src={logo} alt="" aria-hidden className="pointer-events-none absolute -right-6 top-1/2 -z-10 size-48 -translate-y-1/2 object-contain opacity-10" />}
       <header className="mb-2 flex flex-wrap items-center gap-2">
         <h3 className="font-display text-base font-bold">{game.matchup}</h3>
         <span className={cn("rounded px-2 py-0.5 text-xs font-semibold", game.state === "in" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>{status}</span>
