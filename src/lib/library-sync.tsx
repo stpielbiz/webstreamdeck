@@ -10,6 +10,8 @@ import { backfillTitles, getCachedTitleMetadata } from "@/lib/metadata.functions
 import type { CatalogItem, Programme } from "@/lib/iptv-types";
 import type { TitleMetadata } from "@/lib/metadata.server";
 import { lookupKeyFor } from "@/lib/title-key";
+import { backgroundBusy, waitForIdle, yieldToPage } from "@/lib/background-gate";
+import { debugLog } from "@/lib/debug-log";
 
 export const GUIDE_TTL = 4 * 60 * 60_000;
 const LIBRARY_TTL = 12 * 60 * 60_000;
@@ -79,7 +81,13 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
       const [family, owner] = event.query.queryKey;
       if (owner !== playlistId || !["system-catalogue", "cached-title-metadata", "tv-live-items", "device-guide"].includes(String(family))) return;
       if (event.type !== "updated" || event.action.type !== "success" || timer) return;
-      timer = setTimeout(() => { timer = undefined; setRevision((value) => value + 1); }, 500);
+      // Recounting walks the whole library: batch updates and wait until the remote is idle.
+      const tick = () => {
+        if (backgroundBusy()) { timer = setTimeout(tick, 3_000); return; }
+        timer = undefined;
+        setRevision((value) => value + 1);
+      };
+      timer = setTimeout(tick, 5_000);
     });
     return () => { unsubscribe(); if (timer) clearTimeout(timer); };
   }, [client, playlistId]);
@@ -90,15 +98,19 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
       const key = ["system-catalogue", playlistId, kind] as const;
       const items = client.getQueryData<CatalogItem[]>(key);
       const names = new Set((items ?? []).map((item) => item.name));
-      const metadata: Record<string, TitleMetadata> = {};
-      let metadataUpdatedAt = 0;
-      for (const [queryKey, data] of client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) {
-        Object.assign(metadata, data ?? {});
-        metadataUpdatedAt = Math.max(metadataUpdatedAt, client.getQueryState(queryKey)?.dataUpdatedAt ?? 0);
+      const started = performance.now();
+      // The summary already links every catalogue name to its details (built by the fill-in).
+      const summaryKey = ["cached-title-metadata", playlistId, kind, "summary"] as const;
+      const summary = client.getQueryData<Record<string, TitleMetadata>>(summaryKey);
+      let metadata: Record<string, TitleMetadata> = summary ?? {};
+      let metadataUpdatedAt = client.getQueryState(summaryKey)?.dataUpdatedAt ?? 0;
+      if (!summary) {
+        metadata = {};
+        for (const [queryKey, data] of client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) {
+          Object.assign(metadata, data ?? {});
+          metadataUpdatedAt = Math.max(metadataUpdatedAt, client.getQueryState(queryKey)?.dataUpdatedAt ?? 0);
+        }
       }
-      const byKey = new Map<string, TitleMetadata>();
-      for (const value of Object.values(metadata)) if (value?.key) byKey.set(value.key, value);
-      for (const name of names) if (!metadata[name]) { const hit = byKey.get(lookupKeyFor(name).key); if (hit) metadata[name] = hit; }
       const enriched = [...names].filter((name) => metadata[name]);
       const genres = new Map<string, number>();
       for (const name of enriched) {
@@ -108,7 +120,7 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
       // After a completed details update every title has been looked up; the
       // rest simply had no information available, so count them as checked.
       const checked = total && detailsDoneCount(playlistId, kind) >= total ? total : enriched.length;
-      return {
+      const result: LibrarySectionStatus = {
         total,
         updated: enriched.length,
         checked,
@@ -119,6 +131,9 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
         updatedAt: Math.max(client.getQueryState(key)?.dataUpdatedAt ?? 0, metadataUpdatedAt),
         loaded: items !== undefined,
       };
+      const took = performance.now() - started;
+      if (took > 300) debugLog("perf", `Library status (${kind}) took ${Math.round(took)} ms`);
+      return result;
     };
     const liveKey = ["tv-live-items", playlistId, ""] as const;
     const channels = client.getQueryData<CatalogItem[]>(liveKey);
@@ -245,13 +260,25 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
       if (due.length === 0) { finish(); return; }
       setStatus({ running: true, done: 0, total: due.length });
       phase("TV guide", 0, due.length);
+      // Merge every few batches: each merge rebuilds the saved guide, which is slow on a Fire Stick.
+      let collected: { channelId: string; programmes: Programme[] }[] = [];
+      const flush = () => {
+        if (!collected.length) return;
+        const started = performance.now();
+        mergeGuide(client, playlistId, collected);
+        collected = [];
+        const took = performance.now() - started;
+        if (took > 300) debugLog("perf", `Guide merge took ${Math.round(took)} ms`);
+      };
       for (let i = 0; i < due.length && !cancelled; i += GUIDE_BATCH) {
+        if (!force) { flush(); await waitForIdle(() => cancelled); }
         const batch = due.slice(i, i + GUIDE_BATCH);
         try {
           const start = new Date(Date.now() - 60 * 60_000).toISOString();
           const end = new Date(Date.now() + GUIDE_SPAN).toISOString();
           const result = await fetchSchedules({ data: { playlistId, channelIds: batch, start, end } });
-          mergeGuide(client, playlistId, result);
+          collected.push(...result);
+          if (collected.length >= GUIDE_BATCH * 5) flush();
         } catch {
           /* provider hiccup — retry next sync */
         }
@@ -259,6 +286,7 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
         phase("TV guide", Math.min(due.length, i + GUIDE_BATCH), due.length);
         await new Promise((resolve) => window.setTimeout(resolve, 250));
       }
+      flush();
       if (!cancelled) finish();
     };
 
@@ -292,15 +320,23 @@ export function useTitleBackfill(playlistId: string | null) {
     let cancelled = false;
     let timer = 0;
     const kinds = ["movie", "series"] as const;
+    // Matching every title is expensive: redo it only when the catalogue or saved details change.
+    const matchedFor: Record<string, { items: CatalogItem[]; savedCount: number } | undefined> = {};
+    const doneSets: Record<string, Set<string> | undefined> = {};
     const step = async () => {
       if (cancelled) return;
-      if (playing() || document.hidden) { timer = window.setTimeout(step, BACKFILL_PAUSE); return; }
+      if (playing() || backgroundBusy()) { timer = window.setTimeout(step, BACKFILL_PAUSE); return; }
+      const stepStarted = performance.now();
       for (const kind of kinds) {
-        const items = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
+        const items: CatalogItem[] = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
         if (!items.length) continue;
+        const countSaved = () => client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })
+          .reduce((sum, [, data]) => sum + (data ? Object.keys(data).length : 0), 0);
         const summaryKey = ["cached-title-metadata", playlistId, kind, "summary"] as const;
+        const unchanged = matchedFor[kind]?.items === items && matchedFor[kind]?.savedCount === countSaved();
+        if (!unchanged) {
         // Delta link: keep saved details, drop removed titles, look up only new ones.
-        const names = items.map((item) => item.name);
+        const names = items.map((item: CatalogItem) => item.name);
         const current = new Set(names);
         const saved: Record<string, TitleMetadata> = {};
         for (const [, data] of client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) Object.assign(saved, data ?? {});
@@ -308,9 +344,12 @@ export function useTitleBackfill(playlistId: string | null) {
         for (const value of Object.values(saved)) if (value?.key) byKey.set(value.key, value);
         const next: Record<string, TitleMetadata> = {};
         const missing: string[] = [];
-        for (const name of names) {
+        for (let i = 0; i < names.length; i++) {
+          const name = names[i]!;
           const hit = saved[name] ?? byKey.get(lookupKeyFor(name).key);
           if (hit) next[name] = hit; else missing.push(name);
+          // Let remote presses through between slices.
+          if (i % 500 === 499) { await yieldToPage(); if (cancelled) return; }
         }
         const checkedKey = `streamdeck.meta-checked:${playlistId}:${kind}`;
         let checked: Set<string>;
@@ -337,21 +376,33 @@ export function useTitleBackfill(playlistId: string | null) {
             /* Retry on the next pass. */
           }
         }
-        let done: Set<string>;
-        try { done = new Set(JSON.parse(localStorage.getItem(doneKey(playlistId, kind)) ?? "[]") as string[]); } catch { done = new Set(); }
-        const known: Record<string, { cast?: string[] }> = {};
-        for (const [, data] of client.getQueriesData<Record<string, { cast?: string[] }>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) Object.assign(known, data ?? {});
-        const batch = items.map((item) => item.name).filter((name) => !done.has(name) && !(known[name]?.cast?.length)).slice(0, BACKFILL_BATCH);
+        matchedFor[kind] = { items, savedCount: countSaved() };
+        }
+        let done = doneSets[kind];
+        if (!done) {
+          try { done = new Set(JSON.parse(localStorage.getItem(doneKey(playlistId, kind)) ?? "[]") as string[]); } catch { done = new Set(); }
+          doneSets[kind] = done;
+        }
+        const summary = client.getQueryData<Record<string, { cast?: string[] }>>(["cached-title-metadata", playlistId, kind, "summary"]) ?? {};
+        const batch: string[] = [];
+        for (let i = 0; i < items.length && batch.length < BACKFILL_BATCH; i++) {
+          const name = items[i]!.name;
+          if (!done.has(name) && !(summary[name]?.cast?.length)) batch.push(name);
+        }
         if (!batch.length) continue;
         try {
           const result = await backfill({ data: { playlistId, kind, names: batch } });
           client.setQueriesData<Record<string, unknown>>({ queryKey: ["cached-title-metadata", playlistId, kind] }, (old) => ({ ...(old ?? {}), ...result }));
           client.setQueryData<Record<string, TitleMetadata>>(summaryKey, (old) => ({ ...(old ?? {}), ...result }));
           for (const name of batch) done.add(name);
+          // Our own additions don't need a full re-match next time.
+          if (matchedFor[kind]) matchedFor[kind]!.savedCount = countSaved();
           try { localStorage.setItem(doneKey(playlistId, kind), JSON.stringify([...done])); } catch { /* storage full */ }
         } catch { /* try again later */ }
         break;
       }
+      const took = performance.now() - stepStarted;
+      if (took > 300) debugLog("perf", `Details fill-in step took ${Math.round(took)} ms (incl. network)`);
       timer = window.setTimeout(step, BACKFILL_PAUSE);
     };
     timer = window.setTimeout(step, 3_000);

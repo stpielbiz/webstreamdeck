@@ -20,7 +20,7 @@
 - Navigation preserves device mode: TV routes and TV-opened shared screens return to `/tv`, while regular browser screens return to `/dashboard` — keeps remote users out of the desktop shell.
 - Live TV is the single guide destination and uses a persistent category rail with a horizontally navigable programme timeline — no duplicate Guide.
 - Native Back is consumed once on key release and routed to the site's layer-aware handler; player close and completion have separate callbacks — no skipped layers.
-- Provider library data (categories, channels, catalogue, guide) is persisted on-device in IndexedDB (src/lib/device-cache.ts) and refreshed by useLibrarySync — menus render from saved data instantly and only stale parts are re-fetched.
+- Library data is persisted on-device in IndexedDB (device-cache.ts), refreshed by useLibrarySync; heavy saves/sync/backfill wait on `background-gate.ts` (player, remote idle) and yield in slices — Fire Stick main-thread stalls froze the remote.
 - Movies and Shows use shared route and catalogue loading placeholders only when saved data is unavailable — cold fetches get feedback without hiding cache.
 - TV section links show an immediate opening overlay until navigation unmounts the menu — remote clicks get feedback without depending on router pending-state timing.
 - Title details (genres, artwork, cast) are backfilled slowly in the background by `useTitleBackfill` into the shared `title_metadata` store — every user contributes, each title is resolved once, and browsing never waits on it.

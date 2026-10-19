@@ -1,4 +1,5 @@
 import { debugLog, redactUrl } from "@/lib/debug-log";
+import { markPlayerOpen } from "@/lib/background-gate";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Maximize,
@@ -171,6 +172,7 @@ export function VideoPlayer({
       debugLog("native", `Player closed (${reason})`, { alreadyClosed: closed, hasStop: !!stopRef.current });
       if (closed) return;
       closed = true;
+      markPlayerOpen(false);
       setNativeActive(false);
       if (stopRef.current) stopRef.current();
       else window.dispatchEvent(new CustomEvent("streamdeck-back", { cancelable: true }));
@@ -195,8 +197,10 @@ export function VideoPlayer({
     const started = startNative();
     nativeStartedAt.current = Date.now();
     setNativeActive(started);
+    markPlayerOpen(started);
     if (!started) closed = true;
     return () => {
+      if (!closed) markPlayerOpen(false);
       closed = true;
       document.removeEventListener("visibilitychange", onVisibility);
       window.__streamDeckProgress = undefined;

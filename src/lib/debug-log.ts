@@ -21,7 +21,8 @@ function loadEntries(): DebugEntry[] {
 let enabled = typeof window !== "undefined" && window.localStorage.getItem(ENABLED_KEY) === "1";
 // Survive an app restart, so a freeze that needs a relaunch still leaves its trail.
 let entries: DebugEntry[] = enabled ? loadEntries() : [];
-let dirty = false;
+// Entries left from before a freeze/restart are uploaded at the next launch.
+let dirty = entries.length > 0;
 let persistTimer: number | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((listener) => listener());
