@@ -39,18 +39,38 @@ class MainActivity : Activity() {
     private var pingInFlight = false
     private var slowPongs = 0
     private var reloadedAt = 0L
+    // Page heartbeat (once a second) and the last step it reported.
+    @Volatile private var lastBeatAt = 0L
+    @Volatile private var lastBeatStep = ""
+    private var beatGapLogged = false
+
+    private fun beatInfo(): String {
+        if (lastBeatAt == 0L) return "no heartbeat from page"
+        return "last heartbeat ${SystemClock.elapsedRealtime() - lastBeatAt} ms ago, last step: $lastBeatStep"
+    }
+
+    /** Notes when the page's heartbeat stops and starts again — also while the player covers it. */
+    private fun checkBeat() {
+        if (lastBeatAt == 0L) return
+        val gap = SystemClock.elapsedRealtime() - lastBeatAt
+        if (gap > 8_000 && !beatGapLogged) {
+            beatGapLogged = true
+            NativeLog.add("Page heartbeat stopped (player open=${PlayerActivity.isOpen}, ${beatInfo()})")
+        }
+    }
     private val ping = object : Runnable {
         override fun run() {
+            checkBeat()
             if (isResumed && ::webView.isInitialized && !PlayerActivity.isOpen && !MultiViewActivity.isOpen) {
                 val now = SystemClock.elapsedRealtime()
                 val stuck = now - lastPong > STUCK_MS || slowPongs >= SLOW_PONGS_LIMIT
                 if (stuck && ((reloadedAt > 0 && now - reloadedAt > STUCK_MS) || now - lastRecovery < RECOVERY_COOLDOWN_MS)) {
                     // A reload didn't help (or it froze again soon after): restart the app.
-                    NativeLog.add("Watchdog: page still stuck after reload, restarting app")
+                    NativeLog.add("Watchdog: page still stuck after reload, restarting app (${beatInfo()})")
                     restartApp()
                     return
                 } else if (stuck) {
-                    NativeLog.add("Watchdog: page not answering for ${now - lastPong} ms (slow answers: $slowPongs), reloading")
+                    NativeLog.add("Watchdog: page not answering for ${now - lastPong} ms (slow answers: $slowPongs, ${beatInfo()}), reloading")
                     lastRecovery = now
                     reloadedAt = now
                     lastPong = now
@@ -73,6 +93,8 @@ class MainActivity : Activity() {
                 lastPong = SystemClock.elapsedRealtime()
                 slowPongs = 0
             }
+            // While the player covers the page, keep running so a page that
+            // stops mid-playback is noticed (no recovery here, just a note).
             watchdog.postDelayed(this, 3_000)
         }
     }
@@ -95,6 +117,7 @@ class MainActivity : Activity() {
         )
         val alarms = getSystemService(ALARM_SERVICE) as android.app.AlarmManager
         alarms.set(android.app.AlarmManager.RTC, System.currentTimeMillis() + 800, pending)
+        NativeLog.flush()
         finishAffinity()
         android.os.Process.killProcess(android.os.Process.myPid())
     }
@@ -112,6 +135,14 @@ class MainActivity : Activity() {
     private val bodies = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, ByteArray>>()
 
     private inner class Client : WebViewClient() {
+        override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
+            NativeLog.add("Page loading: ${android.net.Uri.parse(url ?: "").path}")
+        }
+
+        override fun onPageFinished(view: WebView, url: String?) {
+            NativeLog.add("Page finished loading: ${android.net.Uri.parse(url ?: "").path}")
+        }
+
         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
             val path = request.url?.path ?: return null
             if (!path.startsWith(BODY_PATH)) return null
@@ -199,9 +230,12 @@ class MainActivity : Activity() {
 
             override fun onClosed() {
                 lastPlayerClosedAt = android.os.SystemClock.elapsedRealtime()
-                NativeLog.add("Player closed")
+                NativeLog.add("Player closed (${beatInfo()})")
                 runOnUiThread {
-                    webView.evaluateJavascript("window.__streamDeckClosed && window.__streamDeckClosed()", null)
+                    val sentAt = SystemClock.elapsedRealtime()
+                    webView.evaluateJavascript("window.__streamDeckClosed && window.__streamDeckClosed(), 1") {
+                        NativeLog.add("Page handled the close message after ${SystemClock.elapsedRealtime() - sentAt} ms")
+                    }
                     webView.requestFocus()
                 }
             }
@@ -330,6 +364,25 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun nativeLog(): String = NativeLog.json()
+
+        /** A step from the page's trail, kept even if the page freezes right after. */
+        @JavascriptInterface
+        fun trace(message: String) {
+            lastBeatStep = message.take(200)
+            NativeLog.add("page: ${message.take(300)}")
+        }
+
+        /** Page heartbeat, once a second. */
+        @JavascriptInterface
+        fun beat(step: String) {
+            val now = SystemClock.elapsedRealtime()
+            if (beatGapLogged && lastBeatAt > 0) {
+                NativeLog.add("Page heartbeat back after ${now - lastBeatAt} ms (last step: $step)")
+            }
+            beatGapLogged = false
+            lastBeatAt = now
+            lastBeatStep = step.take(200)
+        }
 
         /** Open Multi-view with up to four live channels: JSON array of {url,title}. */
         @JavascriptInterface
