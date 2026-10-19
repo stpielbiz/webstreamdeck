@@ -16,13 +16,42 @@ export function useSportsLeagues() {
   return SPORTS_LEAGUES.filter((l) => keys.includes(l.key));
 }
 
+const SCHEDULE_STORE = "sd-league-schedule-v1";
+const today = () => new Date().toLocaleDateString("en-CA");
+type StoredSchedule = { day: string; at: number; data: Record<string, ScheduledGame[]> };
+
+/** Saved schedules for today only; anything from an earlier day is discarded. */
+function readStored(key: string): StoredSchedule | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const all = JSON.parse(localStorage.getItem(SCHEDULE_STORE) ?? "{}") as Record<string, StoredSchedule>;
+    const hit = all[key];
+    return hit && hit.day === today() ? hit : undefined;
+  } catch { return undefined; }
+}
+function writeStored(key: string, data: Record<string, ScheduledGame[]>) {
+  try {
+    const all = JSON.parse(localStorage.getItem(SCHEDULE_STORE) ?? "{}") as Record<string, StoredSchedule>;
+    const day = today();
+    for (const k of Object.keys(all)) if (all[k]?.day !== day) delete all[k];
+    all[key] = { day, at: Date.now(), data };
+    localStorage.setItem(SCHEDULE_STORE, JSON.stringify(all));
+  } catch { /* storage full or unavailable */ }
+}
+
 export function useLeagueSchedule(keys: string[]) {
   const fetchSchedule = useServerFn(getLeagueSchedule);
+  const key = [...keys].sort().join(",");
+  const stored = readStored(key);
   return useQuery({
-    queryKey: ["league-schedule", [...keys].sort().join(",")],
-    queryFn: () => fetchSchedule({ data: { leagues: keys } }),
+    queryKey: ["league-schedule", key, today()],
+    queryFn: async () => { const data = await fetchSchedule({ data: { leagues: keys } }); writeStored(key, data); return data; },
     enabled: keys.length > 0,
+    initialData: stored?.data,
+    initialDataUpdatedAt: () => stored?.at,
+    // Keep today's games on screen; refresh quietly in the background for live scores.
     staleTime: 5 * 60_000,
+    gcTime: Infinity,
     refetchInterval: 5 * 60_000,
   });
 }
