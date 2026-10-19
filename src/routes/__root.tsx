@@ -135,8 +135,21 @@ function RootComponent() {
   useWebUpdateWatcher();
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    // The auth client re-announces SIGNED_IN every time the page becomes visible
+    // again (e.g. returning from the Fire TV player). Reloading everything then
+    // re-downloaded the whole channel list and guide and froze the Fire Stick,
+    // so only react when the signed-in account actually changes.
+    let currentUser: string | null | undefined;
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      const nextUser = session?.user?.id ?? null;
+      if (event === "INITIAL_SESSION") {
+        currentUser = nextUser;
+        return;
+      }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      const changed = nextUser !== currentUser;
+      currentUser = nextUser;
+      if (!changed) return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
