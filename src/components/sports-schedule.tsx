@@ -48,7 +48,7 @@ export function useLeagueSchedule(keys: string[]) {
     queryFn: async () => { const data = await fetchSchedule({ data: { leagues: keys } }); writeStored(key, data); return data; },
     enabled: keys.length > 0,
     initialData: stored?.data,
-    initialDataUpdatedAt: stored?.at,
+    initialDataUpdatedAt: () => stored?.at,
     // Keep today's games on screen; refresh quietly in the background for live scores.
     staleTime: 5 * 60_000,
     gcTime: Infinity,
