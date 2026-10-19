@@ -162,7 +162,7 @@ function SettingsPage() {
         />
       </div>
       {current.sportsEnabled && (
-        <div className="grid grid-cols-2 gap-3 pl-4 sm:grid-cols-3">
+        <div className="ml-6 flex flex-col gap-2 border-l-2 border-primary/30 pl-4" aria-label="Leagues">
           {SPORTS_LEAGUES.map((league) => {
             const on = current.sportsLeagues.includes(league.key);
             return (
@@ -174,6 +174,7 @@ function SettingsPage() {
                   disabled={settings.isLoading || save.isPending}
                   onToggle={(value) => update({ sportsLeagues: value ? [...current.sportsLeagues, league.key] : current.sportsLeagues.filter((k) => k !== league.key) }, value ? `${league.label} added to Live TV` : `${league.label} removed`, "Could not save the setting. Try again.")}
                   focusKey={`setting-league-${league.key}`}
+                  compact
                 />
               </div>
             );

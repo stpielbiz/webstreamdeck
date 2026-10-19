@@ -10,6 +10,8 @@ type SettingToggleCardProps = {
   disabled?: boolean;
   onToggle: (value: boolean) => void;
   focusKey: string;
+  /** Smaller sub-card for options nested under a parent setting. */
+  compact?: boolean;
 };
 
 /**
@@ -25,6 +27,7 @@ export function SettingToggleCard({
   disabled,
   onToggle,
   focusKey,
+  compact,
 }: SettingToggleCardProps) {
   return (
     <button
@@ -35,11 +38,13 @@ export function SettingToggleCard({
       data-tv-focus
       data-zone-entry="true"
       data-focus-key={focusKey}
-      disabled={disabled}
-      onClick={() => onToggle(!checked)}
+      // aria-disabled (not disabled) so the remote keeps focus on this card while saving.
+      aria-disabled={disabled || undefined}
+      onClick={() => { if (!disabled) onToggle(!checked); }}
       className={cn(
-        "flex w-full cursor-pointer items-start justify-between gap-6 rounded-xl border p-5 text-left transition-colors",
-        "hover:border-primary/40 disabled:cursor-not-allowed disabled:opacity-60",
+        "flex w-full cursor-pointer items-start justify-between gap-6 border text-left transition-colors",
+        compact ? "items-center rounded-lg px-4 py-3" : "rounded-xl p-5",
+        "hover:border-primary/40 aria-disabled:cursor-wait",
         checked ? "border-primary/60 bg-primary/10" : "border-border bg-card",
       )}
     >
