@@ -190,7 +190,11 @@ function TvLive() {
       });
     },
     enabled: !!activeId,
-    staleTime: EVENT_CATEGORY.test(categories.data?.find((c) => c.id === effectiveCategory)?.name ?? "") ? 5 * 60_000 : 30 * 60_000,
+    // The full list (Favourites, Recent, search) is huge; the library sync keeps
+    // it fresh in the background, so opening Live TV never re-downloads it.
+    staleTime: effectiveCategory === ""
+      ? Infinity
+      : EVENT_CATEGORY.test(categories.data?.find((c) => c.id === effectiveCategory)?.name ?? "") ? 5 * 60_000 : 30 * 60_000,
     gcTime: 60 * 60_000,
   });
 
