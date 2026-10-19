@@ -1,14 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Film, Monitor, PauseCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Film, Monitor, PauseCircle, RefreshCw, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { SettingToggleCard } from "@/components/setting-toggle-card";
 import { SPORTS_LEAGUES } from "@/lib/sports-leagues";
-import { Trophy } from "lucide-react";
 import { useSaveSettings, useSettings } from "@/lib/playlist-sync";
 import { usePlaylists } from "@/components/playlist-context";
 import { requestLibraryRefresh, runBulkRefresh, stopBulkRefresh, useBulkRefreshState, getBulkRefreshState, useLibraryRefreshStatus } from "@/lib/library-sync";

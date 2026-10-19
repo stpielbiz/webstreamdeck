@@ -15,6 +15,8 @@ import { TvShell } from "@/components/tv-shell";
 import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/search-field";
 import { GameSuggestionCard } from "@/components/game-suggestion";
+import { SportsSchedulePanel, useSportsLeagues } from "@/components/sports-schedule";
+import { SPORTS_CATEGORY_PREFIX } from "@/lib/sports-leagues";
 import { VideoPlayer } from "@/components/video-player";
 import { hasNativePlayer, sendRecentChannels } from "@/lib/external-player";
 import { cn } from "@/lib/utils";
@@ -159,7 +161,9 @@ function TvLive() {
   useAppSearchFocus("live-search");
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   const searching = search.trim().length > 0;
-  const effectiveCategory = searching || categoryId === RECENT_CATEGORY || categoryId === FAVOURITES_CATEGORY ? "" : categoryId;
+  const sportsLeague = !searching && categoryId.startsWith(SPORTS_CATEGORY_PREFIX) ? categoryId.slice(SPORTS_CATEGORY_PREFIX.length) : null;
+  const sportsLeagues = useSportsLeagues();
+  const effectiveCategory = searching || sportsLeague || categoryId === RECENT_CATEGORY || categoryId === FAVOURITES_CATEGORY ? "" : categoryId;
   const recent = useRecentChannels(activeId);
   const touchRecent = useTouchRecent();
   const [multiOpen, setMultiOpen] = useState(false);
@@ -666,6 +670,20 @@ function TvLive() {
                 Recent
               </Button>
             )}
+            {sportsLeagues.map((league) => (
+              <Button
+                key={league.key}
+                data-tv-focus
+                data-focus-key={`live-category-${SPORTS_CATEGORY_PREFIX}${league.key}`}
+                variant={categoryId === SPORTS_CATEGORY_PREFIX + league.key ? "default" : "ghost"}
+                className="h-9 w-full justify-start truncate px-2 text-xs"
+                onFocus={() => previewCategory(SPORTS_CATEGORY_PREFIX + league.key)}
+                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="channel-sports-first"], [data-focus-key="live-search"]')?.focus(); } }}
+                onClick={() => chooseCategory(SPORTS_CATEGORY_PREFIX + league.key)}
+              >
+                {league.label} today
+              </Button>
+            ))}
             {favouriteCategories.map((category) => (
               <LiveCategoryButton
                 key={category.id}
@@ -723,9 +741,11 @@ function TvLive() {
             </div>
           </div>
 
+          {sportsLeague && <SportsSchedulePanel leagueKey={sportsLeague} channels={items.data} onPlay={playChannel} />}
           <div
             ref={guideRef}
-            data-tv-zone="live-guide"
+            hidden={!!sportsLeague}
+            data-tv-zone={sportsLeague ? undefined : "live-guide"}
             data-tv-zone-order="3"
             data-horizontal-nav="true"
             onKeyDown={guideKeys}
