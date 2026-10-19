@@ -310,6 +310,44 @@ class MainActivity : Activity() {
             }.start()
         }
 
+        /**
+         * Same as [fetchText], but the body is kept as bytes and the page
+         * downloads it from /__native-body/<id> — no multi-megabyte script
+         * string for the page to compile, which froze Fire Sticks.
+         */
+        @JavascriptInterface
+        fun fetchToUrl(requestId: String, url: String, userAgent: String) {
+            if (!url.startsWith("http")) return
+            Thread {
+                var status = 0
+                var bytes = ByteArray(0)
+                try {
+                    val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                    conn.instanceFollowRedirects = true
+                    conn.connectTimeout = 20_000
+                    conn.readTimeout = 90_000
+                    conn.setRequestProperty("User-Agent", userAgent)
+                    conn.setRequestProperty("Accept", "*/*")
+                    status = conn.responseCode
+                    val stream = if (status >= 400) conn.errorStream else conn.inputStream
+                    bytes = stream?.use { it.readBytes() } ?: ByteArray(0)
+                    conn.disconnect()
+                } catch (_: Exception) {
+                    status = 0
+                } catch (_: OutOfMemoryError) {
+                    status = 0
+                    bytes = ByteArray(0)
+                }
+                val now = SystemClock.elapsedRealtime()
+                bodies.entries.removeIf { now - it.value.first > BODY_MAX_AGE_MS }
+                if (status > 0) bodies[requestId] = now to bytes
+                val script = "window.__streamDeckFetchReady && window.__streamDeckFetchReady(" +
+                    JSONObject.quote(requestId) + "," + status + ")"
+                runOnUiThread { webView.evaluateJavascript(script, null) }
+            }.start()
+        }
+
+
         @JavascriptInterface
         fun version(): String = BuildConfig.VERSION_NAME
 
