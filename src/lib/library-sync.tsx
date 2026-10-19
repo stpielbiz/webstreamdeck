@@ -317,11 +317,11 @@ export function useTitleBackfill(playlistId: string | null) {
       for (const kind of kinds) {
         const items = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
         if (!items.length) continue;
-        const savedCount = client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })
+        const countSaved = () => client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })
           .reduce((sum, [, data]) => sum + (data ? Object.keys(data).length : 0), 0);
-        const unchanged = matchedFor[kind]?.items === items && matchedFor[kind]?.savedCount === savedCount;
-        if (!unchanged) {
         const summaryKey = ["cached-title-metadata", playlistId, kind, "summary"] as const;
+        const unchanged = matchedFor[kind]?.items === items && matchedFor[kind]?.savedCount === countSaved();
+        if (!unchanged) {
         // Delta link: keep saved details, drop removed titles, look up only new ones.
         const names = items.map((item) => item.name);
         const current = new Set(names);
@@ -363,11 +363,7 @@ export function useTitleBackfill(playlistId: string | null) {
             /* Retry on the next pass. */
           }
         }
-        matchedFor[kind] = {
-          items,
-          savedCount: client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })
-            .reduce((sum, [, data]) => sum + (data ? Object.keys(data).length : 0), 0),
-        };
+        matchedFor[kind] = { items, savedCount: countSaved() };
         }
         let done = doneSets[kind];
         if (!done) {
@@ -386,6 +382,8 @@ export function useTitleBackfill(playlistId: string | null) {
           client.setQueriesData<Record<string, unknown>>({ queryKey: ["cached-title-metadata", playlistId, kind] }, (old) => ({ ...(old ?? {}), ...result }));
           client.setQueryData<Record<string, TitleMetadata>>(summaryKey, (old) => ({ ...(old ?? {}), ...result }));
           for (const name of batch) done.add(name);
+          // Our own additions don't need a full re-match next time.
+          if (matchedFor[kind]) matchedFor[kind]!.savedCount = countSaved();
           try { localStorage.setItem(doneKey(playlistId, kind), JSON.stringify([...done])); } catch { /* storage full */ }
         } catch { /* try again later */ }
         break;
