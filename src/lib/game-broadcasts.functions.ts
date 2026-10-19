@@ -18,19 +18,21 @@ const CANADIAN_NHL: Record<string, string[]> = {
 const cache = new Map<string, { at: number; value: GameInfo | null }>();
 const ymd = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
 
+type EspnEvent = { id: string; name: string; date: string; status?: { type?: { state?: string; shortDetail?: string; completed?: boolean } }; competitions?: { competitors?: { team: Team; score?: string }[]; broadcasts?: { names?: string[] }[]; geoBroadcasts?: { media?: { shortName?: string } }[] }[] };
+
 /** The schedule service returns nothing for date ranges, so fetch each day and merge. */
-async function fetchEvents(path: string, from: Date, to: Date): Promise<any[]> {
+async function fetchEvents(path: string, from: Date, to: Date): Promise<EspnEvent[]> {
   const days = new Set<string>();
   for (let t = from.getTime(); t <= to.getTime() + 86_400_000 - 1; t += 86_400_000) days.add(ymd(new Date(Math.min(t, to.getTime()))));
   const lists = await Promise.all([...days].map(async (day) => {
     try {
       const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${day}`);
       if (!res.ok) return [];
-      const json = await res.json() as { events?: any[] };
+      const json = await res.json() as { events?: EspnEvent[] };
       return json.events ?? [];
     } catch { return []; }
   }));
-  const seen = new Map<string, any>();
+  const seen = new Map<string, EspnEvent>();
   for (const e of lists.flat()) if (e?.id && !seen.has(e.id)) seen.set(e.id, e);
   return [...seen.values()];
 }
