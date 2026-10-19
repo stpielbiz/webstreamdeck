@@ -328,7 +328,7 @@ export function useTitleBackfill(playlistId: string | null) {
       if (playing() || backgroundBusy()) { timer = window.setTimeout(step, BACKFILL_PAUSE); return; }
       const stepStarted = performance.now();
       for (const kind of kinds) {
-        const items = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
+        const items: CatalogItem[] = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
         if (!items.length) continue;
         const countSaved = () => client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })
           .reduce((sum, [, data]) => sum + (data ? Object.keys(data).length : 0), 0);
@@ -336,7 +336,7 @@ export function useTitleBackfill(playlistId: string | null) {
         const unchanged = matchedFor[kind]?.items === items && matchedFor[kind]?.savedCount === countSaved();
         if (!unchanged) {
         // Delta link: keep saved details, drop removed titles, look up only new ones.
-        const names = items.map((item) => item.name);
+        const names = items.map((item: CatalogItem) => item.name);
         const current = new Set(names);
         const saved: Record<string, TitleMetadata> = {};
         for (const [, data] of client.getQueriesData<Record<string, TitleMetadata>>({ queryKey: ["cached-title-metadata", playlistId, kind] })) Object.assign(saved, data ?? {});
