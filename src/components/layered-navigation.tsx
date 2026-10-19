@@ -85,7 +85,7 @@ export function SectionMenu({
     >
       <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Browse</p>
       <div className="flex flex-col gap-1">
-        {[...SECTIONS, ...(savedFranchises.data?.length ? [{ to: "/franchises" as const, tvTo: "/tv/franchises" as const, label: "Franchise", icon: Layers }] : [])].map(({ to, tvTo, label, icon: Icon }) => {
+        {items.map(({ to, tvTo, label, icon: Icon }) => {
           const destination = tv ? tvTo : to;
           const disabled = expired && label !== "Home";
           return (

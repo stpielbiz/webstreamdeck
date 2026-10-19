@@ -76,17 +76,28 @@ function TvHome() {
   const favouriteTitles = (favorites ?? []).filter(
     (row) => row.playlistId === activeId && row.itemKind !== "live",
   );
+  // The home content's own starting point: the first tile, never the search box.
+  const homeEntry = () =>
+    document.querySelector<HTMLElement>('[data-tv-zone="home-content"] [data-zone-entry="true"]:not(input)');
+
+  // The menu has no Home entry on this screen, so the remote opens on the home
+  // content itself instead of a link that leads nowhere.
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>('[data-focus-key="section-Home"]')?.focus();
-    });
+    const frame = window.requestAnimationFrame(() => homeEntry()?.focus());
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
   const returnToMenu = () => {
     const activeZone = document.activeElement?.closest<HTMLElement>("[data-tv-zone]")?.dataset['tvZone'];
     if (activeZone === "home-content") {
-      document.querySelector<HTMLElement>(`[data-focus-key="section-${CSS.escape(focusedSection)}"]`)?.focus();
+      const item = document.querySelector<HTMLElement>(`[data-focus-key="section-${CSS.escape(focusedSection)}"]`)
+        ?? document.querySelector<HTMLElement>('[data-tv-zone="sections"] [data-tv-focus]');
+      item?.focus();
+    } else if (activeZone === "sections") {
+      // Back from the menu brings the home content back — nothing else does now
+      // that the menu's own Home entry is gone here.
+      setFocusedSection("Home");
+      window.requestAnimationFrame(() => homeEntry()?.focus());
     }
   };
 
