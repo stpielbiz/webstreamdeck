@@ -37,6 +37,48 @@ async function fetchEvents(path: string, from: Date, to: Date): Promise<EspnEven
   return [...seen.values()];
 }
 
+/** Official NHL TV codes -> network names playlists use. Canadian/national listings first. */
+const NHL_CODES: Record<string, string> = {
+  SN: "Sportsnet", "SN+": "Sportsnet+", SN1: "Sportsnet One", SNE: "Sportsnet East", SNO: "Sportsnet Ontario", SNP: "Sportsnet Pacific", SNW: "Sportsnet West", SN360: "Sportsnet 360",
+  TVAS: "TVA Sports", TVAS2: "TVA Sports 2", CBC: "CBC", RDS: "RDS", RDS2: "RDS 2", TSN: "TSN", TSN1: "TSN 1", TSN2: "TSN 2", TSN3: "TSN 3", TSN4: "TSN 4", TSN5: "TSN 5", CITY: "Citytv",
+  ESPN: "ESPN", "ESPN+": "ESPN+", ESPN2: "ESPN 2", ABC: "ABC", TNT: "TNT", TBS: "TBS", truTV: "truTV", MAX: "Max", "Prime Video": "Prime Video", NHLN: "NHL Network",
+  MSG: "MSG", "MSG 2": "MSG 2", MSGSN: "MSG Sportsnet", NBCSCA: "NBC Sports California", NBCSP: "NBC Sports Philadelphia", NBCSBA: "NBC Sports Bay Area", NBCSCH: "NBC Sports Chicago", NBCSWA: "NBC Sports Washington", MNMT: "Monumental", ALT: "Altitude",
+};
+type NhlGame = { startTimeUTC: string; homeTeam?: { commonName?: { default?: string } }; tvBroadcasts?: { countryCode?: string; network?: string }[] };
+const nhlCache = new Map<string, { at: number; value: Map<string, string[]> }>();
+
+/** Exact TV listings from the official NHL schedule, keyed by start time + home team. */
+async function nhlListings(from: Date): Promise<Map<string, string[]>> {
+  const day = from.toISOString().slice(0, 10);
+  const hit = nhlCache.get(day);
+  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.value;
+  const map = new Map<string, string[]>();
+  try {
+    const res = await fetch(`https://api-web.nhle.com/v1/schedule/${day}`, { headers: { "user-agent": "Mozilla/5.0", accept: "application/json" } });
+    if (res.ok) {
+      const json = await res.json() as { gameWeek?: { games?: NhlGame[] }[] };
+      for (const g of (json.gameWeek ?? []).flatMap((d) => d.games ?? [])) {
+        const tv = [...(g.tvBroadcasts ?? [])].sort((a, b) => (a.countryCode === "CA" ? 0 : 1) - (b.countryCode === "CA" ? 0 : 1));
+        const names = tv.map((b) => { const code = (b.network ?? "").trim(); return NHL_CODES[code] ?? code; }).filter(Boolean);
+        map.set(`${Date.parse(g.startTimeUTC)}|${(g.homeTeam?.commonName?.default ?? "").toLowerCase()}`, [...new Set(names)]);
+      }
+    }
+  } catch { /* fall back to ESPN */ }
+  nhlCache.set(day, { at: Date.now(), value: map });
+  return map;
+}
+
+/** Prefer official NHL listings; only guess Canadian networks when nothing is listed anywhere. */
+function nhlNames(listings: Map<string, string[]>, date: string, teams: Team[], espn: string[]): string[] {
+  const t = Date.parse(date);
+  for (const tm of teams) {
+    const exact = listings.get(`${t}|${(tm.name ?? "").toLowerCase()}`);
+    if (exact?.length) return exact;
+  }
+  if (espn.filter(Boolean).length) return espn;
+  return teams.flatMap((tm) => CANADIAN_NHL[(tm.name ?? "").toLowerCase()] ?? []);
+}
+
 type Team = { displayName?: string; shortDisplayName?: string; name?: string; location?: string; abbreviation?: string };
 
 export const findGameBroadcasts = createServerFn({ method: "GET" })
@@ -57,11 +99,11 @@ export const findGameBroadcasts = createServerFn({ method: "GET" })
       const teams = (comp?.competitors ?? []).map((c) => c.team);
       const matched = teams.find((t) => [t.displayName, t.name, t.shortDisplayName].some((n) => n && (n.toLowerCase().includes(q) || (q.length >= 6 && q.includes(n.toLowerCase())))) || t.location?.toLowerCase() === q || t.abbreviation?.toLowerCase() === q);
       if (!matched) continue;
-      const names = [
+      let names = [
         ...(comp?.broadcasts ?? []).flatMap((b) => b.names ?? []),
         ...(comp?.geoBroadcasts ?? []).map((g) => g.media?.shortName ?? ""),
       ];
-      if (league === "NHL") for (const t of teams) names.push(...(CANADIAN_NHL[(t.name ?? "").toLowerCase()] ?? []));
+      if (league === "NHL") names = nhlNames(await nhlListings(new Date(now.getTime() - 6 * 3600_000)), e.date, teams, names);
       if (league === "Rugby" && names.filter(Boolean).length === 0) names.push(...RUGBY_DEFAULT);
       found = {
         matchup: e.name, startsAt: e.date, league,
@@ -81,19 +123,20 @@ export const getLeagueSchedule = createServerFn({ method: "GET" })
   .inputValidator((input: { leagues: string[] }) => ({ leagues: (input?.leagues ?? []).filter((k) => SPORTS_LEAGUES.some((l) => l.key === k)).slice(0, 20) }))
   .handler(async ({ data }): Promise<Record<string, ScheduledGame[]>> => {
     const cacheKey = [...data.leagues].sort().join(",");
-    const hit = scheduleCache.get(`v2:${cacheKey}`);
+    const hit = scheduleCache.get(`v3:${cacheKey}`);
     if (hit && Date.now() - hit.at < 5 * 60_000) return hit.value;
     const now = new Date();
     const out: Record<string, ScheduledGame[]> = {};
     await Promise.all(SPORTS_LEAGUES.filter((l) => data.leagues.includes(l.key)).map(async (league) => {
+      const nhl = league.key === "NHL" ? await nhlListings(new Date(now.getTime() - 8 * 3600_000)) : new Map<string, string[]>();
       const lists = await Promise.all(league.paths.map(async (path) => {
         try {
           const json = { events: await fetchEvents(path, new Date(now.getTime() - 8 * 3600_000), new Date(now.getTime() + 30 * 3600_000)) } as { events?: { id: string; name: string; date: string; status?: { type?: { state?: string; shortDetail?: string } }; competitions?: { competitors?: { team: Team; score?: string }[]; broadcasts?: { names?: string[] }[]; geoBroadcasts?: { media?: { shortName?: string } }[] }[] }[] };
           return (json.events ?? []).map((e): ScheduledGame => {
             const comp = e.competitions?.[0];
             const teams = (comp?.competitors ?? []).map((c) => c.team);
-            const names = [...(comp?.broadcasts ?? []).flatMap((b) => b.names ?? []), ...(comp?.geoBroadcasts ?? []).map((g) => g.media?.shortName ?? "")];
-            if (league.key === "NHL") for (const t of teams) names.push(...(CANADIAN_NHL[(t.name ?? "").toLowerCase()] ?? []));
+            let names = [...(comp?.broadcasts ?? []).flatMap((b) => b.names ?? []), ...(comp?.geoBroadcasts ?? []).map((g) => g.media?.shortName ?? "")];
+            if (league.key === "NHL") names = nhlNames(nhl, e.date, teams, names);
             if (league.key === "RUGBY" && !names.filter(Boolean).length) names.push(...RUGBY_DEFAULT);
             const state = e.status?.type?.state === "in" ? "in" : e.status?.type?.state === "post" ? "post" : "pre";
             const score = (comp?.competitors ?? []).map((c) => c.score).filter(Boolean).join("–");
@@ -111,6 +154,6 @@ export const getLeagueSchedule = createServerFn({ method: "GET" })
       const cutoff = now.getTime() + 30 * 3600_000;
       out[league.key] = lists.flat().filter((g) => Date.parse(g.startsAt) < cutoff && Date.parse(g.startsAt) > now.getTime() - 12 * 3600_000).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     }));
-    scheduleCache.set(`v2:${cacheKey}`, { at: Date.now(), value: out });
+    scheduleCache.set(`v3:${cacheKey}`, { at: Date.now(), value: out });
     return out;
   });
