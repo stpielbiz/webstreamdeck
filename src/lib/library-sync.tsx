@@ -11,7 +11,7 @@ import type { CatalogItem, Programme } from "@/lib/iptv-types";
 import type { TitleMetadata } from "@/lib/metadata.server";
 import { lookupKeyFor } from "@/lib/title-key";
 import { backgroundBusy, waitForIdle, yieldToPage } from "@/lib/background-gate";
-import { debugLog } from "@/lib/debug-log";
+import { debugLog, trace } from "@/lib/debug-log";
 
 export const GUIDE_TTL = 4 * 60 * 60_000;
 const LIBRARY_TTL = 12 * 60 * 60_000;

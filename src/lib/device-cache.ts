@@ -1,6 +1,6 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { backgroundBusy } from "@/lib/background-gate";
-import { debugLog } from "@/lib/debug-log";
+import { debugLog, trace } from "@/lib/debug-log";
 
 /**
  * On-device library cache (IndexedDB). Saved provider data is loaded into the
