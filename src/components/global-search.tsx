@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Play, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TitleDetailsDialog } from "@/components/title-details-dialog";
+import { GameSuggestionCard } from "@/components/game-suggestion";
 
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
@@ -141,6 +142,7 @@ export function GlobalSearch() {
       </div>
       {enabled && (
         <div className="max-w-3xl space-y-4" onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); backToSearch(); } }}>
+          <GameSuggestionCard query={search} channels={live.data} onPlay={(item) => void navigate({ to: "/tv/live", search: { channel: item.id } })} />
           {showFranchise && franchise.data && <FranchiseCard franchise={franchise.data} owned={owned} onOpen={() => setFranchiseOpen(true)} />}
           {groups.map((group) => (
             <div key={group.kind}>
