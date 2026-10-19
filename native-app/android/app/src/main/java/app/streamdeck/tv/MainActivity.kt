@@ -339,7 +339,7 @@ class MainActivity : Activity() {
                     bytes = ByteArray(0)
                 }
                 val now = SystemClock.elapsedRealtime()
-                bodies.entries.removeIf { now - it.value.first > BODY_MAX_AGE_MS }
+                for (key in bodies.keys.toList()) { val entry = bodies[key]; if (entry != null && now - entry.first > BODY_MAX_AGE_MS) bodies.remove(key) }
                 if (status > 0) bodies[requestId] = now to bytes
                 val script = "window.__streamDeckFetchReady && window.__streamDeckFetchReady(" +
                     JSONObject.quote(requestId) + "," + status + ")"
