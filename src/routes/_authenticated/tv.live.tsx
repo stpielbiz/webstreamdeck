@@ -526,6 +526,8 @@ function TvLive() {
   // the native player's bottom bar (Down on the remote, TiviMate-style) and
   // the web player's recents strip both use this list.
   const [recentList, setRecentList] = useState<{ itemId: string; title: string; url: string }[]>([]);
+  // Only re-prepare the player's recent channels when the list's order really changes.
+  const recentKey = recent.rows.map((row) => row.itemId).join(",");
   useEffect(() => {
     if (!fullscreen || !activeId || !selected) {
       setRecentList([]);
@@ -555,7 +557,7 @@ function TvLive() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fullscreen, selected?.id, activeId, recent.rows]);
+  }, [fullscreen, selected?.id, activeId, recentKey]);
 
   const pickRecent = (title: string) => {
     const entry = recentList.find((recentItem) => recentItem.title === title);
