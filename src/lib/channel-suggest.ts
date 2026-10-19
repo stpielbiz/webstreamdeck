@@ -52,20 +52,39 @@ function patternsFor(broadcast: string): string[] {
 
 const has = (hay: string, phrase: string) => hay.includes(` ${phrase} `);
 
-/** Rank playlist channels likely to carry the game; strongest first, max 10. */
+/** Numbered event feeds ("ESPN+ 005", "PPV 12") rarely carry the actual game. */
+const EVENT_FEED = / (espn plus|ppv|event|events|dazn|flo) ?\d{1,4} /;
+const isEventFeed = (n: string) => EVENT_FEED.test(n);
+
+export type NetworkChannels = { network: string; items: CatalogItem[] };
+
+/** Matching playlist channels grouped per listed network (real channels before event feeds). */
+export function channelsByNetwork(game: GameInfo, channels: CatalogItem[], max = 16): NetworkChannels[] {
+  return game.broadcasts.map((network) => {
+    const pats = patternsFor(network);
+    const hits = pats.length ? channels.filter((c) => { const n = normalizeChannel(c.name); return pats.some((p) => has(n, p)); }) : [];
+    const sorted = hits
+      .map((item) => ({ item, ev: isEventFeed(normalizeChannel(item.name)) ? 1 : 0 }))
+      .sort((a, b) => a.ev - b.ev || a.item.name.localeCompare(b.item.name))
+      .map((s) => s.item);
+    return { network, items: sorted.slice(0, max) };
+  });
+}
+
+/** Rank playlist channels likely to carry the game: a round-robin mix across networks, then team/league matches. */
 export function suggestChannels(game: GameInfo, channels: CatalogItem[], max = 10): CatalogItem[] {
-  const networks = game.broadcasts.map(patternsFor).filter((p) => p.length);
+  const groups = channelsByNetwork(game, channels, max);
+  const out: CatalogItem[] = [];
+  const seen = new Set<string>();
+  const push = (c: CatalogItem) => { if (!seen.has(c.id) && out.length < max) { seen.add(c.id); out.push(c); } };
+  for (let i = 0; out.length < max && groups.some((g) => g.items[i]); i++) for (const g of groups) { const c = g.items[i]; if (c) push(c); }
   const teams = game.teams.map((t) => normalizeChannel(t).trim()).filter((t) => t.length >= 4);
   const league = normalizeChannel(game.league).trim();
-  const scored: { item: CatalogItem; score: number }[] = [];
-  for (const item of channels) {
-    const n = normalizeChannel(item.name);
-    let score = 0;
-    networks.forEach((list, i) => { if (list.some((p) => has(n, p))) score = Math.max(score, 30 - i); });
-    if (teams.some((t) => has(n, t))) score = Math.max(score, 20);
-    if (!score && league && has(n, league)) score = 5;
-    if (!score && league === "rugby" && has(n, "rugby")) score = 5;
-    if (score) scored.push({ item, score });
+  channels.filter((item) => teams.some((t) => has(normalizeChannel(item.name), t)))
+    .sort((a, b) => a.name.localeCompare(b.name)).forEach(push);
+  {
+    channels.filter((item) => { const n = normalizeChannel(item.name); return (!!league && has(n, league)) || (league === "rugby" && has(n, "rugby")); })
+      .sort((a, b) => a.name.localeCompare(b.name)).forEach(push);
   }
-  return scored.sort((a, b) => b.score - a.score || a.item.name.localeCompare(b.item.name)).slice(0, max).map((s) => s.item);
+  return out;
 }
