@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Play } from "lucide-react";
 import { getLeagueSchedule } from "@/lib/game-broadcasts.functions";
-import { suggestChannels } from "@/lib/channel-suggest";
-import { SPORTS_LEAGUES, gameStatusLabel, visibleGames } from "@/lib/sports-leagues";
+import { channelsByNetwork, suggestChannels } from "@/lib/channel-suggest";
+import { SPORTS_LEAGUES, gameStatusLabel, visibleGames, type ScheduledGame } from "@/lib/sports-leagues";
 import { useSettings } from "@/lib/playlist-sync";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { cn } from "@/lib/utils";
@@ -39,90 +39,104 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
   const label = SPORTS_LEAGUES.find((l) => l.key === leagueKey)?.label ?? leagueKey;
   const games = useMemo(() => visibleGames(schedule.data?.[leagueKey] ?? []), [schedule.data, leagueKey]);
 
-  // Explicit remote movement: Left/Right within a game, Up/Down to the nearest card of the neighbouring game.
+  // Explicit remote movement over network buttons and channel cards by screen position.
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    const card = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>("[data-sport-card]");
-    if (!card) return;
-    const rows = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("[data-sport-row]"));
-    const row = card.closest<HTMLElement>("[data-sport-row]");
-    if (!row) return;
-    const cardsOf = (r: HTMLElement) => Array.from(r.querySelectorAll<HTMLElement>("[data-sport-card]"));
-    const cards = cardsOf(row);
-    const i = cards.indexOf(card);
-    const stop = () => { event.preventDefault(); event.stopPropagation(); };
-    const go = (el?: HTMLElement | null) => { if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: "nearest", inline: "nearest" }); } };
-    const rect = card.getBoundingClientRect();
-    if (event.key === "ArrowLeft") { stop(); if (i === 0) onExitLeft(); else go(cards[i - 1]); }
-    else if (event.key === "ArrowRight") { stop(); go(cards[i + 1]); }
-    else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-      stop();
-      const down = event.key === "ArrowDown";
-      // Within a wrapped grid first move to the line above/below in the same game.
-      const sameRow = cards.filter((c) => { const r = c.getBoundingClientRect(); return down ? r.top > rect.bottom - 4 : r.bottom < rect.top + 4; });
-      let targets = sameRow;
-      if (!targets.length) {
-        let ri = rows.indexOf(row) + (down ? 1 : -1);
-        while (rows[ri] && !cardsOf(rows[ri]!).length) ri += down ? 1 : -1;
-        if (!rows[ri]) { if (!down) onExitUp(); return; }
-        targets = cardsOf(rows[ri]!);
-        const tops = targets.map((c) => c.getBoundingClientRect().top);
-        const line = down ? Math.min(...tops) : Math.max(...tops);
-        targets = targets.filter((c) => Math.abs(c.getBoundingClientRect().top - line) < 4);
-      } else {
-        const tops = targets.map((c) => c.getBoundingClientRect().top);
-        const line = down ? Math.min(...tops) : Math.max(...tops);
-        targets = targets.filter((c) => Math.abs(c.getBoundingClientRect().top - line) < 4);
-      }
-      const cx = rect.left + rect.width / 2;
-      go(targets.sort((a, b) => Math.abs(a.getBoundingClientRect().left + a.offsetWidth / 2 - cx) - Math.abs(b.getBoundingClientRect().left + b.offsetWidth / 2 - cx))[0]);
+    const cur = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>("[data-sport-item]");
+    if (!cur || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+    event.preventDefault(); event.stopPropagation();
+    const items = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("[data-sport-item]"));
+    const r = cur.getBoundingClientRect();
+    const box = (el: HTMLElement) => el.getBoundingClientRect();
+    const go = (el?: HTMLElement) => { if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: "nearest", inline: "nearest" }); } };
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      const line = items.filter((el) => Math.abs(box(el).top - r.top) < 6).sort((a, b) => box(a).left - box(b).left);
+      const i = line.indexOf(cur);
+      if (event.key === "ArrowLeft") { if (i <= 0) onExitLeft(); else go(line[i - 1]); } else go(line[i + 1]);
+      return;
     }
+    const down = event.key === "ArrowDown";
+    const cand = items.filter((el) => (down ? box(el).top > r.bottom - 4 : box(el).bottom < r.top + 4));
+    if (!cand.length) { if (!down) onExitUp(); return; }
+    const edge = down ? Math.min(...cand.map((el) => box(el).top)) : Math.max(...cand.map((el) => box(el).top));
+    const cx = r.left + r.width / 2;
+    const mid = (el: HTMLElement) => Math.abs(box(el).left + box(el).width / 2 - cx);
+    go(cand.filter((el) => Math.abs(box(el).top - edge) < 6).sort((a, b) => mid(a) - mid(b))[0]);
   };
 
   return (
     <div data-tv-zone="live-guide" data-tv-zone-order="3" data-sports-panel onKeyDown={onKeyDown} className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-auto rounded border border-border bg-card p-3" aria-label={`${label} today`}>
       {schedule.isLoading && <p className="p-4 text-sm text-muted-foreground">Checking today's {label} games…</p>}
       {!schedule.isLoading && games.length === 0 && <p className="p-4 text-sm text-muted-foreground">No {label} games today.</p>}
-      {games.map((game, gi) => {
-        const picks = channels ? suggestChannels({ ...game, league: label }, channels, 8) : [];
-        const status = gameStatusLabel(game);
-        return (
-          <section key={game.id} data-sport-row className="rounded-lg border border-border bg-background/40 p-3">
-            <header className="mb-2 flex flex-wrap items-center gap-2">
-              <h3 className="font-display text-base font-bold">{game.matchup}</h3>
-              <span className={cn("rounded px-2 py-0.5 text-xs font-semibold", game.state === "in" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>{status}</span>
-              {game.detail && <span className="text-xs text-muted-foreground">{game.detail}</span>}
-              {game.broadcasts.length > 0 && <span className="w-full truncate text-xs text-muted-foreground">On: {game.broadcasts.join(", ")}</span>}
-            </header>
-            {picks.length ? (
-              <div className="grid grid-cols-4 gap-2">
-                {picks.map((item, ci) => {
-                  const { badge, title } = splitChannelName(item.name);
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      data-tv-focus
-                      data-sport-card
-                      data-zone-entry={gi === 0 && ci === 0 ? "true" : undefined}
-                      data-focus-key={gi === 0 && ci === 0 ? "sports-first-card" : undefined}
-                      onClick={() => onPlay(item)}
-                      className="flex h-20 min-w-0 items-center gap-2 rounded-lg border border-border bg-secondary p-2 text-left outline-none transition-transform focus:scale-[1.03] focus:border-primary focus:bg-primary focus:text-primary-foreground"
-                    >
-                      <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded bg-muted">
-                        {item.image ? <img src={item.image} alt="" loading="lazy" className="size-full object-contain p-0.5" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <Play className="size-4 fill-current" />}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        {badge && <span className="block truncate text-[11px] font-semibold uppercase opacity-80">{badge}</span>}
-                        <span className="line-clamp-2 text-xs font-medium leading-tight">{title}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : <p className="text-xs text-muted-foreground">No matching channels in your playlist.</p>}
-          </section>
-        );
-      })}
+      {games.map((game, gi) => <GameBlock key={game.id} game={game} label={label} first={gi === 0} channels={channels} onPlay={onPlay} />)}
     </div>
+  );
+}
+
+
+function GameBlock({ game, label, first, channels, onPlay }: { game: ScheduledGame; label: string; first: boolean; channels?: CatalogItem[] | undefined; onPlay: (item: CatalogItem) => void }) {
+  const [network, setNetwork] = useState<string | null>(null);
+  const groups = useMemo(() => (channels ? channelsByNetwork({ ...game, league: label }, channels) : []), [channels, game, label]);
+  const mix = useMemo(() => (channels ? suggestChannels({ ...game, league: label }, channels, 8) : []), [channels, game, label]);
+  const picks = network ? groups.find((g) => g.network === network)?.items ?? [] : mix;
+  const status = gameStatusLabel(game);
+  const chip = "h-9 rounded-full border px-3 text-xs font-semibold outline-none transition-transform focus:scale-105 focus:border-primary focus:ring-2 focus:ring-primary";
+  return (
+    <section data-sport-row className="rounded-lg border border-border bg-background/40 p-3">
+      <header className="mb-2 flex flex-wrap items-center gap-2">
+        <h3 className="font-display text-base font-bold">{game.matchup}</h3>
+        <span className={cn("rounded px-2 py-0.5 text-xs font-semibold", game.state === "in" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>{status}</span>
+        {game.detail && <span className="text-xs text-muted-foreground">{game.detail}</span>}
+      </header>
+      {groups.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-2" aria-label="Networks">
+          {[{ network: "All", items: mix }, ...groups].map((g, i) => {
+            const active = (network ?? "All") === g.network;
+            return (
+              <button
+                key={g.network}
+                type="button"
+                data-tv-focus
+                data-focus-glow
+                data-sport-item
+                data-sport-network
+                data-zone-entry={first && i === 0 ? "true" : undefined}
+                data-focus-key={first && i === 0 ? "sports-first-card" : undefined}
+                aria-pressed={active}
+                onClick={() => setNetwork(g.network === "All" ? null : g.network)}
+                className={cn(chip, active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary", !g.items.length && "opacity-50")}
+              >
+                {g.network}{g.network !== "All" && <span className="ml-1 opacity-80">· {g.items.length || "none"}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {picks.length ? (
+        <div className="grid grid-cols-4 gap-2">
+          {picks.map((item) => {
+            const { badge, title } = splitChannelName(item.name);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-tv-focus
+                data-sport-item
+                data-sport-card
+                onClick={() => onPlay(item)}
+                className="flex h-20 min-w-0 items-center gap-2 rounded-lg border border-border bg-secondary p-2 text-left outline-none transition-transform focus:scale-[1.03] focus:border-primary focus:bg-primary focus:text-primary-foreground"
+              >
+                <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded bg-muted">
+                  {item.image ? <img src={item.image} alt="" loading="lazy" className="size-full object-contain p-0.5" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <Play className="size-4 fill-current" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  {badge && <span className="block truncate text-[11px] font-semibold uppercase opacity-80">{badge}</span>}
+                  <span className="line-clamp-2 text-xs font-medium leading-tight">{title}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : <p className="text-xs text-muted-foreground">{network ? `No ${network} channels in your playlist.` : "No matching channels in your playlist."}</p>}
+    </section>
   );
 }
