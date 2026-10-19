@@ -26,7 +26,7 @@ async function fetchEvents(path: string, from: Date, to: Date): Promise<EspnEven
   for (let t = from.getTime(); t <= to.getTime() + 86_400_000 - 1; t += 86_400_000) days.add(ymd(new Date(Math.min(t, to.getTime()))));
   const lists = await Promise.all([...days].map(async (day) => {
     try {
-      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${day}`);
+      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${day}`, { headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36", accept: "application/json" } });
       if (!res.ok) return [];
       const json = await res.json() as { events?: EspnEvent[] };
       return json.events ?? [];
