@@ -128,13 +128,16 @@ async function uploadSnapshot() {
   uploading = true;
   try {
     const { supabase } = await import("@/integrations/supabase/client");
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) return;
+    // Never let a hung sign-in check stop all later uploads.
+    const timeout = <T,>(promise: PromiseLike<T>) => Promise.race([promise, new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("timeout")), 10_000))]);
+    const { data } = await timeout(supabase.auth.getSession());
+    const userId = data.session?.user.id;
+    if (!userId) return;
     dirty = false;
     const code = "AUTO-" + Date.now().toString(36).toUpperCase().slice(-6) + Math.random().toString(36).slice(2, 4).toUpperCase();
-    const { error } = await supabase.from("stream_logs").insert({
-      code, user_id: data.user.id, device: navigator.userAgent.slice(0, 300), entries: entries as never,
-    });
+    const { error } = await timeout(supabase.from("stream_logs").insert({
+      code, user_id: userId, device: navigator.userAgent.slice(0, 300), entries: entries as never,
+    }));
     if (error) dirty = true;
   } catch {
     dirty = true;
@@ -157,6 +160,11 @@ function startAutoUpload() {
     if (now - last > 3000 && document.visibilityState === "visible") debugLog("page", `Page was unresponsive for ${now - last} ms`);
     last = now;
   }, 1000);
+  // Memory use, to tell a running-out-of-memory freeze from a stuck script.
+  window.setInterval(() => {
+    const memory = (performance as Performance & { memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+    if (memory) debugLog("page", `Memory ${Math.round(memory.usedJSHeapSize / 1048576)} of ${Math.round(memory.jsHeapSizeLimit / 1048576)} MB`);
+  }, 30_000);
   window.addEventListener("focus", () => debugLog("page", "Window focused", describeElement(document.activeElement)));
   window.addEventListener("blur", () => debugLog("page", "Window lost focus"));
   document.addEventListener("visibilitychange", () => debugLog("page", `Page ${document.visibilityState}`));

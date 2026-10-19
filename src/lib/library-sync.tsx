@@ -330,7 +330,8 @@ export function useTitleBackfill(playlistId: string | null) {
     const doneSets: Record<string, Set<string> | undefined> = {};
     const step = async () => {
       if (cancelled) return;
-      if (playing() || backgroundBusy()) { timer = window.setTimeout(step, BACKFILL_PAUSE); return; }
+      // A manual details update already covers these titles; don't double the work.
+      if (playing() || backgroundBusy() || bulkState.running) { timer = window.setTimeout(step, BACKFILL_PAUSE); return; }
       const stepStarted = performance.now();
       for (const kind of kinds) {
         const items: CatalogItem[] = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
@@ -478,25 +479,47 @@ export async function runBulkRefresh(
   bulkCancel = false;
   setBulk({ running: true, kind, done: 0, total: names.length, failed: 0 });
   const BATCH = 40;
-  const PARALLEL = 3;
+  // On a Fire Stick one request at a time, and results are merged into the
+  // big details list only every few batches: copying ~14,000 titles after
+  // every batch starved the page of memory and froze the remote.
+  const onDevice = typeof window.StreamDeckNative?.play === "function";
+  const PARALLEL = onDevice ? 1 : 3;
+  const MERGE_EVERY_MS = onDevice ? 20_000 : 5_000;
+  let pendingResults: Record<string, TitleMetadata> = {};
+  let lastMerge = Date.now();
+  const flush = () => {
+    if (!Object.keys(pendingResults).length) return;
+    const result = pendingResults;
+    pendingResults = {};
+    lastMerge = Date.now();
+    const started = performance.now();
+    client.setQueriesData<Record<string, unknown>>({ queryKey: ["cached-title-metadata", playlistId, kind] }, (old) => Object.assign({}, old ?? {}, result));
+    const took = performance.now() - started;
+    if (took > 300) debugLog("perf", `Details update merge took ${Math.round(took)} ms`);
+  };
   let cursor = 0;
   const worker = async () => {
     while (!bulkCancel && cursor < names.length) {
+      // Step aside while something plays, just after it stops, and while the remote is in use.
+      if (backgroundBusy()) { flush(); await waitForIdle(() => bulkCancel); if (bulkCancel) break; }
       const batch = names.slice(cursor, cursor + BATCH);
       cursor += BATCH;
       try {
         const result = await refresh({ data: { kind, names: batch } });
-        client.setQueriesData<Record<string, unknown>>({ queryKey: ["cached-title-metadata", playlistId, kind] }, (old) => ({ ...(old ?? {}), ...result }));
+        Object.assign(pendingResults, result);
+        if (Date.now() - lastMerge > MERGE_EVERY_MS) flush();
         setBulk({ done: bulkState.done + batch.length });
       } catch {
         setBulk({ done: bulkState.done + batch.length, failed: bulkState.failed + batch.length });
         await new Promise((resolve) => setTimeout(resolve, 3000));
       }
+      await yieldToPage();
     }
   };
   try {
     await Promise.all(Array.from({ length: PARALLEL }, worker));
   } finally {
+    flush();
     setBulk({ running: false });
     void wakeLock?.release().catch(() => {});
   }
