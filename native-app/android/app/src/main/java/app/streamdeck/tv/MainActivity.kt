@@ -126,7 +126,8 @@ class MainActivity : Activity() {
         // The page crashed or ran out of memory: start it again instead of
         // leaving a dead screen (or letting Android close the app).
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-            NativeLog.add("Page process ended (crashed=${detail.didCrash()}, priority=${detail.rendererPriorityAtExit()}, playerOpen=${PlayerActivity.isOpen}), rebuilding")
+            val why = if (android.os.Build.VERSION.SDK_INT >= 26) "crashed=${detail.didCrash()}, priority=${detail.rendererPriorityAtExit()}" else "unknown"
+            NativeLog.add("Page process ended ($why, playerOpen=${PlayerActivity.isOpen}), rebuilding")
             runOnUiThread { rebuildWebView() }
             return true
         }
