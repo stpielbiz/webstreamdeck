@@ -3,9 +3,10 @@ import { CircleDot, Clapperboard, Download, Home, Layers, ListVideo, Loader2, Mo
 import { useIsAdmin } from "@/lib/use-admin";
 import { useEffect, useRef, useState, type FocusEvent } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useSavedFranchises } from "@/lib/saved-franchises";
 import { useAccountAccess } from "@/lib/account-access";
+import { cn } from "@/lib/utils";
 
 export type BrowseLayer = "sections" | "categories" | "content";
 
@@ -67,11 +68,7 @@ export function SectionMenu({
     const label = item?.dataset['sectionLabel'];
     if (label) onFocusItem?.(label);
   };
-  // On the home screen itself the Home entry points at the screen you're already
-  // on, so it's a dead link — drop it there and lead with Live TV.
-  const items = [...SECTIONS, ...(savedFranchises.data?.length ? [{ to: "/franchises" as const, tvTo: "/tv/franchises" as const, label: "Franchise", icon: Layers }] : [])].filter(
-    (item) => item.label !== "Home" || current !== "Home",
-  );
+  const items = [...SECTIONS, ...(savedFranchises.data?.length ? [{ to: "/franchises" as const, tvTo: "/tv/franchises" as const, label: "Franchise", icon: Layers }] : [])];
   return (
     <>
       <section
@@ -88,6 +85,25 @@ export function SectionMenu({
         {items.map(({ to, tvTo, label, icon: Icon }) => {
           const destination = tv ? tvTo : to;
           const disabled = expired && label !== "Home";
+          // On the home screen the Home entry is the screen you're already on.
+          // It stays visible as the current place, but nothing can select it.
+          if (label === "Home" && current === "Home") {
+            return (
+              <div
+                key={label}
+                aria-current="page"
+                aria-disabled="true"
+                tabIndex={-1}
+                className={cn(
+                  buttonVariants({ variant: focused === label || (!focused && current === label) ? "default" : "ghost" }),
+                  "pointer-events-none cursor-default select-none",
+                  compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg",
+                )}
+              >
+                <Icon className="size-5 shrink-0" /> {label}
+              </div>
+            );
+          }
           return (
             <Button key={label} asChild={!disabled} disabled={disabled} variant={focused === label || (!focused && current === label) ? "default" : "ghost"} className={compact ? "h-11 justify-start px-3 text-base" : "h-14 justify-start px-4 text-lg"}>
             {disabled ? <span aria-disabled="true"><Icon className="size-5 shrink-0" /> {label}</span> : <Link to={destination} preload={tv ? false : "intent"} onClick={() => setOpening(label)} data-tv-focus data-section-label={label} data-focus-key={`section-${label}`}>
