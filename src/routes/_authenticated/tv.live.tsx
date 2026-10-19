@@ -24,6 +24,7 @@ import { MultiView } from "@/components/multi-view";
 import { ChannelActionMenu, type ProgrammeInfo } from "@/components/channel-action-menu";
 import { FAVOURITES_CATEGORY, RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 import { toast } from "sonner";
+import { debugLog, describeElement } from "@/lib/debug-log";
 
 const GUIDE_HOURS = 12;
 const GUIDE_WIDTH = 2880;
