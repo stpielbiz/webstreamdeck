@@ -83,6 +83,40 @@ function persistNow() {
   try { window.localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries)); } catch { /* storage full */ }
 }
 
+/**
+ * Step-by-step trail of what the page is doing. In the TV app each step goes
+ * straight into the app's own log, so the last step before a freeze survives
+ * even when the page never gets to save anything again.
+ */
+let lastStep = "page start";
+let lastStepAt = Date.now();
+export function trace(step: string, detail?: unknown) {
+  if (!enabled || typeof window === "undefined") return;
+  lastStep = step;
+  lastStepAt = Date.now();
+  const native = window.StreamDeckNative?.trace;
+  if (native) {
+    let text = step;
+    if (detail !== undefined) {
+      try { text += ` ${typeof detail === "string" ? detail : JSON.stringify(detail)}`; } catch { /* unserialisable */ }
+    }
+    try { native(text.slice(0, 300)); return; } catch { /* old app: fall back */ }
+  }
+  debugLog("trace", step, detail);
+}
+
+/** Times a synchronous piece of work as two trail steps (start + how long it took). */
+export function traced<T>(label: string, work: () => T): T {
+  if (!enabled) return work();
+  trace(`${label}: start`);
+  const started = performance.now();
+  try {
+    return work();
+  } finally {
+    trace(`${label}: done in ${Math.round(performance.now() - started)} ms`);
+  }
+}
+
 /** The TV app's own event log (lifecycle, recoveries, key delivery), merged into uploads. */
 function nativeEntries(): DebugEntry[] {
   try {
