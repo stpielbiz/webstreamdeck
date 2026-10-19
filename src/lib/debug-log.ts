@@ -83,6 +83,40 @@ function persistNow() {
   try { window.localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries)); } catch { /* storage full */ }
 }
 
+/**
+ * Step-by-step trail of what the page is doing. In the TV app each step goes
+ * straight into the app's own log, so the last step before a freeze survives
+ * even when the page never gets to save anything again.
+ */
+let lastStep = "page start";
+let lastStepAt = Date.now();
+export function trace(step: string, detail?: unknown) {
+  if (!enabled || typeof window === "undefined") return;
+  lastStep = step;
+  lastStepAt = Date.now();
+  const native = window.StreamDeckNative?.trace;
+  if (native) {
+    let text = step;
+    if (detail !== undefined) {
+      try { text += ` ${typeof detail === "string" ? detail : JSON.stringify(detail)}`; } catch { /* unserialisable */ }
+    }
+    try { native(text.slice(0, 300)); return; } catch { /* old app: fall back */ }
+  }
+  debugLog("trace", step, detail);
+}
+
+/** Times a synchronous piece of work as two trail steps (start + how long it took). */
+export function traced<T>(label: string, work: () => T): T {
+  if (!enabled) return work();
+  trace(`${label}: start`);
+  const started = performance.now();
+  try {
+    return work();
+  } finally {
+    trace(`${label}: done in ${Math.round(performance.now() - started)} ms`);
+  }
+}
+
 /** The TV app's own event log (lifecycle, recoveries, key delivery), merged into uploads. */
 function nativeEntries(): DebugEntry[] {
   try {
@@ -192,13 +226,30 @@ function startAutoUpload() {
       nativeOverlay: !!document.querySelector("[data-native-overlay]"),
     });
   }, true);
-  // A page that stops responding shows up as a long gap between ticks.
+  // A page that stops responding shows up as a long gap between ticks. The TV
+  // app also gets a heartbeat with the last step, so it can say where it stopped.
   let last = Date.now();
   window.setInterval(() => {
     const now = Date.now();
-    if (now - last > 3000 && document.visibilityState === "visible") debugLog("page", `Page was unresponsive for ${now - last} ms`);
+    const gap = now - last;
+    if (gap > 3000) {
+      const where = `(last step: ${lastStep}, ${Math.round((now - lastStepAt) / 1000)} s ago)`;
+      if (document.visibilityState === "visible") trace(`Page was unresponsive for ${gap} ms ${where}`);
+      else if (gap > 10_000) trace(`Page timers paused ${gap} ms while hidden ${where}`);
+      if (document.visibilityState === "visible") debugLog("page", `Page was unresponsive for ${gap} ms`, where);
+    }
     last = now;
+    try { window.StreamDeckNative?.beat?.(lastStep.slice(0, 200)); } catch { /* old app */ }
   }, 1000);
+  // Work that blocked the page for a long time, reported once it finishes.
+  try {
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.duration < 700) continue;
+        trace(`Long task ${Math.round(entry.duration)} ms`, { after: lastStep });
+      }
+    }).observe({ type: "longtask", buffered: false });
+  } catch { /* not supported */ }
   // Memory use, to tell a running-out-of-memory freeze from a stuck script.
   window.setInterval(() => {
     const memory = (performance as Performance & { memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number } }).memory;

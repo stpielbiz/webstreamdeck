@@ -1,4 +1,4 @@
-import { debugLog, redactUrl } from "@/lib/debug-log";
+import { debugLog, redactUrl, trace } from "@/lib/debug-log";
 import { markPlayerOpen } from "@/lib/background-gate";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -170,18 +170,22 @@ export function VideoPlayer({
     let closed = false;
     const close = (reason = "app reported close") => {
       debugLog("native", `Player closed (${reason})`, { alreadyClosed: closed, hasStop: !!stopRef.current });
+      trace(`Player close: ${reason}`, { alreadyClosed: closed });
       if (closed) return;
       closed = true;
       markPlayerOpen(false);
       setNativeActive(false);
+      trace("Player close: handing back to the screen");
       if (stopRef.current) stopRef.current();
       else window.dispatchEvent(new CustomEvent("streamdeck-back", { cancelable: true }));
+      trace("Player close: screen told");
     };
-    window.__streamDeckClosed = () => close();
+    window.__streamDeckClosed = () => { trace("Player close: message from app received"); close(); };
     // Backup: the app can report the close late, leaving our layer over the page.
     const openedAt = Date.now();
     let wasHidden = false;
     const checkReturn = () => {
+      trace("Player: app came back to front", { closed });
       const isOpen = window.StreamDeckNative?.isPlayerOpen;
       debugLog("native", "App resumed", { sinceOpenMs: Date.now() - openedAt, closed, playerOpen: isOpen ? isOpen() : "unknown" });
       if (Date.now() - openedAt < 1500) return;
@@ -194,7 +198,9 @@ export function VideoPlayer({
       else checkReturn();
     };
     document.addEventListener("visibilitychange", onVisibility);
+    trace("Player: opening TV app player", { live });
     const started = startNative();
+    trace(`Player: TV app player ${started ? "opened" : "not opened"}`);
     nativeStartedAt.current = Date.now();
     setNativeActive(started);
     markPlayerOpen(started);

@@ -16,6 +16,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { DebugPanel } from "@/components/debug-panel";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebUpdateWatcher } from "@/lib/web-update";
+import { installTrace } from "@/lib/trace-installer";
+import { trace } from "@/lib/debug-log";
 
 function NotFoundComponent() {
   return (
@@ -134,6 +136,8 @@ function RootComponent() {
   const router = useRouter();
   useWebUpdateWatcher();
 
+  useEffect(() => installTrace(queryClient, router), [queryClient, router]);
+
   useEffect(() => {
     // The auth client re-announces SIGNED_IN every time the page becomes visible
     // again (e.g. returning from the Fire TV player). Reloading everything then
@@ -149,6 +153,7 @@ function RootComponent() {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       const changed = nextUser !== currentUser;
       currentUser = nextUser;
+      trace(`Sign-in event ${event}`, changed ? "account changed: reloading data" : "same account: ignored");
       if (!changed) return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();

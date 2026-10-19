@@ -27,6 +27,10 @@ interface StreamDeckNativeBridge {
   isPlayerOpen?: () => boolean;
   /** Newer apps: the app's own event log (JSON array of {at, message}), kept across restarts. */
   nativeLog?: () => string;
+  /** Newer apps: write a page step straight into the app's log (survives a frozen page). */
+  trace?: (message: string) => void;
+  /** Newer apps: page heartbeat with the last step it reached. */
+  beat?: (step: string) => void;
 }
 
 declare global {

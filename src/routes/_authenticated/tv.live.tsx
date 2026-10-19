@@ -24,7 +24,7 @@ import { MultiView } from "@/components/multi-view";
 import { ChannelActionMenu, type ProgrammeInfo } from "@/components/channel-action-menu";
 import { FAVOURITES_CATEGORY, RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 import { toast } from "sonner";
-import { debugLog, describeElement } from "@/lib/debug-log";
+import { debugLog, describeElement, trace } from "@/lib/debug-log";
 
 const GUIDE_HOURS = 12;
 const GUIDE_WIDTH = 2880;
@@ -426,8 +426,10 @@ function TvLive() {
       }
       if (!row && tries > 0) { attempt(tries - 1); return; }
       row ??= document.querySelector<HTMLElement>('[data-focus-key^="category-"], [data-tv-focus]');
+      trace("Guide: restoring selection", { tries, found: !!row });
       row?.focus({ preventScroll: true });
       row?.scrollIntoView({ block: "center" });
+      trace("Guide: selection restored", describeElement(document.activeElement));
       debugLog("guide", "Selection restored", { target: describeElement(row), active: describeElement(document.activeElement), dialogs: document.querySelectorAll('[role="dialog"]').length });
     });
     attempt(3);
@@ -467,6 +469,7 @@ function TvLive() {
 
   const playChannel = (item: CatalogItem) => {
     debugLog("guide", "Starting channel full screen", { channel: item.id });
+    trace("Guide: starting channel", { channel: item.id });
     setFocusedId(item.id);
     lastChannel.current = item.id;
     touchRecent(activeId, item);
@@ -512,8 +515,10 @@ function TvLive() {
 
   const exitFullscreen = () => {
     debugLog("guide", "Leaving full screen", { channel: lastChannel.current });
+    trace("Guide: leaving full screen");
     setFullscreen(false);
     restoreChannelFocus();
+    trace("Guide: full screen closed, restoring selection");
   };
 
 
@@ -530,6 +535,7 @@ function TvLive() {
     // Order straight from the Recent rows so channels from other categories
     // keep their true position instead of dropping out of the list.
     const candidates = recent.rows.filter((row) => row.itemId !== selected.id).slice(0, 9);
+    trace("Guide: preparing recent channels for player", { count: candidates.length });
     void (async () => {
       const list: { itemId: string; title: string; url: string }[] = [];
       for (const row of candidates) {
@@ -543,6 +549,7 @@ function TvLive() {
       }
       setRecentList(list);
       if (hasNativePlayer()) sendRecentChannels(list);
+      trace("Guide: recent channels sent to player", { count: list.length });
     })();
     return () => {
       cancelled = true;

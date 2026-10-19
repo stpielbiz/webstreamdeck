@@ -11,7 +11,7 @@ import type { CatalogItem, Programme } from "@/lib/iptv-types";
 import type { TitleMetadata } from "@/lib/metadata.server";
 import { lookupKeyFor } from "@/lib/title-key";
 import { backgroundBusy, waitForIdle, yieldToPage } from "@/lib/background-gate";
-import { debugLog } from "@/lib/debug-log";
+import { debugLog, trace } from "@/lib/debug-log";
 
 export const GUIDE_TTL = 4 * 60 * 60_000;
 const LIBRARY_TTL = 12 * 60 * 60_000;
@@ -132,6 +132,7 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
         loaded: items !== undefined,
       };
       const took = performance.now() - started;
+      trace(`Library status (${kind}): done in ${Math.round(took)} ms`);
       if (took > 300) debugLog("perf", `Library status (${kind}) took ${Math.round(took)} ms`);
       return result;
     };
@@ -270,7 +271,9 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
       const flush = () => {
         if (!collected.length) return;
         const started = performance.now();
+        trace("Guide merge: start");
         mergeGuide(client, playlistId, collected);
+        trace(`Guide merge: done in ${Math.round(performance.now() - started)} ms`);
         collected = [];
         const took = performance.now() - started;
         if (took > 300) debugLog("perf", `Guide merge took ${Math.round(took)} ms`);
@@ -333,6 +336,7 @@ export function useTitleBackfill(playlistId: string | null) {
       // A manual details update already covers these titles; don't double the work.
       if (playing() || backgroundBusy() || bulkState.running) { timer = window.setTimeout(step, BACKFILL_PAUSE); return; }
       const stepStarted = performance.now();
+      trace("Details fill-in step: start");
       for (const kind of kinds) {
         const items: CatalogItem[] = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
         if (!items.length) continue;
@@ -408,6 +412,7 @@ export function useTitleBackfill(playlistId: string | null) {
         break;
       }
       const took = performance.now() - stepStarted;
+      trace(`Details fill-in step: done in ${Math.round(took)} ms`);
       if (took > 300) debugLog("perf", `Details fill-in step took ${Math.round(took)} ms (incl. network)`);
       timer = window.setTimeout(step, BACKFILL_PAUSE);
     };
@@ -493,7 +498,9 @@ export async function runBulkRefresh(
     pendingResults = {};
     lastMerge = Date.now();
     const started = performance.now();
+    trace(`Details update merge (${kind}): start`);
     client.setQueriesData<Record<string, unknown>>({ queryKey: ["cached-title-metadata", playlistId, kind] }, (old) => Object.assign({}, old ?? {}, result));
+    trace(`Details update merge (${kind}): done in ${Math.round(performance.now() - started)} ms`);
     const took = performance.now() - started;
     if (took > 300) debugLog("perf", `Details update merge took ${Math.round(took)} ms`);
   };
