@@ -17,6 +17,8 @@ export type ScheduledGame = {
   id: string;
   matchup: string;
   startsAt: string;
+  /** Away then home team logos, when known. */
+  logos?: string[];
   state: "pre" | "in" | "post";
   detail: string;
   endedAt: string | null;
