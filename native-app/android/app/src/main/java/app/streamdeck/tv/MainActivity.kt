@@ -4,6 +4,9 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.view.KeyEvent
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -22,6 +25,35 @@ class MainActivity : Activity() {
     private lateinit var appUpdater: AppUpdater
     private var lastPlayerClosedAt = 0L
     private var lastPlayRequestAt = 0L
+
+    // Watchdog: if the page stops answering (stuck script), reload the same
+    // screen so nobody has to force stop the app.
+    private val watchdog = Handler(Looper.getMainLooper())
+    private var isResumed = false
+    private var lastPong = 0L
+    private var lastRecovery = 0L
+    private val ping = object : Runnable {
+        override fun run() {
+            if (isResumed && ::webView.isInitialized && !PlayerActivity.isOpen) {
+                val now = SystemClock.elapsedRealtime()
+                if (now - lastPong > STUCK_MS && now - lastRecovery > RECOVERY_COOLDOWN_MS) {
+                    lastRecovery = now
+                    lastPong = now
+                    webView.reload()
+                } else {
+                    webView.evaluateJavascript("1") { lastPong = SystemClock.elapsedRealtime() }
+                }
+            } else {
+                lastPong = SystemClock.elapsedRealtime()
+            }
+            watchdog.postDelayed(this, 3_000)
+        }
+    }
+
+    companion object {
+        private const val STUCK_MS = 12_000L
+        private const val RECOVERY_COOLDOWN_MS = 120_000L
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,11 +132,17 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         super.onPause()
+        isResumed = false
+        watchdog.removeCallbacks(ping)
         pausedAt = android.os.SystemClock.elapsedRealtime()
     }
 
     override fun onResume() {
         super.onResume()
+        isResumed = true
+        lastPong = SystemClock.elapsedRealtime()
+        watchdog.removeCallbacks(ping)
+        watchdog.postDelayed(ping, 3_000)
         if (::appUpdater.isInitialized) appUpdater.onResume()
         if (::webView.isInitialized) {
             // Hand the remote back to the page: without Android focus the WebView gets no arrow/OK presses.
