@@ -1,13 +1,13 @@
 /** Browser-safe list of leagues for the Sports package and game lookups. */
-export const SPORTS_LEAGUES: { key: string; label: string; paths: string[] }[] = [
-  { key: "NHL", label: "NHL", paths: ["hockey/nhl"] },
-  { key: "NBA", label: "NBA", paths: ["basketball/nba"] },
-  { key: "NFL", label: "NFL", paths: ["football/nfl"] },
-  { key: "MLB", label: "MLB", paths: ["baseball/mlb"] },
-  { key: "MLS", label: "MLS", paths: ["soccer/usa.1"] },
-  { key: "EPL", label: "Premier League", paths: ["soccer/eng.1"] },
-  { key: "LALIGA", label: "LaLiga", paths: ["soccer/esp.1"] },
-  { key: "UCL", label: "Champions League", paths: ["soccer/uefa.champions"] },
+export const SPORTS_LEAGUES: { key: string; label: string; paths: string[]; logo?: string }[] = [
+  { key: "NHL", logo: "https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png", label: "NHL", paths: ["hockey/nhl"] },
+  { key: "NBA", logo: "https://a.espncdn.com/i/teamlogos/leagues/500/nba.png", label: "NBA", paths: ["basketball/nba"] },
+  { key: "NFL", logo: "https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png", label: "NFL", paths: ["football/nfl"] },
+  { key: "MLB", logo: "https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png", label: "MLB", paths: ["baseball/mlb"] },
+  { key: "MLS", logo: "https://a.espncdn.com/i/teamlogos/leagues/500/mls.png", label: "MLS", paths: ["soccer/usa.1"] },
+  { key: "EPL", logo: "https://a.espncdn.com/i/leaguelogos/soccer/500/23.png", label: "Premier League", paths: ["soccer/eng.1"] },
+  { key: "LALIGA", logo: "https://a.espncdn.com/i/leaguelogos/soccer/500/15.png", label: "LaLiga", paths: ["soccer/esp.1"] },
+  { key: "UCL", logo: "https://a.espncdn.com/i/leaguelogos/soccer/500/2.png", label: "Champions League", paths: ["soccer/uefa.champions"] },
   { key: "RUGBY", label: "Rugby", paths: ["rugby/164205", "rugby/244293", "rugby/289234", "rugby/180659", "rugby/270557", "rugby/267979", "rugby/242041"] },
 ];
 
