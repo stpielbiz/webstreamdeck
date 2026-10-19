@@ -29,32 +29,77 @@ class MainActivity : Activity() {
     private var lastPlayerClosedAt = 0L
     private var lastPlayRequestAt = 0L
 
-    // Watchdog: if the page stops answering (stuck script), reload the same
-    // screen so nobody has to force stop the app.
+    // Watchdog: if the page stops answering (stuck script or memory thrash),
+    // reload it; if a reload doesn't bring it back, restart the app — nobody
+    // should have to force stop it.
     private val watchdog = Handler(Looper.getMainLooper())
     private var isResumed = false
     private var lastPong = 0L
     private var lastRecovery = 0L
+    private var pingInFlight = false
+    private var slowPongs = 0
+    private var reloadedAt = 0L
     private val ping = object : Runnable {
         override fun run() {
-            if (isResumed && ::webView.isInitialized && !PlayerActivity.isOpen) {
+            if (isResumed && ::webView.isInitialized && !PlayerActivity.isOpen && !MultiViewActivity.isOpen) {
                 val now = SystemClock.elapsedRealtime()
-                if (now - lastPong > STUCK_MS && now - lastRecovery > RECOVERY_COOLDOWN_MS) {
+                val stuck = now - lastPong > STUCK_MS || slowPongs >= SLOW_PONGS_LIMIT
+                if (stuck && reloadedAt > 0 && now - reloadedAt > STUCK_MS) {
+                    // The reload didn't help: the page's process itself is stuck.
+                    restartApp()
+                    return
+                } else if (stuck && now - lastRecovery > RECOVERY_COOLDOWN_MS) {
                     lastRecovery = now
+                    reloadedAt = now
                     lastPong = now
+                    slowPongs = 0
+                    pingInFlight = false
                     webView.reload()
-                } else {
-                    webView.evaluateJavascript("1") { lastPong = SystemClock.elapsedRealtime() }
+                } else if (!pingInFlight) {
+                    pingInFlight = true
+                    val sentAt = now
+                    webView.evaluateJavascript("1") {
+                        pingInFlight = false
+                        val answered = SystemClock.elapsedRealtime()
+                        lastPong = answered
+                        slowPongs = if (answered - sentAt > SLOW_PONG_MS) slowPongs + 1 else 0
+                        if (slowPongs == 0) reloadedAt = 0L
+                    }
                 }
             } else {
                 lastPong = SystemClock.elapsedRealtime()
+                slowPongs = 0
             }
             watchdog.postDelayed(this, 3_000)
         }
     }
 
+    /** Relaunch the app in a fresh process (the page's stuck process goes with it). */
+    private fun restartApp() {
+        if (RecordingManager.isRunning()) {
+            // Killing the process would stop a recording: rebuild the page instead.
+            reloadedAt = 0L
+            lastPong = SystemClock.elapsedRealtime()
+            rebuildWebView()
+            watchdog.postDelayed(ping, 3_000)
+            return
+        }
+        val intent = Intent(this, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        val pending = android.app.PendingIntent.getActivity(
+            this, 4242, intent,
+            android.app.PendingIntent.FLAG_CANCEL_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
+        )
+        val alarms = getSystemService(ALARM_SERVICE) as android.app.AlarmManager
+        alarms.set(android.app.AlarmManager.RTC, System.currentTimeMillis() + 800, pending)
+        finishAffinity()
+        android.os.Process.killProcess(android.os.Process.myPid())
+    }
+
     companion object {
         private const val STUCK_MS = 12_000L
+        private const val SLOW_PONG_MS = 4_000L
+        private const val SLOW_PONGS_LIMIT = 4
         private const val RECOVERY_COOLDOWN_MS = 120_000L
         private const val BODY_PATH = "/__native-body/"
         private const val BODY_MAX_AGE_MS = 180_000L
