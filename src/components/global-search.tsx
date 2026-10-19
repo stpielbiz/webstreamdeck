@@ -50,7 +50,14 @@ export function GlobalSearch() {
     staleTime: 30 * 60_000,
     gcTime: 60 * 60_000,
   });
-  const live = useQuery(opts("live", "global-search-live"));
+  // Same saved list Live TV and the library sync use — one copy of every channel, not two.
+  const live = useQuery({
+    queryKey: ["tv-live-items", activeId, ""],
+    queryFn: () => fetchItems({ data: { playlistId: activeId ?? "", kind: "live" } }),
+    enabled,
+    staleTime: Infinity,
+    gcTime: 60 * 60_000,
+  });
   const movies = useQuery(opts("movie", "system-catalogue"));
   const shows = useQuery(opts("series", "system-catalogue"));
   const client = useQueryClient();

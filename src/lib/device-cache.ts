@@ -20,7 +20,6 @@ const PERSISTED = new Set([
   "cached-title-metadata",
   "categories",
   "items",
-  "global-search-live",
   "global-search-movie",
   "global-search-series",
   "device-guide",
@@ -28,6 +27,10 @@ const PERSISTED = new Set([
 
 /** Large values: saving them is expensive, so it is batched and deferred. */
 const HEAVY = new Set(["system-catalogue", "cached-title-metadata", "device-guide", "global-search-movie", "global-search-series"]);
+/** The full channel list (no category) is as big as a catalogue. */
+function isHeavy(queryKey: QueryKey) {
+  return HEAVY.has(String(queryKey[0])) || (queryKey[0] === "tv-live-items" && queryKey[2] === "");
+}
 
 interface Entry { key: string; queryKey: QueryKey; data: unknown; at: number; v?: number }
 
@@ -54,13 +57,28 @@ function openDb(): Promise<IDBDatabase | null> {
   return dbPromise;
 }
 
-async function readAll(): Promise<Entry[]> {
+/**
+ * Reads saved entries one at a time (a cursor), so unpacking a big list is
+ * its own task and remote presses get handled in between — getAll() unpacked
+ * everything in one go and froze a Fire Stick for seconds at launch.
+ */
+async function readAll(skip?: (key: string) => boolean): Promise<Entry[]> {
   const db = await openDb();
   if (!db) return [];
   return new Promise((resolve) => {
-    const request = db.transaction(STORE, "readonly").objectStore(STORE).getAll();
-    request.onsuccess = () => resolve((request.result as Entry[]) ?? []);
-    request.onerror = () => resolve([]);
+    const out: Entry[] = [];
+    try {
+      const request = db.transaction(STORE, "readonly").objectStore(STORE).openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) { resolve(out); return; }
+        if (!skip?.(String(cursor.key))) out.push(cursor.value as Entry);
+        cursor.continue();
+      };
+      request.onerror = () => resolve(out);
+    } catch {
+      resolve(out);
+    }
   });
 }
 
@@ -82,11 +100,31 @@ function shouldPersist(queryKey: QueryKey) {
   return typeof queryKey[0] === "string" && PERSISTED.has(queryKey[0]);
 }
 
+async function deleteKeys(keys: string[]) {
+  const db = await openDb();
+  if (!db) return;
+  try {
+    const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+    for (const key of keys) store.delete(key);
+  } catch {
+    /* ignore */
+  }
+}
+
 let hydrated: Promise<void> | null = null;
 /** Load saved data into the query cache, then keep saving successful results. */
 export function hydrateDeviceCache(client: QueryClient): Promise<void> {
   hydrated ??= (async () => {
-    const entries = await readAll();
+    // Lists no longer saved (e.g. the old duplicate copy of all channels) are skipped and removed.
+    const obsolete: string[] = [];
+    const entries = await readAll((key) => {
+      let prefix: unknown;
+      try { prefix = (JSON.parse(key) as unknown[])[0]; } catch { prefix = null; }
+      const drop = typeof prefix !== "string" || !PERSISTED.has(prefix);
+      if (drop) obsolete.push(key);
+      return drop;
+    });
+    if (obsolete.length) void deleteKeys(obsolete);
     const now = Date.now();
     for (const entry of entries) {
       // Title details links never expire; only the playlist lists age out.
@@ -102,7 +140,7 @@ export function hydrateDeviceCache(client: QueryClient): Promise<void> {
     const pending = new Map<string, number>();
     const schedule = (query: { queryKey: QueryKey; state: { data: unknown; dataUpdatedAt: number } }, delay: number) => {
       const id = JSON.stringify(query.queryKey);
-      if (pending.has(id) && HEAVY.has(String(query.queryKey[0]))) return; // already queued; latest data is read at save time
+      if (pending.has(id) && isHeavy(query.queryKey)) return; // already queued; latest data is read at save time
       const timer = pending.get(id);
       if (timer) window.clearTimeout(timer);
       pending.set(id, window.setTimeout(() => {
@@ -115,7 +153,7 @@ export function hydrateDeviceCache(client: QueryClient): Promise<void> {
       if (event.type !== "updated" || event.action.type !== "success") return;
       const query = event.query;
       if (!shouldPersist(query.queryKey)) return;
-      schedule(query, HEAVY.has(String(query.queryKey[0])) ? 60_000 : 500);
+      schedule(query, isHeavy(query.queryKey) ? 60_000 : 500);
     });
   })().catch(() => undefined);
   return hydrated;

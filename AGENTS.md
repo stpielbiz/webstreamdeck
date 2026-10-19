@@ -20,7 +20,7 @@
 - Navigation preserves device mode: TV routes and TV-opened shared screens return to `/tv`, while regular browser screens return to `/dashboard` — keeps remote users out of the desktop shell.
 - Live TV is the single guide destination and uses a persistent category rail with a horizontally navigable programme timeline — no duplicate Guide.
 - Native Back is consumed once on key release and routed to the site's layer-aware handler; player close and completion have separate callbacks — no skipped layers.
-- Library data is persisted on-device in IndexedDB (device-cache.ts), refreshed by useLibrarySync; heavy saves/sync/backfill wait on `background-gate.ts` (player, remote idle) and yield in slices — Fire Stick main-thread stalls froze the remote.
+- Library data is persisted on-device in IndexedDB (device-cache.ts), refreshed by useLibrarySync (the only refresher of the full channel list, shared by Live TV and search); heavy saves/sync/backfill wait on `background-gate.ts` (player, remote idle) and yield in slices — Fire Stick main-thread stalls froze the remote.
 - Movies and Shows use shared route and catalogue loading placeholders only when saved data is unavailable — cold fetches get feedback without hiding cache.
 - TV section links show an immediate opening overlay until navigation unmounts the menu — remote clicks get feedback without depending on router pending-state timing.
 - Title details (genres, artwork, cast) are backfilled slowly in the background by `useTitleBackfill` into the shared `title_metadata` store — every user contributes, each title is resolved once, and browsing never waits on it.
@@ -32,7 +32,7 @@
 - All search inputs use the shared SearchField with local draft state and confirmation on Enter, blur or keyboard dismissal; native Back is consumed before page navigation — no per-letter requests.
 - Fire TV display density is an account setting applied through the shared TV shell and root sizing selectors, never browser zoom — stable focus geometry.
 - Account expiry is stored separately from roles; expired accounts retain only Home, Settings, and sign-out access.
-- Provider calls use `device-provider.ts` hooks: Fire TV runs `iptv-provider.ts` on-device via `StreamDeckNative.fetchText`, else server — providers often blank our servers.
+- Provider calls use `device-provider.ts` hooks: Fire TV runs `iptv-provider.ts` on-device via `fetchToUrl` (body served at `/__native-body/<id>`; `fetchText` fallback), else server — providers blank our servers; giant script strings froze the page.
 - Multi-view: one player per screen; Recents capped at 10/playlist.
 - Recordings are device-only: native `RecordingManager` (foreground service + alarms) saves .ts files and its index on the Fire TV; web reads them via bridge — browsers can't record in background.
 - Player recents bar: `StreamDeckNative.setRecentChannels` feeds it; Down toggles, OK switches (reports `__streamDeckChannelSwitched`). Live-only: VOD keeps Down for seeking.

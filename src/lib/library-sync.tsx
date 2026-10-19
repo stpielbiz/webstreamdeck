@@ -213,12 +213,18 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
       if (!force && !stale(key, LIBRARY_TTL)) return client.getQueryData<T>(key);
       const old = client.getQueryData<T>(key);
       try {
-        const data = await fn();
-        // Keep the saved copy if the provider returns nothing (outage/hiccup).
-        if (!force && Array.isArray(old) && old.length > 0 && Array.isArray(data) && data.length === 0) return old;
-        // Structural sharing keeps unchanged entries; only differences are applied.
-        client.setQueryData(key, data);
-        return client.getQueryData<T>(key);
+        // fetchQuery joins a download already running for the same list (e.g.
+        // a screen opening it) instead of starting a second huge one.
+        return await client.fetchQuery<T>({
+          queryKey: key,
+          queryFn: async () => {
+            const data = await fn();
+            // Keep the saved copy if the provider returns nothing (outage/hiccup).
+            if (!force && Array.isArray(old) && old.length > 0 && Array.isArray(data) && data.length === 0) return old as T;
+            return data;
+          },
+          staleTime: 0,
+        });
       } catch {
         return old;
       }
@@ -237,7 +243,6 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
       if (first) setStatus({ running: true, done: 0, total: 0 });
       await refresh(["tv-live-categories", playlistId], () => fetchCategories({ data: { playlistId, kind: "live" } }));
       const channels = await refresh<CatalogItem[]>(["tv-live-items", playlistId, ""], () => fetchItems({ data: { playlistId, kind: "live" } }));
-      if (channels) client.setQueryData(["global-search-live", playlistId, "live"], channels);
       if (cancelled) return;
       phase("Movies");
       await refresh(["system-catalogue", playlistId, "movie"], () => fetchItems({ data: { playlistId, kind: "movie" } }));

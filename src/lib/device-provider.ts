@@ -26,7 +26,7 @@ export function hasDeviceFetch(): boolean {
   return typeof window !== "undefined" && typeof window.StreamDeckNative?.fetchText === "function";
 }
 
-const pending = new Map<string, (status: number, body: string) => void>();
+const pending = new Map<string, (status: number, body: BodyInit | null) => void>();
 let counter = 0;
 let installed = false;
 
@@ -37,6 +37,17 @@ function install() {
     const done = pending.get(id);
     pending.delete(id);
     done?.(status, body);
+  };
+  // Newer apps hand big bodies over as a same-origin download instead of a
+  // giant script string, which used to stall (and run out of memory on) the page.
+  window.__streamDeckFetchReady = (id, status) => {
+    const done = pending.get(id);
+    pending.delete(id);
+    if (!done) return;
+    if (status <= 0) { done(status, null); return; }
+    fetch(`/__native-body/${encodeURIComponent(id)}`)
+      .then((response) => done(status, response.body))
+      .catch(() => done(0, null));
   };
   provider.setDeviceFetcher(
     (url, userAgent) =>
@@ -59,7 +70,9 @@ function install() {
             if (status <= 0) reject(new Error("unreachable"));
             else resolve(new Response(body, { status }));
           });
-          window.StreamDeckNative!.fetchText!(id, url, userAgent);
+          const bridge = window.StreamDeckNative!;
+          if (typeof bridge.fetchToUrl === "function") bridge.fetchToUrl(id, url, userAgent);
+          else bridge.fetchText!(id, url, userAgent);
         });
       }),
   );

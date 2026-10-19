@@ -19,6 +19,8 @@ interface StreamDeckNativeBridge {
   checkForUpdates?: () => void;
   /** Fetch a URL over the device's own connection; answers via __streamDeckFetchDone. */
   fetchText?: (requestId: string, url: string, userAgent: string) => void;
+  /** Newer apps: same fetch, but the body is read from /__native-body/<id> (announced via __streamDeckFetchReady). */
+  fetchToUrl?: (requestId: string, url: string, userAgent: string) => void;
   /** Hands the player's bottom bar the recent channels: JSON array of {title, url}. */
   setRecentChannels?: (json: string) => void;
   /** True while the native full-screen player is showing. */
@@ -34,6 +36,7 @@ declare global {
     /** The TV app came back to the front (e.g. after its player closed). */
     __streamDeckResumed?: (() => void) | undefined;
     __streamDeckFetchDone?: ((requestId: string, status: number, body: string) => void) | undefined;
+    __streamDeckFetchReady?: ((requestId: string, status: number) => void) | undefined;
     /** The native player's bottom bar switched channel; carries the channel title. */
     __streamDeckChannelSwitched?: ((title: string) => void) | undefined;
   }
