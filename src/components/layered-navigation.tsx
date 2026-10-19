@@ -67,6 +67,11 @@ export function SectionMenu({
     const label = item?.dataset['sectionLabel'];
     if (label) onFocusItem?.(label);
   };
+  // On the home screen itself the Home entry points at the screen you're already
+  // on, so it's a dead link — drop it there and lead with Live TV.
+  const items = [...SECTIONS, ...(savedFranchises.data?.length ? [{ to: "/franchises" as const, tvTo: "/tv/franchises" as const, label: "Franchise", icon: Layers }] : [])].filter(
+    (item) => item.label !== "Home" || current !== "Home",
+  );
   return (
     <>
       <section
@@ -80,7 +85,7 @@ export function SectionMenu({
     >
       <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Browse</p>
       <div className="flex flex-col gap-1">
-        {[...SECTIONS, ...(savedFranchises.data?.length ? [{ to: "/franchises" as const, tvTo: "/tv/franchises" as const, label: "Franchise", icon: Layers }] : [])].map(({ to, tvTo, label, icon: Icon }) => {
+        {items.map(({ to, tvTo, label, icon: Icon }) => {
           const destination = tv ? tvTo : to;
           const disabled = expired && label !== "Home";
           return (
