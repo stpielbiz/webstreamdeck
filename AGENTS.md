@@ -13,7 +13,7 @@
 - Movies/Shows: persistent 20/80 category/content browsing, zone-bound focus — deterministic remote nav.
 - Selecting a Movie or Show opens a compact modal with details and preview playback; remote Back closes it before leaving the section.
 - Device pairing uses the public `/device-login` entry screen and returns there after authentication; legacy Firestick and TV-specific links redirect to it. Signed-out Fire TV goes to `/tv/pair` via `signedOutPath()`.
-- The root auth listener reloads data only when the signed-in account changes — the auth client re-fires SIGNED_IN on every return to visibility, and reloading everything froze the Fire Stick after the player closed.
+- Root auth listener reloads data only when the account changes — SIGNED_IN re-fires on visibility; full reloads froze Fire Stick.
 - The TV home uses a persistent menu/details workspace: focus previews a section, OK opens it, and content rows remain independently remote-navigable.
 - Remote focus uses a shared inset :focus indicator and action-only targets; rows navigate by order, dialogs isolate focus — reliable selection. A control drawing its own focus look opts out with `data-focus-glow`.
 - Continue watching uses horizontal shelves; Home and Favourites share compact three-column channel/movie/show lists with action-only row focus and shared title dialogs.
