@@ -165,16 +165,40 @@ export function VideoPlayer({
       if (!live) progressRef.current?.(position, Number.isFinite(duration) && duration > 0 ? duration : null);
     };
     window.__streamDeckEnded = () => endedRef.current?.();
-    window.__streamDeckClosed = () => {
+    let closed = false;
+    const close = () => {
+      if (closed) return;
+      closed = true;
       setNativeActive(false);
       if (stopRef.current) stopRef.current();
       else window.dispatchEvent(new CustomEvent("streamdeck-back", { cancelable: true }));
     };
-    setNativeActive(startNative());
+    window.__streamDeckClosed = close;
+    // Backup: the app can report the close late, leaving our layer over the page.
+    const openedAt = Date.now();
+    let wasHidden = false;
+    const checkReturn = () => {
+      if (Date.now() - openedAt < 1500) return;
+      const isOpen = window.StreamDeckNative?.isPlayerOpen;
+      if (isOpen) { if (!isOpen()) close(); return; }
+      if (wasHidden) window.setTimeout(close, 300);
+    };
+    window.__streamDeckResumed = checkReturn;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") wasHidden = true;
+      else checkReturn();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    const started = startNative();
+    setNativeActive(started);
+    if (!started) closed = true;
     return () => {
+      closed = true;
+      document.removeEventListener("visibilitychange", onVisibility);
       window.__streamDeckProgress = undefined;
       window.__streamDeckEnded = undefined;
       window.__streamDeckClosed = undefined;
+      window.__streamDeckResumed = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, fallbackSrc, live, allowNative]);
