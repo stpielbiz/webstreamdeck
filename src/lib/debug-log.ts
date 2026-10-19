@@ -144,8 +144,13 @@ export function formatDebugLog(): string {
  */
 let uploading = false;
 let uploadStarted = false;
+let lastNativeAt = "";
 async function uploadSnapshot() {
-  if (!enabled || !dirty || uploading || entries.length === 0) return;
+  if (!enabled || uploading) return;
+  const native = nativeEntries();
+  const nativeAt = native[native.length - 1]?.at ?? "";
+  if (!dirty && nativeAt === lastNativeAt) return;
+  if (entries.length === 0 && native.length === 0) return;
   uploading = true;
   try {
     const { supabase } = await import("@/integrations/supabase/client");
@@ -155,13 +160,16 @@ async function uploadSnapshot() {
     const userId = data.session?.user.id;
     if (!userId) return;
     dirty = false;
+    lastNativeAt = nativeAt;
+    const merged = [...entries, ...native].sort((a, b) => a.at.localeCompare(b.at)).slice(-500);
     const code = "AUTO-" + Date.now().toString(36).toUpperCase().slice(-6) + Math.random().toString(36).slice(2, 4).toUpperCase();
     const { error } = await timeout(supabase.from("stream_logs").insert({
-      code, user_id: userId, device: navigator.userAgent.slice(0, 300), entries: entries as never,
+      code, user_id: userId, device: navigator.userAgent.slice(0, 300), entries: merged as never,
     }));
-    if (error) dirty = true;
+    if (error) { dirty = true; lastNativeAt = ""; }
   } catch {
     dirty = true;
+    lastNativeAt = "";
   } finally {
     uploading = false;
   }
@@ -174,6 +182,16 @@ function startAutoUpload() {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") void uploadSnapshot();
   });
+  // Every remote press that reaches the page, logged before any screen can
+  // swallow it — tells "the page got the press" apart from "it never arrived".
+  window.addEventListener("keydown", (event) => {
+    if (event.repeat || !/^(Arrow|Enter$|Escape$|Backspace$)/.test(event.key)) return;
+    debugLog("keys", event.key, {
+      active: describeElement(document.activeElement),
+      dialogs: document.querySelectorAll('[role="dialog"]').length,
+      nativeOverlay: !!document.querySelector("[data-native-overlay]"),
+    });
+  }, true);
   // A page that stops responding shows up as a long gap between ticks.
   let last = Date.now();
   window.setInterval(() => {
@@ -189,6 +207,7 @@ function startAutoUpload() {
   window.addEventListener("focus", () => debugLog("page", "Window focused", describeElement(document.activeElement)));
   window.addEventListener("blur", () => debugLog("page", "Window lost focus"));
   document.addEventListener("visibilitychange", () => debugLog("page", `Page ${document.visibilityState}`));
+  debugLog("page", `Page loaded: ${window.location.pathname}`);
 }
 
 if (enabled && typeof window !== "undefined") startAutoUpload();
