@@ -226,13 +226,30 @@ function startAutoUpload() {
       nativeOverlay: !!document.querySelector("[data-native-overlay]"),
     });
   }, true);
-  // A page that stops responding shows up as a long gap between ticks.
+  // A page that stops responding shows up as a long gap between ticks. The TV
+  // app also gets a heartbeat with the last step, so it can say where it stopped.
   let last = Date.now();
   window.setInterval(() => {
     const now = Date.now();
-    if (now - last > 3000 && document.visibilityState === "visible") debugLog("page", `Page was unresponsive for ${now - last} ms`);
+    const gap = now - last;
+    if (gap > 3000) {
+      const where = `(last step: ${lastStep}, ${Math.round((now - lastStepAt) / 1000)} s ago)`;
+      if (document.visibilityState === "visible") trace(`Page was unresponsive for ${gap} ms ${where}`);
+      else if (gap > 10_000) trace(`Page timers paused ${gap} ms while hidden ${where}`);
+      if (document.visibilityState === "visible") debugLog("page", `Page was unresponsive for ${gap} ms`, where);
+    }
     last = now;
+    try { window.StreamDeckNative?.beat?.(lastStep.slice(0, 200)); } catch { /* old app */ }
   }, 1000);
+  // Work that blocked the page for a long time, reported once it finishes.
+  try {
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.duration < 700) continue;
+        trace(`Long task ${Math.round(entry.duration)} ms`, { after: lastStep });
+      }
+    }).observe({ type: "longtask", buffered: false });
+  } catch { /* not supported */ }
   // Memory use, to tell a running-out-of-memory freeze from a stuck script.
   window.setInterval(() => {
     const memory = (performance as Performance & { memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
