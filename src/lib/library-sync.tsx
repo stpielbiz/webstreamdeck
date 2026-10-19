@@ -336,6 +336,7 @@ export function useTitleBackfill(playlistId: string | null) {
       // A manual details update already covers these titles; don't double the work.
       if (playing() || backgroundBusy() || bulkState.running) { timer = window.setTimeout(step, BACKFILL_PAUSE); return; }
       const stepStarted = performance.now();
+      trace("Details fill-in step: start");
       for (const kind of kinds) {
         const items: CatalogItem[] = client.getQueryData<CatalogItem[]>(["system-catalogue", playlistId, kind]) ?? [];
         if (!items.length) continue;

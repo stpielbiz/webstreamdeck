@@ -1,3 +1,5 @@
+import { trace } from "@/lib/debug-log";
+
 /**
  * Shared "is now a good moment for heavy background work?" signal.
  * Background library work steps aside while the TV app's full-screen player is
@@ -20,6 +22,7 @@ function install() {
 
 export function markPlayerOpen(open: boolean) {
   install();
+  if (open !== playerOpen) trace(open ? "Background work paused: player open" : "Player closed: background work waits 15 s");
   if (playerOpen && !open) playerClosedAt = Date.now();
   playerOpen = open;
 }
