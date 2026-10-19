@@ -106,6 +106,7 @@ export function VideoPlayer({
   const externalLaunchRef = useRef(onExternalLaunch);
   externalLaunchRef.current = onExternalLaunch;
   const [nativeActive, setNativeActive] = useState(false);
+  const nativeStartedAt = useRef(0);
   const [copied, setCopied] = useState(false);
   const [autoLaunched, setAutoLaunched] = useState(false);
   const autoLaunchRef = useRef<string | null>(null);
@@ -192,6 +193,7 @@ export function VideoPlayer({
     };
     document.addEventListener("visibilitychange", onVisibility);
     const started = startNative();
+    nativeStartedAt.current = Date.now();
     setNativeActive(started);
     if (!started) closed = true;
     return () => {
@@ -555,7 +557,7 @@ export function VideoPlayer({
       )}
 
       {nativeActive && (
-        <div className="absolute inset-0 z-10 grid place-items-center bg-black/90 px-6 text-center">
+        <div data-native-overlay data-started-at={nativeStartedAt.current} className="absolute inset-0 z-10 grid place-items-center bg-black/90 px-6 text-center">
           <div>
             <Tv className="mx-auto size-8 text-primary" />
             <p className="mt-3 text-sm font-medium text-white">Playing in the Stream Deck player</p>
