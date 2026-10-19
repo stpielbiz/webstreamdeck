@@ -9,7 +9,10 @@ import android.os.Looper
 import android.os.SystemClock
 import android.view.KeyEvent
 import android.webkit.JavascriptInterface
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -53,16 +56,37 @@ class MainActivity : Activity() {
     companion object {
         private const val STUCK_MS = 12_000L
         private const val RECOVERY_COOLDOWN_MS = 120_000L
+        private const val BODY_PATH = "/__native-body/"
+        private const val BODY_MAX_AGE_MS = 180_000L
+    }
+
+    /** Provider responses waiting for the page to download them from /__native-body/<id>. */
+    private val bodies = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, ByteArray>>()
+
+    private inner class Client : WebViewClient() {
+        override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+            val path = request.url?.path ?: return null
+            if (!path.startsWith(BODY_PATH)) return null
+            val bytes = bodies.remove(path.removePrefix(BODY_PATH))?.second ?: ByteArray(0)
+            return WebResourceResponse(
+                "text/plain", "utf-8", 200, "OK",
+                mapOf("Cache-Control" to "no-store"),
+                java.io.ByteArrayInputStream(bytes),
+            )
+        }
+
+        // The page crashed or ran out of memory: start it again instead of
+        // leaving a dead screen (or letting Android close the app).
+        override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+            runOnUiThread { rebuildWebView() }
+            return true
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        webView = WebView(this)
-        setContentView(webView)
-        appUpdater = AppUpdater(this)
-
-        webView.settings.apply {
+    private fun createWebView(): WebView {
+        val view = WebView(this)
+        view.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
@@ -76,9 +100,29 @@ class MainActivity : Activity() {
             // device instead of being refused like a browser.
             userAgentString = "TiviMate/4.7.0 (Linux; Android 9) StreamDeckTV/${BuildConfig.VERSION_NAME}"
         }
-        webView.webViewClient = WebViewClient()
-        webView.webChromeClient = WebChromeClient()
-        webView.addJavascriptInterface(Bridge(), "StreamDeckNative")
+        view.webViewClient = Client()
+        view.webChromeClient = WebChromeClient()
+        view.addJavascriptInterface(Bridge(), "StreamDeckNative")
+        return view
+    }
+
+    private fun rebuildWebView() {
+        if (isFinishing) return
+        val old = webView
+        bodies.clear()
+        webView = createWebView()
+        setContentView(webView)
+        try { old.destroy() } catch (_: Exception) {}
+        lastPong = SystemClock.elapsedRealtime()
+        webView.loadUrl(BuildConfig.START_URL)
+        webView.requestFocus()
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        webView = createWebView()
+        setContentView(webView)
+        appUpdater = AppUpdater(this)
 
         PlayerActivity.listener = object : PlayerActivity.Listener {
             override fun onProgress(positionSeconds: Double, durationSeconds: Double) {
