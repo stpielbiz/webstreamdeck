@@ -42,11 +42,23 @@ const ALIASES: Record<string, string[]> = {
   "tnt sports": ["tnt sports"],
   "premier sports": ["premier sports"],
   florugby: ["florugby", "flo rugby"],
+  // Specific feeds: an exact listing only matches that feed.
+  "sportsnet one": ["sportsnet one", "sn one", "sn1", "sn 1"],
+  "sportsnet east": ["sportsnet east", "sn east"],
+  "sportsnet ontario": ["sportsnet ontario", "sn ontario"],
+  "sportsnet pacific": ["sportsnet pacific", "sn pacific"],
+  "sportsnet west": ["sportsnet west", "sn west"],
+  "sportsnet 360": ["sportsnet 360", "sn360", "sn 360"],
+  "sportsnet plus": ["sportsnet plus", "sn plus"],
+  "tva sports 2": ["tva sports 2", "tvasports 2"],
+  "rds 2": ["rds 2", "rds2"],
+  ...Object.fromEntries([1, 2, 3, 4, 5].map((n) => [`tsn ${n}`, [`tsn ${n}`, `tsn${n}`]])),
 };
 
 function patternsFor(broadcast: string): string[] {
   const norm = normalizeChannel(broadcast).trim().replace(/\blocal\b/g, "").trim();
-  for (const [key, list] of Object.entries(ALIASES)) if (norm === key || norm.startsWith(`${key} `)) return list;
+  if (ALIASES[norm]) return ALIASES[norm]!;
+  for (const [key, list] of Object.entries(ALIASES)) if (norm.startsWith(`${key} `)) return list;
   return norm ? [norm] : [];
 }
 
