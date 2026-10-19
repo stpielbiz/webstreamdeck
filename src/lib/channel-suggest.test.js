@@ -16,4 +16,9 @@ describe("game channel suggestions", () => {
     const names = suggestChannels({ ...game, broadcasts: [] }, [ch("NHL Center Ice 3"), ch("Canadiens TV")]).map((c) => c.name);
     expect(names).toEqual(["Canadiens TV", "NHL Center Ice 3"]);
   });
+  test("rugby: Springboks game finds SuperSport and Sky Sport channels", () => {
+    const rugby = { matchup: "South Africa vs New Zealand", startsAt: "", league: "Rugby", teams: ["South Africa"], broadcasts: ["SuperSport", "Sky Sport"] };
+    const names = suggestChannels(rugby, [ch("ZA: SS Rugby HD"), ch("NZ | Sky Sport 1"), ch("Rugby Pass"), ch("CNN")]).map((c) => c.name);
+    expect(names).toEqual(["ZA: SS Rugby HD", "NZ | Sky Sport 1", "Rugby Pass"]);
+  });
 });

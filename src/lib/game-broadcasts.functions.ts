@@ -4,8 +4,10 @@ import type { GameInfo } from "@/lib/channel-suggest";
 const LEAGUES: [string, string][] = [
   ["hockey/nhl", "NHL"], ["basketball/nba", "NBA"], ["football/nfl", "NFL"], ["baseball/mlb", "MLB"],
   ["soccer/usa.1", "MLS"], ["soccer/eng.1", "Premier League"], ["soccer/esp.1", "LaLiga"], ["soccer/uefa.champions", "Champions League"],
+  ["rugby/164205", "Rugby"], ["rugby/244293", "Rugby"], ["rugby/289234", "Rugby"], ["rugby/180659", "Rugby"], ["rugby/270557", "Rugby"], ["rugby/267979", "Rugby"], ["rugby/242041", "Rugby"],
 ];
-const NICKNAMES: Record<string, string> = { habs: "canadiens", leafs: "maple leafs", sens: "senators", bruins: "bruins", pens: "penguins", caps: "capitals", jays: "blue jays", niners: "49ers", sixers: "76ers", raps: "raptors" };
+const NICKNAMES: Record<string, string> = { habs: "canadiens", leafs: "maple leafs", sens: "senators", bruins: "bruins", pens: "penguins", caps: "capitals", jays: "blue jays", niners: "49ers", sixers: "76ers", raps: "raptors", springboks: "south africa", boks: "south africa", "all blacks": "new zealand", wallabies: "australia", pumas: "argentina", "los pumas": "argentina" };
+const RUGBY_DEFAULT = ["SuperSport", "Sky Sport", "Stan Sport", "TNT Sports", "Premier Sports", "FloRugby", "Peacock", "ITV", "BBC"];
 // ESPN rarely lists Canadian networks; add the usual ones for Canadian NHL teams.
 const CANADIAN_NHL: Record<string, string[]> = {
   canadiens: ["Sportsnet", "TVA Sports", "RDS", "TSN"], "maple leafs": ["Sportsnet", "TSN", "CBC"], senators: ["TSN", "Sportsnet", "RDS"],
@@ -47,6 +49,7 @@ export const findGameBroadcasts = createServerFn({ method: "GET" })
         ...(comp?.geoBroadcasts ?? []).map((g) => g.media?.shortName ?? ""),
       ];
       if (league === "NHL") for (const t of teams) names.push(...(CANADIAN_NHL[(t.name ?? "").toLowerCase()] ?? []));
+      if (league === "Rugby" && names.filter(Boolean).length === 0) names.push(...RUGBY_DEFAULT);
       found = {
         matchup: e.name, startsAt: e.date, league,
         teams: teams.flatMap((t) => [t.displayName ?? "", t.name ?? ""]),
