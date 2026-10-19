@@ -14,6 +14,7 @@ import { usePlaylists } from "@/components/playlist-context";
 import { TvShell } from "@/components/tv-shell";
 import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/search-field";
+import { GameSuggestionCard } from "@/components/game-suggestion";
 import { VideoPlayer } from "@/components/video-player";
 import { hasNativePlayer, sendRecentChannels } from "@/lib/external-player";
 import { cn } from "@/lib/utils";
@@ -711,6 +712,7 @@ function TvLive() {
             <Button data-tv-focus variant="secondary" size="sm" disabled={updatingChannels} onClick={() => void updateChannels()}>{updatingChannels ? "Updating…" : "Update channels"}</Button>
             <Button data-tv-focus variant="secondary" size="sm" onClick={() => setMultiOpen(true)}>Multi-view</Button>
           </div>
+          {searching && <GameSuggestionCard query={search} channels={items.data} onPlay={playChannel} />}
           <div className="mb-1 flex min-h-10 shrink-0 items-center justify-between gap-2 border-b border-border pb-1">
             <div className="min-w-0">
               <p className="break-words font-display text-sm font-bold">{focused?.name ?? "Live TV guide"}</p>
