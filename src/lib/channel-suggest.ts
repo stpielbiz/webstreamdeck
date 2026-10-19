@@ -36,6 +36,12 @@ const ALIASES: Record<string, string[]> = {
   tnt: ["tnt"],
   msg: ["msg"],
   "fox": ["fox"],
+  supersport: ["supersport", "ss rugby", "ss variety", "ss grandstand", "ss action"],
+  "sky sport": ["sky sport", "sky sports"],
+  "stan sport": ["stan sport"],
+  "tnt sports": ["tnt sports"],
+  "premier sports": ["premier sports"],
+  florugby: ["florugby", "flo rugby"],
 };
 
 function patternsFor(broadcast: string): string[] {
@@ -58,6 +64,7 @@ export function suggestChannels(game: GameInfo, channels: CatalogItem[], max = 1
     networks.forEach((list, i) => { if (list.some((p) => has(n, p))) score = Math.max(score, 30 - i); });
     if (teams.some((t) => has(n, t))) score = Math.max(score, 20);
     if (!score && league && has(n, league)) score = 5;
+    if (!score && league === "rugby" && has(n, "rugby")) score = 5;
     if (score) scored.push({ item, score });
   }
   return scored.sort((a, b) => b.score - a.score || a.item.name.localeCompare(b.item.name)).slice(0, max).map((s) => s.item);
