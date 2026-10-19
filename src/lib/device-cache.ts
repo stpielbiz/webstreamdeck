@@ -20,7 +20,6 @@ const PERSISTED = new Set([
   "cached-title-metadata",
   "categories",
   "items",
-  "global-search-live",
   "global-search-movie",
   "global-search-series",
   "device-guide",
@@ -28,6 +27,10 @@ const PERSISTED = new Set([
 
 /** Large values: saving them is expensive, so it is batched and deferred. */
 const HEAVY = new Set(["system-catalogue", "cached-title-metadata", "device-guide", "global-search-movie", "global-search-series"]);
+/** The full channel list (no category) is as big as a catalogue. */
+function isHeavy(queryKey: QueryKey) {
+  return HEAVY.has(String(queryKey[0])) || (queryKey[0] === "tv-live-items" && queryKey[2] === "");
+}
 
 interface Entry { key: string; queryKey: QueryKey; data: unknown; at: number; v?: number }
 
@@ -54,13 +57,28 @@ function openDb(): Promise<IDBDatabase | null> {
   return dbPromise;
 }
 
-async function readAll(): Promise<Entry[]> {
+/**
+ * Reads saved entries one at a time (a cursor), so unpacking a big list is
+ * its own task and remote presses get handled in between — getAll() unpacked
+ * everything in one go and froze a Fire Stick for seconds at launch.
+ */
+async function readAll(skip?: (key: string) => boolean): Promise<Entry[]> {
   const db = await openDb();
   if (!db) return [];
   return new Promise((resolve) => {
-    const request = db.transaction(STORE, "readonly").objectStore(STORE).getAll();
-    request.onsuccess = () => resolve((request.result as Entry[]) ?? []);
-    request.onerror = () => resolve([]);
+    const out: Entry[] = [];
+    try {
+      const request = db.transaction(STORE, "readonly").objectStore(STORE).openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) { resolve(out); return; }
+        if (!skip?.(String(cursor.key))) out.push(cursor.value as Entry);
+        cursor.continue();
+      };
+      request.onerror = () => resolve(out);
+    } catch {
+      resolve(out);
+    }
   });
 }
 
