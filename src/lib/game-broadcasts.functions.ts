@@ -18,6 +18,25 @@ const CANADIAN_NHL: Record<string, string[]> = {
 const cache = new Map<string, { at: number; value: GameInfo | null }>();
 const ymd = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
 
+type EspnEvent = { id: string; name: string; date: string; status?: { type?: { state?: string; shortDetail?: string; completed?: boolean } }; competitions?: { competitors?: { team: Team; score?: string }[]; broadcasts?: { names?: string[] }[]; geoBroadcasts?: { media?: { shortName?: string } }[] }[] };
+
+/** The schedule service returns nothing for date ranges, so fetch each day and merge. */
+async function fetchEvents(path: string, from: Date, to: Date): Promise<EspnEvent[]> {
+  const days = new Set<string>();
+  for (let t = from.getTime(); t <= to.getTime() + 86_400_000 - 1; t += 86_400_000) days.add(ymd(new Date(Math.min(t, to.getTime()))));
+  const lists = await Promise.all([...days].map(async (day) => {
+    try {
+      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${day}`, { headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36", accept: "application/json" } });
+      if (!res.ok) return [];
+      const json = await res.json() as { events?: EspnEvent[] };
+      return json.events ?? [];
+    } catch { return []; }
+  }));
+  const seen = new Map<string, EspnEvent>();
+  for (const e of lists.flat()) if (e?.id && !seen.has(e.id)) seen.set(e.id, e);
+  return [...seen.values()];
+}
+
 type Team = { displayName?: string; shortDisplayName?: string; name?: string; location?: string; abbreviation?: string };
 
 export const findGameBroadcasts = createServerFn({ method: "GET" })
@@ -29,15 +48,8 @@ export const findGameBroadcasts = createServerFn({ method: "GET" })
     const hit = cache.get(q);
     if (hit && Date.now() - hit.at < 10 * 60_000) return hit.value;
     const now = new Date();
-    const range = `${ymd(new Date(now.getTime() - 6 * 3600_000))}-${ymd(new Date(now.getTime() + 36 * 3600_000))}`;
-    const results = await Promise.all(LEAGUES.map(async ([path, league]) => {
-      try {
-        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${range}`);
-        if (!res.ok) return [];
-        const json = await res.json() as { events?: { name: string; date: string; status?: { type?: { completed?: boolean } }; competitions?: { competitors?: { team: Team }[]; broadcasts?: { names?: string[] }[]; geoBroadcasts?: { media?: { shortName?: string } }[] }[] }[] };
-        return (json.events ?? []).map((e) => ({ e, league }));
-      } catch { return []; }
-    }));
+    const results = await Promise.all(LEAGUES.map(async ([path, league]) =>
+      (await fetchEvents(path, new Date(now.getTime() - 6 * 3600_000), new Date(now.getTime() + 36 * 3600_000))).map((e) => ({ e, league }))));
     let found: GameInfo | null = null;
     for (const { e, league } of results.flat().sort((a, b) => a.e.date.localeCompare(b.e.date))) {
       if (e.status?.type?.completed) continue;
@@ -69,17 +81,14 @@ export const getLeagueSchedule = createServerFn({ method: "GET" })
   .inputValidator((input: { leagues: string[] }) => ({ leagues: (input?.leagues ?? []).filter((k) => SPORTS_LEAGUES.some((l) => l.key === k)).slice(0, 20) }))
   .handler(async ({ data }): Promise<Record<string, ScheduledGame[]>> => {
     const cacheKey = [...data.leagues].sort().join(",");
-    const hit = scheduleCache.get(cacheKey);
+    const hit = scheduleCache.get(`v2:${cacheKey}`);
     if (hit && Date.now() - hit.at < 5 * 60_000) return hit.value;
     const now = new Date();
-    const range = `${ymd(new Date(now.getTime() - 8 * 3600_000))}-${ymd(new Date(now.getTime() + 30 * 3600_000))}`;
     const out: Record<string, ScheduledGame[]> = {};
     await Promise.all(SPORTS_LEAGUES.filter((l) => data.leagues.includes(l.key)).map(async (league) => {
       const lists = await Promise.all(league.paths.map(async (path) => {
         try {
-          const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${range}`);
-          if (!res.ok) return [];
-          const json = await res.json() as { events?: { id: string; name: string; date: string; status?: { type?: { state?: string; shortDetail?: string } }; competitions?: { competitors?: { team: Team; score?: string }[]; broadcasts?: { names?: string[] }[]; geoBroadcasts?: { media?: { shortName?: string } }[] }[] }[] };
+          const json = { events: await fetchEvents(path, new Date(now.getTime() - 8 * 3600_000), new Date(now.getTime() + 30 * 3600_000)) } as { events?: { id: string; name: string; date: string; status?: { type?: { state?: string; shortDetail?: string } }; competitions?: { competitors?: { team: Team; score?: string }[]; broadcasts?: { names?: string[] }[]; geoBroadcasts?: { media?: { shortName?: string } }[] }[] }[] };
           return (json.events ?? []).map((e): ScheduledGame => {
             const comp = e.competitions?.[0];
             const teams = (comp?.competitors ?? []).map((c) => c.team);
@@ -102,6 +111,6 @@ export const getLeagueSchedule = createServerFn({ method: "GET" })
       const cutoff = now.getTime() + 30 * 3600_000;
       out[league.key] = lists.flat().filter((g) => Date.parse(g.startsAt) < cutoff && Date.parse(g.startsAt) > now.getTime() - 12 * 3600_000).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     }));
-    scheduleCache.set(cacheKey, { at: Date.now(), value: out });
+    scheduleCache.set(`v2:${cacheKey}`, { at: Date.now(), value: out });
     return out;
   });
