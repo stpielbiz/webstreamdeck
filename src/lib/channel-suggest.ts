@@ -7,6 +7,7 @@ export type GameInfo = {
   league: string;
   teams: string[];
   broadcasts: string[];
+  logos?: string[];
 };
 
 const NOISE = /\b(hd|fhd|uhd|sd|4k|hevc|h265|raw|backup|vip|60fps|50fps|ca|us|usa|uk|en|fr|ott)\b/g;

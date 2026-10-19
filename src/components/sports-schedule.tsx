@@ -111,6 +111,7 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
     <section data-sport-row className="relative isolate overflow-hidden rounded-lg border border-border bg-background/40 p-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {logo && <img src={logo} alt="" aria-hidden className="pointer-events-none absolute -right-6 top-1/2 -z-10 size-48 -translate-y-1/2 object-contain opacity-10" />}
       <header className="mb-2 flex flex-wrap items-center gap-2">
+        <TeamLogos logos={game.logos} />
         <h3 className="font-display text-base font-bold">{game.matchup}</h3>
         <span className={cn("rounded px-2 py-0.5 text-xs font-semibold", game.state === "in" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>{status}</span>
         {game.detail && <span className="text-xs text-muted-foreground">{game.detail}</span>}
@@ -166,5 +167,17 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
         </div>
       ) : <p className="text-xs text-muted-foreground">{network ? `No ${network} channels in your playlist.` : "No matching channels in your playlist."}</p>}
     </section>
+  );
+}
+
+/** Small away/home team logos beside a matchup; hidden when a logo fails to load. */
+export function TeamLogos({ logos }: { logos?: string[] | undefined }) {
+  if (!logos?.length) return null;
+  return (
+    <span className="flex items-center gap-1">
+      {logos.slice(0, 2).map((src) => (
+        <img key={src} src={src} alt="" loading="lazy" className="size-8 object-contain drop-shadow" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+      ))}
+    </span>
   );
 }
