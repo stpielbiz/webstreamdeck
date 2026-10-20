@@ -19,6 +19,10 @@ export type ScheduledGame = {
   startsAt: string;
   /** Away then home team logos, when known. */
   logos?: string[];
+  /** Finished games only: away then home team with its final score. */
+  result?: { name: string; logo: string; score: string }[];
+  /** Finished games only: "Final", "Final/OT"… */
+  final?: string;
   state: "pre" | "in" | "post";
   detail: string;
   endedAt: string | null;
