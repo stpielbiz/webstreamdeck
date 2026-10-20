@@ -124,7 +124,7 @@ export const getLeagueSchedule = createServerFn({ method: "GET" })
   .inputValidator((input: { leagues: string[] }) => ({ leagues: (input?.leagues ?? []).filter((k) => SPORTS_LEAGUES.some((l) => l.key === k)).slice(0, 20) }))
   .handler(async ({ data }): Promise<Record<string, ScheduledGame[]>> => {
     const cacheKey = [...data.leagues].sort().join(",");
-    const hit = scheduleCache.get(`v4:${cacheKey}`);
+    const hit = scheduleCache.get(`v5:${cacheKey}`);
     if (hit && Date.now() - hit.at < 5 * 60_000) return hit.value;
     const now = new Date();
     const out: Record<string, ScheduledGame[]> = {};
@@ -148,6 +148,7 @@ export const getLeagueSchedule = createServerFn({ method: "GET" })
               teams: teams.flatMap((t) => [t.displayName ?? "", t.name ?? ""]).filter(Boolean),
               broadcasts: [...new Set(names.filter(Boolean))],
               logos: [...teams].reverse().map((t) => t.logo ?? "").filter(Boolean),
+              ...(state === "post" ? { result: [...(comp?.competitors ?? [])].reverse().map((c) => ({ name: c.team.shortDisplayName ?? c.team.name ?? c.team.displayName ?? "", logo: c.team.logo ?? "", score: c.score ?? "" })), final: e.status?.type?.shortDetail ?? "Final" } : {}),
             };
           });
         } catch { return []; }
@@ -156,6 +157,6 @@ export const getLeagueSchedule = createServerFn({ method: "GET" })
       const cutoff = now.getTime() + 30 * 3600_000;
       out[league.key] = lists.flat().filter((g) => Date.parse(g.startsAt) < cutoff && Date.parse(g.startsAt) > now.getTime() - 12 * 3600_000).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     }));
-    scheduleCache.set(`v4:${cacheKey}`, { at: Date.now(), value: out });
+    scheduleCache.set(`v5:${cacheKey}`, { at: Date.now(), value: out });
     return out;
   });
