@@ -125,6 +125,7 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
         </div>
       )}
       {!schedule.isLoading && games.length === 0 && <p className="p-4 text-sm text-muted-foreground">No {label} games today.</p>}
+      {!loading && games.length > 0 && <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Beta — channel suggestions are a best guess and can be wrong.</p>}
       {games.map((game, gi) => {
         const day = dayLabel(game.startsAt);
         const showDay = gi === 0 || dayLabel(games[gi - 1]!.startsAt) !== day;

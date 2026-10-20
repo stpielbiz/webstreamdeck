@@ -153,8 +153,8 @@ function SettingsPage() {
       <div data-remote-row>
         <SettingToggleCard
           icon={<Trophy className="size-4 text-primary" />}
-          title="Sports package"
-          description={<>Adds a "today" category in Live TV for each league you pick, listing its games with start times and the channels in your playlist that may show them.</>}
+          title="Sports package (beta)"
+          description={<>Adds a "today" category in Live TV for each league you pick, listing its games with start times and the channels in your playlist that may show them. Channel suggestions are the system's best guess — they can be wrong, and some games may not be listed.</>}
           checked={current.sportsEnabled}
           disabled={settings.isLoading || save.isPending}
           onToggle={(value) => update({ sportsEnabled: value }, value ? "Sports package is on" : "Sports package is off", "Could not save the setting. Try again.")}
