@@ -31,11 +31,22 @@ test("mix shows every network and demotes ESPN+ event feeds", () => {
   expect(names).toContain("CA: Sportsnet East HD");
   expect(names).toContain("CA: TSN 1");
   expect(names).toContain("CA: RDS");
-  expect(byNet(game, ch)[1].items.map((c) => c.name)).toEqual(["CA: Sportsnet East HD"]);
+  expect(byNet(game, ch).find((g) => g.network === "Sportsnet").items.map((c) => c.name)).toEqual(["CA: Sportsnet East HD"]);
 });
 
 test("an exact feed listing (TSN 2) does not pull other TSN feeds", () => {
   const ch = ["CA: TSN 1", "CA: TSN 2 HD", "CA: TSN3", "CA: Sportsnet East"].map((name, i) => ({ id: String(i), name }));
   const g = { matchup: "x", startsAt: "", league: "NHL", teams: [], broadcasts: ["TSN 2"] };
-  expect(byNet(g, ch)[0].items.map((c) => c.name)).toEqual(["CA: TSN 2 HD"]);
+  expect(byNet(g, ch).find((x) => x.network === "TSN 2").items.map((c) => c.name)).toEqual(["CA: TSN 2 HD"]);
+});
+
+test("team-named feeds come first; NHL Network always offered", () => {
+  const ch = ["NHL 05: Maple Leafs vs Sharks", "Kings TV", "CA: NHL Network HD", "CA: Sportsnet East"].map((name, i) => ({ id: String(i), name }));
+  const g = { matchup: "x", startsAt: "", league: "NHL", teams: ["Toronto Maple Leafs", "Maple Leafs", "San Jose Sharks", "Sharks"], broadcasts: ["Sportsnet"] };
+  const groups = byNet(g, ch);
+  expect(groups[0]).toEqual({ network: "This game", items: [ch[0]] });
+  expect(groups.find((x) => x.network === "NHL Network").items).toEqual([ch[2]]);
+  expect(sugg(g, ch)[0].name).toBe("NHL 05: Maple Leafs vs Sharks");
+  const kings = { ...g, teams: ["Los Angeles Kings", "Kings", "San Jose Sharks", "Sharks"] };
+  expect(byNet(kings, ch)[0].items.map((c) => c.name)).not.toContain("Kings TV");
 });
