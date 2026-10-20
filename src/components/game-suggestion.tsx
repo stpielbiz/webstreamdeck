@@ -24,7 +24,7 @@ export function GameSuggestionCard({ query, channels, onPlay }: { query: string;
   return (
     <div data-remote-row className="mb-2 shrink-0 rounded border border-primary/40 bg-card p-2">
       <p className="flex items-center gap-2 text-sm font-semibold">
-        <Trophy className="size-4 text-primary" /> <TeamLogos logos={game.data.logos} /> Game on: {game.data.matchup}
+        <Trophy className="size-4 text-primary" /> <TeamLogos logos={game.data.logos} /> Game on: {game.data.matchup} <span className="text-xs font-normal text-muted-foreground">(beta)</span>
         <span className="text-xs font-normal text-muted-foreground">· {game.data.league} · {when.toLocaleDateString([], { weekday: "short" })} {when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
       </p>
       {game.data.broadcasts.length > 0 && <p className="mt-0.5 truncate text-xs text-muted-foreground">On: {game.data.broadcasts.join(", ")}</p>}

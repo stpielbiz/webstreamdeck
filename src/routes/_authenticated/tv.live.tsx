@@ -687,7 +687,7 @@ function TvLive() {
                 onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="sports-first-card"], [data-focus-key="live-search"]')?.focus(); } }}
                 onClick={() => chooseCategory(SPORTS_CATEGORY_PREFIX + league.key)}
               >
-                {league.label} today
+                {league.label} today <span className="opacity-70">(beta)</span>
               </Button>
             ))}
             {favouriteCategories.map((category) => (
