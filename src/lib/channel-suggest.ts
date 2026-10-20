@@ -79,16 +79,42 @@ const isEventFeed = (n: string) => EVENT_FEED.test(n);
 
 export type NetworkChannels = { network: string; items: CatalogItem[] };
 
+export const THIS_GAME = "This game";
+const LEAGUE_NETWORK: Record<string, string> = { NHL: "NHL Network", NBA: "NBA TV", NFL: "NFL Network", MLB: "MLB Network" };
+const FEED_MARK = / (nhl|nba|nfl|mlb|mls|vs|v|at|game|live) /;
+
+/** Channels named after a team playing (e.g. "NHL 05: Maple Leafs vs Sharks"). */
+export function gameFeedChannels(game: GameInfo, channels: CatalogItem[], max = 16): CatalogItem[] {
+  const names = namesOf(channels);
+  // teams arrive as [displayName, nickname] pairs.
+  const full: string[] = [];
+  const nick: string[] = [];
+  game.teams.forEach((t, i) => { const n = normalizeChannel(t).trim(); if (n.length >= 3) (i % 2 === 0 ? full : nick).push(n); });
+  const out: CatalogItem[] = [];
+  for (let i = 0; i < channels.length && out.length < max; i++) {
+    const n = names[i]!.replace(/@/g, " at ");
+    if (full.some((t) => has(n, t))) { out.push(channels[i]!); continue; }
+    const hits = nick.filter((t) => has(n, t)).length;
+    if (hits >= 2 || (hits === 1 && (FEED_MARK.test(n) || channels[i]!.name.includes("@")))) out.push(channels[i]!);
+  }
+  return out;
+}
+
 /** Matching playlist channels grouped per listed network (real channels before event feeds). */
 export function channelsByNetwork(game: GameInfo, channels: CatalogItem[], max = 16): NetworkChannels[] {
   const names = namesOf(channels);
-  return game.broadcasts.map((network) => {
+  const nets = [...game.broadcasts];
+  const leagueNet = LEAGUE_NETWORK[game.league];
+  if (leagueNet && !nets.some((b) => normalizeChannel(b) === normalizeChannel(leagueNet))) nets.unshift(leagueNet);
+  const groups = nets.map((network) => {
     const pats = patternsFor(network);
     const hits: { item: CatalogItem; ev: number }[] = [];
     if (pats.length) for (let i = 0; i < channels.length; i++) { const n = names[i]!; if (pats.some((p) => has(n, p))) hits.push({ item: channels[i]!, ev: isEventFeed(n) ? 1 : 0 }); }
     hits.sort((a, b) => a.ev - b.ev || a.item.name.localeCompare(b.item.name));
     return { network, items: hits.slice(0, max).map((s) => s.item) };
   });
+  const feeds = gameFeedChannels(game, channels, max);
+  return feeds.length ? [{ network: THIS_GAME, items: feeds }, ...groups] : groups;
 }
 
 /** Round-robin mix across already-computed network groups, then team/league matches. */
