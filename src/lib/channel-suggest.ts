@@ -31,6 +31,9 @@ const ALIASES: Record<string, string[]> = {
   rds: ["rds", "rds2", "rds info"],
   cbc: ["cbc"],
   "nhl network": ["nhl network"],
+  "nba tv": ["nba tv"],
+  "nfl network": ["nfl network"],
+  "mlb network": ["mlb network"],
   "espn plus": ["espn plus"],
   espn: ["espn"],
   "prime video": ["prime video", "amazon prime"],
@@ -123,6 +126,7 @@ export function suggestChannels(game: GameInfo, channels: CatalogItem[], max = 1
   const out: CatalogItem[] = [];
   const seen = new Set<string>();
   const push = (c: CatalogItem) => { if (!seen.has(c.id) && out.length < max) { seen.add(c.id); out.push(c); } };
+  groups.filter((g) => g.network === THIS_GAME).forEach((g) => g.items.forEach(push));
   for (let i = 0; out.length < max && groups.some((g) => g.items[i]); i++) for (const g of groups) { const c = g.items[i]; if (c) push(c); }
   if (out.length >= max) return out;
   const teams = game.teams.map((t) => normalizeChannel(t).trim()).filter((t) => t.length >= 4);
