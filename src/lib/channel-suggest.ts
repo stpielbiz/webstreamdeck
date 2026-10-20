@@ -65,6 +65,14 @@ function patternsFor(broadcast: string): string[] {
 
 const has = (hay: string, phrase: string) => hay.includes(` ${phrase} `);
 
+/** Cleaned names computed once per channel list (by identity) and reused for every game. */
+const prepared = new WeakMap<CatalogItem[], string[]>();
+function namesOf(channels: CatalogItem[]): string[] {
+  let names = prepared.get(channels);
+  if (!names) { names = channels.map((c) => normalizeChannel(c.name)); prepared.set(channels, names); }
+  return names;
+}
+
 /** Numbered event feeds ("ESPN+ 005", "PPV 12") rarely carry the actual game. */
 const EVENT_FEED = / (espn plus|ppv|event|events|dazn|flo) ?\d{1,4} /;
 const isEventFeed = (n: string) => EVENT_FEED.test(n);
@@ -73,31 +81,34 @@ export type NetworkChannels = { network: string; items: CatalogItem[] };
 
 /** Matching playlist channels grouped per listed network (real channels before event feeds). */
 export function channelsByNetwork(game: GameInfo, channels: CatalogItem[], max = 16): NetworkChannels[] {
+  const names = namesOf(channels);
   return game.broadcasts.map((network) => {
     const pats = patternsFor(network);
-    const hits = pats.length ? channels.filter((c) => { const n = normalizeChannel(c.name); return pats.some((p) => has(n, p)); }) : [];
-    const sorted = hits
-      .map((item) => ({ item, ev: isEventFeed(normalizeChannel(item.name)) ? 1 : 0 }))
-      .sort((a, b) => a.ev - b.ev || a.item.name.localeCompare(b.item.name))
-      .map((s) => s.item);
-    return { network, items: sorted.slice(0, max) };
+    const hits: { item: CatalogItem; ev: number }[] = [];
+    if (pats.length) for (let i = 0; i < channels.length; i++) { const n = names[i]!; if (pats.some((p) => has(n, p))) hits.push({ item: channels[i]!, ev: isEventFeed(n) ? 1 : 0 }); }
+    hits.sort((a, b) => a.ev - b.ev || a.item.name.localeCompare(b.item.name));
+    return { network, items: hits.slice(0, max).map((s) => s.item) };
   });
 }
 
-/** Rank playlist channels likely to carry the game: a round-robin mix across networks, then team/league matches. */
-export function suggestChannels(game: GameInfo, channels: CatalogItem[], max = 10): CatalogItem[] {
-  const groups = channelsByNetwork(game, channels, max);
+/** Round-robin mix across already-computed network groups, then team/league matches. */
+export function suggestChannels(game: GameInfo, channels: CatalogItem[], max = 10, groups = channelsByNetwork(game, channels, max)): CatalogItem[] {
+  const names = namesOf(channels);
   const out: CatalogItem[] = [];
   const seen = new Set<string>();
   const push = (c: CatalogItem) => { if (!seen.has(c.id) && out.length < max) { seen.add(c.id); out.push(c); } };
   for (let i = 0; out.length < max && groups.some((g) => g.items[i]); i++) for (const g of groups) { const c = g.items[i]; if (c) push(c); }
+  if (out.length >= max) return out;
   const teams = game.teams.map((t) => normalizeChannel(t).trim()).filter((t) => t.length >= 4);
   const league = normalizeChannel(game.league).trim();
-  channels.filter((item) => teams.some((t) => has(normalizeChannel(item.name), t)))
-    .sort((a, b) => a.name.localeCompare(b.name)).forEach(push);
-  {
-    channels.filter((item) => { const n = normalizeChannel(item.name); return (!!league && has(n, league)) || (league === "rugby" && has(n, "rugby")); })
-      .sort((a, b) => a.name.localeCompare(b.name)).forEach(push);
+  const teamHits: CatalogItem[] = [];
+  const leagueHits: CatalogItem[] = [];
+  for (let i = 0; i < channels.length; i++) {
+    const n = names[i]!;
+    if (teams.some((t) => has(n, t))) teamHits.push(channels[i]!);
+    else if ((!!league && has(n, league)) || (league === "rugby" && has(n, "rugby"))) leagueHits.push(channels[i]!);
   }
+  teamHits.sort((a, b) => a.name.localeCompare(b.name)).forEach(push);
+  leagueHits.sort((a, b) => a.name.localeCompare(b.name)).forEach(push);
   return out;
 }

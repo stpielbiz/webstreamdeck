@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Play } from "lucide-react";
 import { getLeagueSchedule } from "@/lib/game-broadcasts.functions";
 import { channelsByNetwork, suggestChannels } from "@/lib/channel-suggest";
@@ -8,6 +8,7 @@ import { SPORTS_LEAGUES, gameStatusLabel, visibleGames, type ScheduledGame } fro
 import { useSettings } from "@/lib/playlist-sync";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { cn } from "@/lib/utils";
+import { trace } from "@/lib/debug-log";
 
 /** Leagues the account picked in Settings (empty when the Sports package is off). */
 export function useSportsLeagues() {
@@ -42,7 +43,7 @@ function writeStored(key: string, data: Record<string, ScheduledGame[]>) {
 export function useLeagueSchedule(keys: string[]) {
   const fetchSchedule = useServerFn(getLeagueSchedule);
   const key = [...keys].sort().join(",");
-  const stored = readStored(key);
+  const stored = useMemo(() => readStored(key), [key]);
   return useQuery({
     queryKey: ["league-schedule", key, today()],
     queryFn: async () => { const data = await fetchSchedule({ data: { leagues: keys } }); writeStored(key, data); return data; },
@@ -77,6 +78,16 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
   const label = leagueInfo?.label ?? leagueKey;
   const logo = leagueInfo?.logo;
   const games = useMemo(() => visibleGames(schedule.data?.[leagueKey] ?? []), [schedule.data, leagueKey]);
+  // Show the animation first; match channels one game at a time after a short pause so the remote never stalls.
+  const [ready, setReady] = useState(0);
+  useEffect(() => { setReady(0); }, [leagueKey]);
+  useEffect(() => {
+    if (!channels || ready >= games.length) return;
+    const started = performance.now();
+    const t = window.setTimeout(() => { setReady((r) => r + 1); if (ready + 1 === games.length) trace(`Sports matching: ${games.length} games ready`, `${Math.round(performance.now() - started)} ms last step`); }, ready === 0 ? 300 : 16);
+    return () => window.clearTimeout(t);
+  }, [ready, games.length, channels]);
+  const loading = schedule.isLoading || (games.length > 0 && ready === 0);
 
   // Explicit remote movement over network buttons and channel cards by screen position.
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -104,7 +115,7 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
 
   return (
     <div data-tv-zone="live-guide" data-tv-zone-order="3" data-sports-panel onKeyDown={onKeyDown} className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-auto rounded border border-border bg-card p-3" aria-label={`${label} today`}>
-      {schedule.isLoading && (
+      {loading && (
         <div className="flex flex-col items-center gap-4 p-6" role="status">
           {logo ? <img src={logo} alt="" className="size-20 animate-pulse object-contain drop-shadow-lg" /> : <span className="size-12 animate-spin rounded-full border-4 border-muted border-t-primary" />}
           <p className="text-sm font-semibold text-muted-foreground">Loading today's {label} games…</p>
@@ -117,6 +128,7 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
       {games.map((game, gi) => {
         const day = dayLabel(game.startsAt);
         const showDay = gi === 0 || dayLabel(games[gi - 1]!.startsAt) !== day;
+        if (gi >= ready) return gi === 0 ? null : <div key={game.id} className="h-32 animate-pulse rounded-lg bg-muted" />;
         return (
           <div key={game.id} className="space-y-3">
             {showDay && <h2 className="sticky top-0 z-10 -mx-3 bg-card px-3 py-1 font-display text-sm font-bold uppercase tracking-wide text-primary">{day}</h2>}
@@ -132,7 +144,7 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
 function GameBlock({ game, logo, label, first, channels, onPlay }: { game: ScheduledGame; logo?: string | undefined; label: string; first: boolean; channels?: CatalogItem[] | undefined; onPlay: (item: CatalogItem) => void }) {
   const [network, setNetwork] = useState<string | null>(null);
   const groups = useMemo(() => (channels ? channelsByNetwork({ ...game, league: label }, channels) : []), [channels, game, label]);
-  const mix = useMemo(() => (channels ? suggestChannels({ ...game, league: label }, channels, 8) : []), [channels, game, label]);
+  const mix = useMemo(() => (channels ? suggestChannels({ ...game, league: label }, channels, 8, channelsByNetwork({ ...game, league: label }, channels, 8)) : []), [channels, game, label]);
   const picks = network ? groups.find((g) => g.network === network)?.items ?? [] : mix;
   const status = gameStatusLabel(game);
   const chip = "h-9 rounded-full border px-3 text-xs font-semibold outline-none transition-transform focus:scale-105 focus:border-primary focus:ring-2 focus:ring-primary";
