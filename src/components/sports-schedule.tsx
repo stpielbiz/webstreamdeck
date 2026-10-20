@@ -132,7 +132,7 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
         return (
           <div key={game.id} className="space-y-3">
             {showDay && <h2 className="sticky top-0 z-10 -mx-3 bg-card px-3 py-1 font-display text-sm font-bold uppercase tracking-wide text-primary">{day}</h2>}
-            {game.state === "post" ? <FinalBlock game={game} /> : <GameBlock game={game} logo={logo} label={label} first={gi === 0} channels={channels} onPlay={onPlay} />}
+            {game.state === "post" ? <FinalBlock game={game} /> : <GameBlock game={game} logo={logo} label={label} first={gi === games.findIndex((g) => g.state !== "post")} channels={channels} onPlay={onPlay} />}
           </div>
         );
       })}
