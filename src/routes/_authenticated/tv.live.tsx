@@ -52,6 +52,24 @@ export const Route = createFileRoute("/_authenticated/tv/live")({
   component: TvLive,
 });
 
+/** Right from a category: land on the guide row nearest the same height (its current programme). */
+function enterGuideNear(from: HTMLElement) {
+  const guide = document.querySelector<HTMLElement>('[data-tv-zone="live-guide"]');
+  const y = from.getBoundingClientRect().top + from.offsetHeight / 2;
+  const box = guide?.getBoundingClientRect();
+  let best: HTMLElement | null = null;
+  let bestDistance = Infinity;
+  for (const row of Array.from(guide?.querySelectorAll<HTMLElement>("[data-guide-row]") ?? [])) {
+    const rect = row.getBoundingClientRect();
+    if (box && (rect.bottom <= box.top + 36 || rect.top >= box.bottom)) continue;
+    const distance = Math.abs(rect.top + rect.height / 2 - y);
+    if (distance < bestDistance) { bestDistance = distance; best = row; }
+  }
+  const cell = best?.querySelector<HTMLElement>("[data-guide-cell]") ?? guide?.querySelector<HTMLElement>("[data-guide-cell]");
+  if (cell) cell.focus({ preventScroll: true });
+  else document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus();
+}
+
 function ChannelNameButton({
   label,
   starred,
@@ -122,7 +140,7 @@ function LiveCategoryButton({
         if (event.key === "ArrowRight") {
           event.preventDefault();
           event.stopPropagation();
-          document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus();
+          enterGuideNear(event.currentTarget);
         }
       }}
     >
@@ -402,9 +420,10 @@ function TvLive() {
         else go(guideRef.current?.querySelector<HTMLElement>("[data-guide-next]"));
         return;
       }
-      const time = Number(cell.dataset['start']);
       const targets = cellsOf(next);
-      const match = idx === 0 ? targets[0] : targets.find((c) => Number(c.dataset['start']) <= time && Number(c.dataset['end']) > time) ?? targets.filter((c) => Number(c.dataset['start']) <= time).pop() ?? targets[0];
+      const x = idx === 0 ? -1 : cell.offsetLeft + cell.offsetWidth / 2;
+      const match = idx === 0 ? targets[0] : targets.find((c) => c.offsetLeft <= x && c.offsetLeft + c.offsetWidth > x)
+        ?? targets.reduce<HTMLElement | undefined>((bestCell, c) => !bestCell || Math.abs(c.offsetLeft + c.offsetWidth / 2 - x) < Math.abs(bestCell.offsetLeft + bestCell.offsetWidth / 2 - x) ? c : bestCell, undefined);
       go(match);
     }
   };
@@ -658,7 +677,7 @@ function TvLive() {
               variant={categoryId === FAVOURITES_CATEGORY ? "default" : "ghost"}
               className="h-9 w-full justify-start truncate px-2 text-xs"
               onFocus={() => previewCategory(FAVOURITES_CATEGORY)}
-              onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); } }}
+              onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); enterGuideNear(event.currentTarget); } }}
               onClick={() => chooseCategory(FAVOURITES_CATEGORY)}
             >
               <Star className="size-3 shrink-0" /> Favourites
@@ -670,7 +689,7 @@ function TvLive() {
                 variant={categoryId === RECENT_CATEGORY ? "default" : "ghost"}
                 className="h-9 w-full justify-start truncate px-2 text-xs"
                 onFocus={() => previewCategory(RECENT_CATEGORY)}
-                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); } }}
+                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); enterGuideNear(event.currentTarget); } }}
                 onClick={() => chooseCategory(RECENT_CATEGORY)}
               >
                 Recent
@@ -684,7 +703,7 @@ function TvLive() {
                 variant={categoryId === SPORTS_CATEGORY_PREFIX + league.key ? "default" : "ghost"}
                 className="h-9 w-full justify-start truncate px-2 text-xs"
                 onFocus={() => previewCategory(SPORTS_CATEGORY_PREFIX + league.key)}
-                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="sports-first-card"], [data-focus-key="live-search"]')?.focus(); } }}
+                onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); (document.querySelector<HTMLElement>('[data-focus-key="sports-first-card"]') ?? document.querySelector<HTMLElement>('[data-focus-key="live-search"]'))?.focus(); } }}
                 onClick={() => chooseCategory(SPORTS_CATEGORY_PREFIX + league.key)}
               >
                 {league.label} today <span className="opacity-70">(beta)</span>
@@ -707,7 +726,7 @@ function TvLive() {
               variant={categoryId === "" ? "default" : "ghost"}
               className="h-9 w-full justify-start truncate px-2 text-xs"
               onFocus={() => previewCategory("")}
-              onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); document.querySelector<HTMLElement>('[data-focus-key="live-search"]')?.focus(); } }}
+              onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); enterGuideNear(event.currentTarget); } }}
 
               onClick={() => chooseCategory("")}
             >
