@@ -37,7 +37,7 @@ test("mix shows every network and demotes ESPN+ event feeds", () => {
 test("an exact feed listing (TSN 2) does not pull other TSN feeds", () => {
   const ch = ["CA: TSN 1", "CA: TSN 2 HD", "CA: TSN3", "CA: Sportsnet East"].map((name, i) => ({ id: String(i), name }));
   const g = { matchup: "x", startsAt: "", league: "NHL", teams: [], broadcasts: ["TSN 2"] };
-  expect(byNet(g, ch)[0].items.map((c) => c.name)).toEqual(["CA: TSN 2 HD"]);
+  expect(byNet(g, ch).find((x) => x.network === "TSN 2").items.map((c) => c.name)).toEqual(["CA: TSN 2 HD"]);
 });
 
 test("team-named feeds come first; NHL Network always offered", () => {
