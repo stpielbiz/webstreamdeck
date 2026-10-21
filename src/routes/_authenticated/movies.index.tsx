@@ -6,12 +6,12 @@ import { CatalogLoading } from "@/components/catalog-loading";
 export const Route = createFileRoute("/_authenticated/movies/")({
   head: () => ({
     meta: [
-      { title: "Movies — Stream Deck" },
+      { title: "Movies — Streamivo" },
       {
         name: "description",
         content: "Browse the films in your playlist by category, search them and pick up where you stopped.",
       },
-      { property: "og:title", content: "Movies — Stream Deck" },
+      { property: "og:title", content: "Movies — Streamivo" },
       { property: "og:description", content: "Your playlist's film library, organised." },
     ],
   }),

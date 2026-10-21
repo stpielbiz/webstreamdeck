@@ -25,12 +25,12 @@ export const Route = createFileRoute("/_authenticated/series/$id")({
   validateSearch: z.object({ play: z.boolean().optional() }),
   head: () => ({
     meta: [
-      { title: "Watch a series — Stream Deck" },
+      { title: "Watch a series — Streamivo" },
       {
         name: "description",
         content: "Seasons, episode lists and playback that resumes each episode where you stopped.",
       },
-      { property: "og:title", content: "Watch a series — Stream Deck" },
+      { property: "og:title", content: "Watch a series — Streamivo" },
       { property: "og:description", content: "Play episodes from your own playlist." },
       { name: "robots", content: "noindex" },
     ],

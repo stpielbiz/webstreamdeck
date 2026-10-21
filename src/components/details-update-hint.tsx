@@ -21,7 +21,7 @@ export function DetailsUpdateHint({ tv = false }: { tv?: boolean }) {
         <li>Full descriptions, actors, genres and years</li>
         <li>Search that also finds titles by actor</li>
         <li>Franchise and collection lists</li>
-        <li>Better "Popular on Stream Deck" rows</li>
+        <li>Better "Popular on Streamivo" rows</li>
       </ul>
       <p className="mt-2 text-sm text-muted-foreground">
         The update runs in the background — please wait until it finishes.

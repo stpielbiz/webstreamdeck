@@ -11,7 +11,7 @@ import { groupCatalogItems, mediaMatchKey, type TitleVariant } from "@/lib/title
 
 const norm = mediaMatchKey;
 
-/** "Popular on Stream Deck" top 10 row; resolves a pick against the user's own playlist. */
+/** "Popular on Streamivo" top 10 row; resolves a pick against the user's own playlist. */
 export function PopularRow({
   kind,
   tv = false,
@@ -48,7 +48,7 @@ export function PopularRow({
   return (
     <section className={cn("mb-6", tv && "mb-3")}>
       <h2 className={cn("mb-3 flex items-center gap-2 font-display font-semibold", tv ? "mb-2 text-lg" : "text-lg")}>
-        <Flame className={cn("text-primary", tv ? "size-4" : "size-5")} /> Popular on Stream Deck
+        <Flame className={cn("text-primary", tv ? "size-4" : "size-5")} /> Popular on Streamivo
       </h2>
       <div className={cn("flex gap-3 overflow-x-auto pb-2", tv && "gap-2")}>
         {rows.map((row, index) => (

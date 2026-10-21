@@ -26,12 +26,12 @@ export const Route = createFileRoute("/_authenticated/live")({
   validateSearch: z.object({ channel: z.string().optional() }),
   head: () => ({
     meta: [
-      { title: "Live TV — Stream Deck" },
+      { title: "Live TV — Streamivo" },
       {
         name: "description",
         content: "Browse your channels by category, see what's on now and watch straight away.",
       },
-      { property: "og:title", content: "Live TV — Stream Deck" },
+      { property: "og:title", content: "Live TV — Streamivo" },
       { property: "og:description", content: "Your channel list with now and next." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

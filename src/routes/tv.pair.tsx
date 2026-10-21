@@ -11,13 +11,13 @@ export const Route = createFileRoute("/tv/pair")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in on your TV — Stream Deck" },
+      { title: "Sign in on your TV — Streamivo" },
       {
         name: "description",
         content:
           "Enter the code shown here on a signed-in phone, tablet, or computer to sign in this device.",
       },
-      { property: "og:title", content: "Sign in on your TV — Stream Deck" },
+      { property: "og:title", content: "Sign in on your TV — Streamivo" },
       {
         property: "og:description",
         content: "Sign in another device with a short code — no password typing required.",

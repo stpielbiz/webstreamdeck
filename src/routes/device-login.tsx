@@ -13,15 +13,15 @@ export const Route = createFileRoute("/device-login")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Log in another device — Stream Deck" },
+      { title: "Log in another device — Streamivo" },
       {
         name: "description",
-        content: "Enter the one-time code shown on another device to sign it into Stream Deck.",
+        content: "Enter the one-time code shown on another device to sign it into Streamivo.",
       },
-      { property: "og:title", content: "Log in another device — Stream Deck" },
+      { property: "og:title", content: "Log in another device — Streamivo" },
       {
         property: "og:description",
-        content: "Sign another device into your Stream Deck account with a one-time code.",
+        content: "Sign another device into your Streamivo account with a one-time code.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

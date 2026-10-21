@@ -1,4 +1,4 @@
-name: Build Stream Deck TV app
+name: Build Streamivo TV app
 
 on:
   workflow_dispatch:
@@ -42,7 +42,7 @@ jobs:
             EXPECTED_SHA="dea1f22e6edd0e3d269d5edbaca0bc70d5dd17957bc3b350649d1d8a9d5061c2"
             ACTUAL_SHA="$(sha256sum "$RUNNER_TEMP/release.jks" | cut -d' ' -f1)"
             if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
-              echo "::error::ANDROID_KEYSTORE_BASE64 does not match the Stream Deck signing key (a character was changed while copying). Re-paste it from streamdeck-release.base64.txt."
+              echo "::error::ANDROID_KEYSTORE_BASE64 does not match the Streamivo signing key (a character was changed while copying). Re-paste it from streamdeck-release.base64.txt."
               exit 1
             fi
             echo "Keystore fingerprint matches."
@@ -88,7 +88,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: tv-app-v1.0.${{ github.run_number }}
-          name: Stream Deck TV app 1.0.${{ github.run_number }}
+          name: Streamivo TV app 1.0.${{ github.run_number }}
           make_latest: "true"
           files: |
             native-app/android/stream-deck-tv.apk

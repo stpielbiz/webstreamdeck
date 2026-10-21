@@ -50,7 +50,7 @@ export function TvShell({
           <Tv className="size-5" />
         </span>
         <div className="min-w-0">
-          <p className="truncate font-display text-lg font-bold">Stream Deck</p>
+          <p className="truncate font-display text-lg font-bold">Streamivo</p>
           <p className="truncate text-xs text-muted-foreground">{title}</p>
         </div>
         <div className="hidden shrink-0 text-right md:block">

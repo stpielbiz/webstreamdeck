@@ -26,12 +26,12 @@ export const Route = createFileRoute("/_authenticated/movies/$id")({
   validateSearch: z.object({ play: z.boolean().optional() }),
   head: () => ({
     meta: [
-      { title: "Watch a film — Stream Deck" },
+      { title: "Watch a film — Streamivo" },
       {
         name: "description",
         content: "Film details, synopsis and playback with resume from where you stopped.",
       },
-      { property: "og:title", content: "Watch a film — Stream Deck" },
+      { property: "og:title", content: "Watch a film — Streamivo" },
       { property: "og:description", content: "Play a film from your own playlist." },
       { name: "robots", content: "noindex" },
     ],

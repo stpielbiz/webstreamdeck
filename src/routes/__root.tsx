@@ -84,13 +84,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Stream Deck — Watch your IPTV playlists anywhere" },
+      { title: "Streamivo — Watch your IPTV playlists anywhere" },
       {
         name: "description",
         content:
           "Sign in, add your Xtream Codes or M3U playlist, and watch live TV, movies and series with favourites and resume where you left off.",
       },
-      { property: "og:title", content: "Stream Deck — Watch your IPTV playlists anywhere" },
+      { property: "og:title", content: "Streamivo — Watch your IPTV playlists anywhere" },
       {
         property: "og:description",
         content: "Your own IPTV subscriptions, in one fast player with favourites and resume.",

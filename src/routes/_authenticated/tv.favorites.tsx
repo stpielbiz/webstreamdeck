@@ -7,12 +7,12 @@ import { TvShell } from "@/components/tv-shell";
 export const Route = createFileRoute("/_authenticated/tv/favorites")({
   head: () => ({
     meta: [
-      { title: "Favourites on your TV — Stream Deck" },
+      { title: "Favourites on your TV — Streamivo" },
       {
         name: "description",
         content: "Your starred channels, movies and series, ready to open with the remote.",
       },
-      { property: "og:title", content: "Favourites on your TV — Stream Deck" },
+      { property: "og:title", content: "Favourites on your TV — Streamivo" },
       { property: "og:description", content: "Separate compact lists of your favourite channels, movies and shows." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

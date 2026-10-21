@@ -347,7 +347,7 @@ class RecordingService : Service() {
         @Suppress("DEPRECATION")
         val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, "recordings") else Notification.Builder(this)
         return builder
-            .setContentTitle("Stream Deck")
+            .setContentTitle("Streamivo")
             .setContentText("Recording live TV")
             .setSmallIcon(android.R.drawable.presence_video_online)
             .setOngoing(true)

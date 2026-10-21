@@ -37,7 +37,7 @@ function bridge(): RecorderBridge | null {
   return (window.StreamDeckNative as unknown as RecorderBridge | undefined) ?? null;
 }
 
-/** True when this device can record (the Stream Deck Fire TV app, new enough). */
+/** True when this device can record (the Streamivo Fire TV app, new enough). */
 export function canRecord(): boolean {
   return typeof bridge()?.startRecording === "function";
 }

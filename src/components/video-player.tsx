@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { externalPlayerLinks, hasNativePlayer, playNative } from "@/lib/external-player";
 
 const DEVICE_ONLY_MESSAGE =
-  "Your provider only allows streams from your own device. Open it in VLC or use the Stream Deck TV app.";
+  "Your provider only allows streams from your own device. Open it in VLC or use the Streamivo TV app.";
 
 export interface VideoPlayerProps {
   src: string | null;
@@ -150,7 +150,7 @@ export function VideoPlayer({
     return true;
   }, [live]);
 
-  // Inside the Stream Deck TV app, hand playback to its built-in player, which
+  // Inside the Streamivo TV app, hand playback to its built-in player, which
   // fetches the stream over the device's own connection.
   const startNative = useCallback(() => {
     if (!fallbackSrc) return false;
@@ -570,7 +570,7 @@ export function VideoPlayer({
         <div data-native-overlay data-started-at={nativeStartedAt.current} className="absolute inset-0 z-10 grid place-items-center bg-black/90 px-6 text-center">
           <div>
             <Tv className="mx-auto size-8 text-primary" />
-            <p className="mt-3 text-sm font-medium text-white">Playing in the Stream Deck player</p>
+            <p className="mt-3 text-sm font-medium text-white">Playing in the Streamivo player</p>
             <button
               type="button"
               data-tv-focus
