@@ -21,6 +21,7 @@ import { SearchField } from "@/components/search-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { setDebugEnabled, useDebugLog } from "@/lib/debug-log";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -59,6 +60,8 @@ function AdminPage() {
 
   const debug = useDebugLog();
   const [openLog, setOpenLog] = useState<string | null>(null);
+  const [logsOpen, setLogsOpen] = useState(false);
+  const [deleting, setDeleting] = useState<AdminUser | null>(null);
   const logs = useQuery({
     queryKey: ["admin", "stream-logs"],
     enabled: isAdmin,
@@ -165,7 +168,7 @@ function AdminPage() {
             Manage accounts, access and shared title data.
           </p>
         </div>
-        <Button variant="secondary" size="sm" onClick={refresh}>
+        <Button variant="secondary" size="sm" data-tv-focus onClick={refresh}>
           <RefreshCw className="size-4" /> Refresh
         </Button>
       </header>
@@ -189,13 +192,16 @@ function AdminPage() {
 
       <section className="space-y-3 rounded-lg border border-border bg-card p-4">
         <div className="flex items-center justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <h2 className="font-display text-lg font-semibold">Connection & stream logs</h2>
-            <p className="text-sm text-muted-foreground">Turn on for this device. While on, logs save here automatically every 20 seconds (codes start with AUTO); a Logs button bottom-left can also Save now.</p>
+            <p className="text-sm text-muted-foreground">Turn on for this device. While on, logs save here automatically every 20 seconds (codes start with AUTO).</p>
           </div>
           <Switch data-tv-focus checked={debug.enabled} onCheckedChange={setDebugEnabled} aria-label="Connection and stream logs" />
         </div>
-        {(logs.data ?? []).map((log) => (
+        <Button variant="outline" size="sm" data-tv-focus onClick={() => setLogsOpen((v) => !v)}>
+          {logsOpen ? "Hide logs" : `Show logs (${logs.data?.length ?? 0})`}
+        </Button>
+        {logsOpen && (logs.data ?? []).map((log) => (
           <div key={log.id} className="rounded border border-border">
             <button data-tv-focus className="flex w-full justify-between px-3 py-2 text-left text-sm" onClick={() => setOpenLog(openLog === log.id ? null : log.id)}>
               <span className="font-mono font-semibold">{log.code}</span>
@@ -211,161 +217,110 @@ function AdminPage() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <h2 className="font-display text-lg font-semibold">Accounts</h2>
-          <SearchField
-            value={filter}
-            onValueChange={setFilter}
-            placeholder="Search by email"
-            containerClassName="max-w-sm"
-            data-tv-focus data-app-search="true"
-          />
+          <SearchField value={filter} onValueChange={setFilter} placeholder="Search by email" containerClassName="max-w-sm" data-tv-focus data-app-search="true" />
         </div>
 
         {accounts.isLoading ? (
           <Skeleton className="h-40 w-full" />
         ) : accounts.isError ? (
-          <p className="text-sm text-destructive">
-            {(accounts.error as Error).message}
-          </p>
+          <p className="text-sm text-destructive">{(accounts.error as Error).message}</p>
+        ) : rows.length === 0 ? (
+          <p className="py-6 text-center text-muted-foreground">No accounts match that search.</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full min-w-[760px] text-sm">
-              <thead className="bg-secondary/60 text-left text-xs uppercase tracking-widest text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2">Email</th>
-                  <th className="px-3 py-2">Joined</th>
-                  <th className="px-3 py-2">Last sign-in</th>
-                  <th className="px-3 py-2">Sources</th>
-                  <th className="px-3 py-2">Favourites</th>
-                  <th className="px-3 py-2">Watching</th>
-                  <th className="px-3 py-2">Access</th>
-                  <th className="px-3 py-2">Expiry</th>
-                  <th className="px-3 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((user) => (
-                  <tr key={user.id} className="border-t border-border">
-                    <td className="px-3 py-2 font-medium">
-                      {user.email ?? "—"}
-                      {!user.confirmed && (
-                        <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">
-                          unconfirmed
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">{fmt(user.createdAt)}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{fmt(user.lastSignInAt)}</td>
-                    <td className="px-3 py-2">{user.playlists}</td>
-                    <td className="px-3 py-2">{user.favorites}</td>
-                    <td className="px-3 py-2">{user.progress}</td>
-                    <td className="px-3 py-2">
-                      {user.isAdmin ? (
-                        <span className="rounded bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
-                          Admin
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Member</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <AccountExpiryControl user={user} pending={access.isPending} onSave={(value) => access.mutate({ userId: user.id, ...value })} />
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title={user.isAdmin ? "Remove admin access" : "Make admin"}
-                          onClick={() =>
-                            role.mutate({ userId: user.id, admin: !user.isAdmin })
-                          }
-                        >
-                          {user.isAdmin ? (
-                            <ShieldOff className="size-4" />
-                          ) : (
-                            <ShieldCheck className="size-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Copy password reset link"
-                          disabled={!user.email}
-                          onClick={() => user.email && link.mutate(user.email)}
-                        >
-                          <KeyRound className="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Delete account"
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `Permanently delete ${user.email ?? "this account"} and all of its saved data?`,
-                              )
-                            ) {
-                              remove.mutate(user.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {rows.length === 0 && (
-                  <tr>
-                    <td className="px-3 py-6 text-center text-muted-foreground" colSpan={9}>
-                      No accounts match that search.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <ul className="space-y-3">
+            {rows.map((user) => (
+              <li key={user.id} className="space-y-3 rounded-lg border border-border bg-card p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="min-w-0 break-all font-semibold">{user.email ?? "—"}</span>
+                  {user.isAdmin && <span className="rounded bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">Admin</span>}
+                  {!user.confirmed && <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">unconfirmed</span>}
+                  {user.transferClaimedAt && <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">Transfer sent {new Date(user.transferClaimedAt).toLocaleString()}</span>}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Joined {fmt(user.createdAt)} · Last sign-in {fmt(user.lastSignInAt)} · {user.playlists} sources · {user.favorites} favourites · {user.progress} watching
+                </p>
+                <AccountExpiryControl user={user} tv={mode === "tv"} pending={access.isPending} onSave={(value) => access.mutate({ userId: user.id, ...value })} />
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" data-tv-focus onClick={() => role.mutate({ userId: user.id, admin: !user.isAdmin })}>
+                    {user.isAdmin ? <><ShieldOff className="size-4" /> Remove admin</> : <><ShieldCheck className="size-4" /> Make admin</>}
+                  </Button>
+                  <Button variant="outline" size="sm" data-tv-focus disabled={!user.email} onClick={() => user.email && link.mutate(user.email)}>
+                    <KeyRound className="size-4" /> Reset link
+                  </Button>
+                  <Button variant="outline" size="sm" data-tv-focus onClick={() => setDeleting(user)}>
+                    <Trash2 className="size-4 text-destructive" /> Delete
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
+
+      <Dialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete account?</DialogTitle>
+            <DialogDescription>Permanently delete {deleting?.email ?? "this account"} and all of its saved data.</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" data-tv-focus autoFocus data-dialog-back onClick={() => setDeleting(null)}>Cancel</Button>
+            <Button variant="destructive" data-tv-focus onClick={() => { if (deleting) remove.mutate(deleting.id); setDeleting(null); }}>Delete</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function AccountExpiryControl({ user, pending, onSave }: {
+function addTo(base: Date, unit: "day" | "month" | "year") {
+  const d = new Date(base);
+  if (unit === "day") d.setDate(d.getDate() + 1);
+  else if (unit === "month") d.setMonth(d.getMonth() + 1);
+  else d.setFullYear(d.getFullYear() + 1);
+  return d;
+}
+
+function AccountExpiryControl({ user, tv, pending, onSave }: {
   user: AdminUser;
+  tv: boolean;
   pending: boolean;
   onSave: (value: { neverExpires: boolean; expiresAt: string | null }) => void;
 }) {
   const [neverExpires, setNeverExpires] = useState(user.neverExpires);
   const [date, setDate] = useState(user.expiresAt?.slice(0, 10) ?? "");
+  const bump = (unit: "day" | "month" | "year") => {
+    const current = date ? new Date(`${date}T12:00:00`) : null;
+    const base = current && current > new Date() ? current : new Date();
+    const next = addTo(base, unit);
+    setNeverExpires(false);
+    setDate(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`);
+  };
   const save = () => {
-    if (neverExpires) {
-      onSave({ neverExpires: true, expiresAt: null });
-      return;
-    }
-    if (!date) {
-      toast.error("Choose an expiry date");
-      return;
-    }
+    if (neverExpires) return onSave({ neverExpires: true, expiresAt: null });
+    if (!date) return void toast.error("Choose an expiry date");
     onSave({ neverExpires: false, expiresAt: new Date(`${date}T23:59:59.999Z`).toISOString() });
   };
+  const label = neverExpires ? "Never expires" : date ? `Expires ${new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}` : "No expiry date set";
 
   return (
-    <div className="min-w-64 space-y-2">
-      <div className="flex items-center gap-2">
-        <Input type="date" value={date} disabled={neverExpires || pending} onChange={(event) => setDate(event.target.value)} aria-label={`Expiry date for ${user.email ?? "account"}`} />
-        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={save}><CalendarClock className="size-4" /> Save</Button>
+    <div className="space-y-2 rounded-md bg-secondary/40 p-3">
+      <p className="text-sm font-semibold">
+        {label}
+        {user.expired && !user.neverExpires && <span className="ml-2 text-destructive">(currently expired)</span>}
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" size="sm" variant="secondary" data-tv-focus disabled={pending} onClick={() => bump("day")}>+1 day</Button>
+        <Button type="button" size="sm" variant="secondary" data-tv-focus disabled={pending} onClick={() => bump("month")}>+1 month</Button>
+        <Button type="button" size="sm" variant="secondary" data-tv-focus disabled={pending} onClick={() => bump("year")}>+1 year</Button>
+        <Button type="button" size="sm" variant={neverExpires ? "default" : "outline"} data-tv-focus disabled={pending} onClick={() => setNeverExpires((v) => !v)}>
+          Never expires: {neverExpires ? "On" : "Off"}
+        </Button>
+        {!tv && <Input type="date" className="w-auto" value={date} disabled={neverExpires || pending} onChange={(event) => setDate(event.target.value)} aria-label={`Expiry date for ${user.email ?? "account"}`} />}
+        <Button type="button" size="sm" data-tv-focus disabled={pending} onClick={save}><CalendarClock className="size-4" /> Save</Button>
       </div>
-      <label className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Switch checked={neverExpires} disabled={pending} onCheckedChange={setNeverExpires} aria-label={`Never expires for ${user.email ?? "account"}`} />
-        Never expires
-        {user.expired && !user.neverExpires && <span className="font-semibold text-destructive">Expired</span>}
-      </label>
-      {user.transferClaimedAt && <span className="inline-block rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
-        Transfer sent {new Date(user.transferClaimedAt).toLocaleString()}
-      </span>}
     </div>
   );
 }
