@@ -24,6 +24,7 @@ import { useSpatialNav } from "@/lib/use-spatial-nav";
 import { useSavedFranchises } from "@/lib/saved-franchises";
 import { useTvScreenSize } from "@/lib/playlist-sync";
 import { useAccountAccess } from "@/lib/account-access";
+import { AccountExpiryBadge } from "@/components/account-expiry-badge";
 import { signedOutPath } from "@/lib/fire-tv-device";
 import {
   Select,
@@ -106,7 +107,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="grid h-14 shrink-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-border px-3 sm:px-6">
           <Link to="/dashboard" className="flex min-w-0 items-center gap-2">
             <span className="grid size-8 shrink-0 place-items-center rounded bg-primary text-primary-foreground"><Tv className="size-4" /></span>
-            <span className="truncate font-display text-lg font-bold">Streamivo</span>
+            <span className="truncate font-display text-lg font-bold">Streamivo</span><AccountExpiryBadge />
           </Link>
           <span className="hidden text-sm text-muted-foreground sm:block">{playlists.find((item) => item.id === activeId)?.name ?? "No playlist"}</span>
           <div className="flex items-center gap-1">
@@ -129,7 +130,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="grid size-8 place-items-center rounded bg-primary text-primary-foreground">
             <Tv className="size-4" />
           </span>
-          <span className="font-display text-lg font-bold tracking-tight">Streamivo</span>
+          <span className="font-display text-lg font-bold tracking-tight">Streamivo</span><AccountExpiryBadge />
         </Link>
 
         <nav className="flex flex-col gap-1">

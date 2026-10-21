@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Tv } from "lucide-react";
+import { AccountExpiryBadge } from "@/components/account-expiry-badge";
 import type { ReactNode } from "react";
 
 import { usePlaylists } from "@/components/playlist-context";
@@ -50,7 +51,7 @@ export function TvShell({
           <Tv className="size-5" />
         </span>
         <div className="min-w-0">
-          <p className="truncate font-display text-lg font-bold">Streamivo</p>
+          <p className="flex min-w-0 items-baseline gap-2"><span className="truncate font-display text-lg font-bold">Streamivo</span><AccountExpiryBadge /></p>
           <p className="truncate text-xs text-muted-foreground">{title}</p>
         </div>
         <div className="hidden shrink-0 text-right md:block">

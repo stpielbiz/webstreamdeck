@@ -43,19 +43,17 @@ export function SubscriptionBanner() {
     : `Keep watching after that for ${PAYMENT.price}.`;
   const showPay = !!status && !status.neverExpires;
 
+  if (!status || status.neverExpires) return null;
+
   return (
-    <div className="space-y-4 rounded-lg border border-primary/40 bg-primary/10 p-5">
+    <div className="space-y-3 rounded-lg border border-primary/40 bg-primary/10 p-4">
       <div>
         <p className="flex items-center gap-2 font-display text-base font-semibold"><Icon className="size-5 text-primary" />{title}</p>
         <p className="mt-1 text-sm text-muted-foreground">{body}</p>
       </div>
       {showPay && !pending && (
         <div className="space-y-3">
-          <ul className="space-y-1 text-sm">
-            <li><span className="text-muted-foreground">Price:</span> <strong>{PAYMENT.price}</strong></li>
-            <li><span className="text-muted-foreground">Send by PayPal (Friends and Family) to:</span> <strong>{PAYMENT.email}</strong></li>
-            <li><span className="text-muted-foreground">In the note, write your login email</span></li>
-          </ul>
+          <p className="text-sm"><strong>{PAYMENT.price}</strong> <span className="text-muted-foreground">by PayPal Friends and Family to</span> <strong>{PAYMENT.email}</strong></p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" data-tv-focus onClick={() => setHowTo(true)}>How to pay</Button>
             <Button data-tv-focus disabled={mutation.isPending} onClick={() => mutation.mutate()}>
