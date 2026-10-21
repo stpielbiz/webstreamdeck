@@ -7,6 +7,7 @@ import { getAccountAccess } from "@/lib/account-access.functions";
 export type AccountAccess = {
   expiresAt: string | null;
   neverExpires: boolean;
+  transferClaimedAt: string | null;
   expired: boolean;
 };
 

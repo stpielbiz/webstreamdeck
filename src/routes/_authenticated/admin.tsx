@@ -363,6 +363,9 @@ function AccountExpiryControl({ user, pending, onSave }: {
         Never expires
         {user.expired && !user.neverExpires && <span className="font-semibold text-destructive">Expired</span>}
       </label>
+      {user.transferClaimedAt && <span className="inline-block rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+        Transfer sent {new Date(user.transferClaimedAt).toLocaleString()}
+      </span>}
     </div>
   );
 }

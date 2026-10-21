@@ -14,6 +14,7 @@ export type AdminUser = {
   progress: number;
   expiresAt: string | null;
   neverExpires: boolean;
+  transferClaimedAt: string | null;
   expired: boolean;
 };
 
@@ -55,7 +56,7 @@ export const listAccounts = createServerFn({ method: "GET" })
       supabaseAdmin.from("playlists").select("user_id"),
       supabaseAdmin.from("favorites").select("user_id"),
       supabaseAdmin.from("watch_progress").select("user_id"),
-      supabaseAdmin.from("account_access").select("user_id, expires_at, never_expires"),
+      supabaseAdmin.from("account_access").select("user_id, expires_at, never_expires, transfer_claimed_at"),
     ]);
 
     const admins = new Set(
@@ -87,6 +88,7 @@ export const listAccounts = createServerFn({ method: "GET" })
       progress: pg.get(user.id) ?? 0,
       expiresAt,
       neverExpires,
+      transferClaimedAt: accountAccess?.transfer_claimed_at ?? null,
       expired: !neverExpires && (!expiresAt || new Date(expiresAt).getTime() <= Date.now()),
     };
     });
@@ -113,6 +115,7 @@ export const setAccountAccess = createServerFn({ method: "POST" })
       user_id: data.userId,
       expires_at: data.expiresAt,
       never_expires: data.neverExpires,
+      transfer_claimed_at: null,
     }, { onConflict: "user_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
