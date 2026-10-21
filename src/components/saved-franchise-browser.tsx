@@ -1,10 +1,11 @@
 import { useGetItems } from "@/lib/device-provider";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Layers } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { useFranchiseMatches } from "@/components/franchise-list";
+import { franchiseIndex, useFranchiseMatches } from "@/components/franchise-details";
+import { debugLog } from "@/lib/debug-log";
 import { FranchiseCollectionPage } from "@/components/franchise-collection";
 import { usePlaylists } from "@/components/playlist-context";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,19 @@ export function SavedFranchiseBrowser({ tv, onBack }: { tv?: boolean; onBack: ()
   const movies = useQuery(options("movie"));
   const shows = useQuery(options("series"));
   const selected = saved.data?.find((item) => item.id === openId) ?? null;
+  // Show the wall first; build the title index after the first paint so the remote never waits on it.
+  const [ready, setReady] = useState<{ movies?: typeof movies.data; shows?: typeof shows.data }>({});
+  useEffect(() => {
+    if (!movies.data && !shows.data) return;
+    const started = performance.now();
+    const timer = window.setTimeout(() => {
+      franchiseIndex(movies.data);
+      franchiseIndex(shows.data);
+      setReady({ movies: movies.data, shows: shows.data });
+      debugLog("franchise", "ready", { ms: Math.round(performance.now() - started) });
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [movies.data, shows.data]);
 
   const cards = () => Array.from(gridRef.current?.querySelectorAll<HTMLElement>("[data-franchise-card]") ?? []);
   const focusIndex = (index: number) => window.requestAnimationFrame(() => {
@@ -68,13 +82,6 @@ export function SavedFranchiseBrowser({ tv, onBack }: { tv?: boolean; onBack: ()
     list[next]?.focus();
   };
 
-  if (selected) {
-    return (
-      <section className="mx-auto w-full max-w-5xl p-3 sm:p-6">
-        <FranchiseCollectionPage franchise={selected} movies={movies.data} shows={shows.data} onBack={close} />
-      </section>
-    );
-  }
 
   const confirmRemove = async () => {
     if (!removing) return;
@@ -87,7 +94,13 @@ export function SavedFranchiseBrowser({ tv, onBack }: { tv?: boolean; onBack: ()
   };
 
   return (
-    <section className="mx-auto w-full max-w-6xl space-y-5 p-3 sm:p-6">
+    <>
+    {selected && (
+      <section className="mx-auto w-full max-w-5xl p-3 sm:p-6">
+        <FranchiseCollectionPage franchise={selected} movies={ready.movies ?? movies.data} shows={ready.shows ?? shows.data} onBack={close} />
+      </section>
+    )}
+    <section hidden={!!selected} className="mx-auto w-full max-w-6xl space-y-5 p-3 sm:p-6">
       <div className="flex items-center gap-3" data-remote-row>
         <Button ref={backRef} data-layer-back data-tv-focus variant="ghost" size="sm" onClick={onBack}
           onKeyDown={(event) => { if (event.key === "ArrowDown" && cards().length) { event.preventDefault(); event.stopPropagation(); cards()[0]?.focus(); } }}>
@@ -101,7 +114,7 @@ export function SavedFranchiseBrowser({ tv, onBack }: { tv?: boolean; onBack: ()
       {saved.isLoading ? <p className="text-sm text-muted-foreground">Loading saved lists…</p> : saved.data?.length ? (
         <div ref={gridRef} data-remote-row onKeyDownCapture={onGridKey} className={tv ? "grid grid-cols-5 gap-4" : "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"}>
           {saved.data.map((franchise, index) => (
-            <PosterCard key={franchise.id} franchise={franchise} movies={movies.data} shows={shows.data} first={index === 0}
+            <PosterCard key={franchise.id} franchise={franchise} movies={ready.movies} shows={ready.shows} first={index === 0}
               onOpen={() => setOpenId(franchise.id)} onHold={() => setRemoving(franchise)} />
           ))}
         </div>
@@ -118,6 +131,7 @@ export function SavedFranchiseBrowser({ tv, onBack }: { tv?: boolean; onBack: ()
         </DialogContent>
       </Dialog>
     </section>
+    </>
   );
 }
 
