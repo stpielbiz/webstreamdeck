@@ -71,6 +71,13 @@
       "when": 1792448461196,
       "tag": "0009_sports_package",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792547821096,
+      "tag": "0010_transfer_claim",
+      "breakpoints": true
     }
   ]
 }
