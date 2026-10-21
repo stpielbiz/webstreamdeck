@@ -12,19 +12,28 @@ import type { CatalogItem } from "@/lib/iptv-types";
 import { groupCatalogItems, mediaMatchKey, type TitleGroup } from "@/lib/title-variants";
 import { useRemoveSavedFranchise, useSaveFranchise, useSavedFranchises } from "@/lib/saved-franchises";
 
+// Grouping a full catalogue is heavy on a Fire Stick: build each index once per catalogue array.
+const indexCache = new WeakMap<CatalogItem[], Map<string, TitleGroup[]>>();
+const emptyIndex = new Map<string, TitleGroup[]>();
+export function franchiseIndex(items?: CatalogItem[]) {
+  if (!items?.length) return emptyIndex;
+  const cached = indexCache.get(items);
+  if (cached) return cached;
+  const map = new Map<string, TitleGroup[]>();
+  for (const group of groupCatalogItems(items)) {
+    const key = mediaMatchKey(group.title.replace(/[[(]\s*(?:US|UK|CA|AU|EN|FR|DE|ES|IT)\s*[\])]/gi, ""));
+    const list = map.get(key);
+    if (list) list.push(group); else map.set(key, [group]);
+  }
+  indexCache.set(items, map);
+  return map;
+}
+
 export function useFranchiseMatches(franchise: Franchise | null | undefined, movies?: CatalogItem[], shows?: CatalogItem[]) {
   return useMemo(() => {
     if (!franchise) return [];
-    const index = (items?: CatalogItem[]) => {
-      const map = new Map<string, TitleGroup[]>();
-      for (const group of groupCatalogItems(items ?? [])) {
-        const key = mediaMatchKey(group.title.replace(/[[(]\s*(?:US|UK|CA|AU|EN|FR|DE|ES|IT)\s*[\])]/gi, ""));
-        map.set(key, [...(map.get(key) ?? []), group]);
-      }
-      return map;
-    };
-    const moviesIndex = index(movies);
-    const showsIndex = index(shows);
+    const moviesIndex = franchiseIndex(movies);
+    const showsIndex = franchiseIndex(shows);
     return franchise.members.map((member) => {
       const candidates = (member.kind === "movie" ? moviesIndex : showsIndex).get(mediaMatchKey(member.title)) ?? [];
       const group = candidates.find((candidate) => {
