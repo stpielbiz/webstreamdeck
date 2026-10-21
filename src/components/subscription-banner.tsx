@@ -54,7 +54,7 @@ export function SubscriptionBanner() {
           <ul className="space-y-1 text-sm">
             <li><span className="text-muted-foreground">Price:</span> <strong>{PAYMENT.price}</strong></li>
             <li><span className="text-muted-foreground">Send by PayPal (Friends and Family) to:</span> <strong>{PAYMENT.email}</strong></li>
-            <li><span className="text-muted-foreground">In the note, write your login email</span>{status?.expiresAt ? null : null}</li>
+            <li><span className="text-muted-foreground">In the note, write your login email</span></li>
           </ul>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" data-tv-focus onClick={() => setHowTo(true)}>How to pay</Button>
