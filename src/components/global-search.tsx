@@ -129,7 +129,7 @@ export function GlobalSearch() {
       <div data-remote-row className="flex max-w-2xl items-center gap-2">
         <SearchField
           containerClassName="min-w-0 flex-1"
-          data-tv-focus data-zone-entry="true" data-app-search="true" data-focus-key="global-search"
+          data-tv-focus data-app-search="true" data-focus-key="global-search"
           value={search} onValueChange={setSearch}
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") {

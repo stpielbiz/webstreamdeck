@@ -79,11 +79,15 @@ function TvHome() {
   // The home content's own starting point: the first tile, never the search box.
   const homeEntry = () =>
     document.querySelector<HTMLElement>('[data-tv-zone="home-content"] [data-zone-entry="true"]:not(input)');
+  // The menu's Home entry — the screen you're on. It can't be selected, but it
+  // is where the remote starts, so Down walks the menu and Right walks into the
+  // content below.
+  const homeMenuEntry = () =>
+    document.querySelector<HTMLElement>('[data-focus-key="section-Home"]');
 
-  // The menu's Home entry only marks this screen — it can't be selected — so the
-  // remote opens on the home content itself. That content swaps in a few times
-  // while the playlist and library load, so keep the opening selection applied
-  // and hand over the moment a remote button is pressed.
+  // The remote opens on the menu's Home entry. That entry appears as the
+  // playlist and library load, so keep the opening selection applied and hand
+  // over the moment a remote button is pressed.
   useEffect(() => {
     let touched = false;
     const mark = () => { touched = true; };
@@ -91,7 +95,7 @@ function TvHome() {
     let attempts = 0;
     const timer = window.setInterval(() => {
       const idle = !touched && (!document.activeElement || document.activeElement === document.body);
-      if (idle) homeEntry()?.focus();
+      if (idle) homeMenuEntry()?.focus();
       if (touched || ++attempts > 32) window.clearInterval(timer);
     }, 250);
     return () => { window.clearInterval(timer); window.removeEventListener("keydown", mark); };
