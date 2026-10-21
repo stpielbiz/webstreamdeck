@@ -20,10 +20,10 @@ export const Route = createFileRoute("/_authenticated/settings")({
   validateSearch: z.object({ mode: z.literal("tv").optional() }),
   head: () => ({
     meta: [
-      { title: "Settings — Stream Deck" },
-      { name: "description", content: "Choose how Stream Deck handles your playlists and viewing history." },
-      { property: "og:title", content: "Settings — Stream Deck" },
-      { property: "og:description", content: "Personal Stream Deck preferences." },
+      { title: "Settings — Streamivo" },
+      { name: "description", content: "Choose how Streamivo handles your playlists and viewing history." },
+      { property: "og:title", content: "Settings — Streamivo" },
+      { property: "og:description", content: "Personal Streamivo preferences." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/_authenticated/favorites")({
   head: () => ({
     meta: [
-      { title: "Favourites — Stream Deck" },
+      { title: "Favourites — Streamivo" },
       {
         name: "description",
         content: "The channels, films and shows you starred, ready to play in one click.",
       },
-      { property: "og:title", content: "Favourites — Stream Deck" },
+      { property: "og:title", content: "Favourites — Streamivo" },
       { property: "og:description", content: "Separate compact lists of your favourite channels, movies and shows." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -19,9 +19,9 @@ export const Route = createFileRoute("/_authenticated/playlists")({
   validateSearch: z.object({ mode: z.literal("tv").optional() }),
   head: () => ({
     meta: [
-      { title: "Playlists — Stream Deck" },
+      { title: "Playlists — Streamivo" },
       { name: "description", content: "Add, edit and remove your Xtream Codes logins and M3U playlist links." },
-      { property: "og:title", content: "Playlists — Stream Deck" },
+      { property: "og:title", content: "Playlists — Streamivo" },
       { property: "og:description", content: "Manage the IPTV sources on your account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

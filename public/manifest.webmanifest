@@ -1,6 +1,6 @@
 {
-  "name": "Stream Deck",
-  "short_name": "Stream Deck",
+  "name": "Streamivo",
+  "short_name": "Streamivo",
   "description": "Watch your own IPTV playlists — live TV, movies and series.",
   "start_url": "/",
   "display": "standalone",

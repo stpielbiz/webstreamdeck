@@ -20,12 +20,12 @@ import type { ProgressRow } from "@/lib/iptv.functions";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Home — Stream Deck" },
+      { title: "Home — Streamivo" },
       {
         name: "description",
         content: "Continue watching, your favourites and quick access to live TV.",
       },
-      { property: "og:title", content: "Home — Stream Deck" },
+      { property: "og:title", content: "Home — Streamivo" },
       { property: "og:description", content: "Pick up where you left off." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -63,7 +63,7 @@ function Dashboard() {
         <SubscriptionBanner />
         <EmptyState
           title="Add your first playlist"
-          description="Stream Deck plays your own IPTV subscription. Add an Xtream Codes login or an M3U link and your channels, movies and series appear here."
+          description="Streamivo plays your own IPTV subscription. Add an Xtream Codes login or an M3U link and your channels, movies and series appear here."
           action={
             <Button asChild>
               <Link to="/playlists">Add a playlist</Link>
@@ -106,7 +106,7 @@ function Dashboard() {
         ) : resumable.length === 0 ? (
           <EmptyState
             title="Nothing to resume yet"
-            description="Start a movie or an episode and Stream Deck will remember exactly where you stopped."
+            description="Start a movie or an episode and Streamivo will remember exactly where you stopped."
           />
         ) : (
           <PosterGrid>

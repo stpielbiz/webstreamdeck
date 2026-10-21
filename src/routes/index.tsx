@@ -18,9 +18,9 @@ const ICONS: Record<string, LucideIcon> = {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Stream Deck — IPTV player for Fire Stick and every screen" },
+      { title: "Streamivo — IPTV player for Fire Stick and every screen" },
       { name: "description", content: "Watch your Xtream Codes or M3U playlist with a live guide, franchises, favourites, actor search and resume — built for the Fire Stick remote." },
-      { property: "og:title", content: "Stream Deck — IPTV player for Fire Stick and every screen" },
+      { property: "og:title", content: "Streamivo — IPTV player for Fire Stick and every screen" },
       { property: "og:description", content: "Live TV, movies and shows from your own playlist, with franchises, favourites and actor search." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -57,7 +57,7 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-6xl items-center gap-2 px-6 py-6">
         <span className="grid size-9 place-items-center rounded bg-primary text-primary-foreground"><Tv className="size-5" /></span>
-        <span className="font-display text-xl font-bold">Stream Deck</span>
+        <span className="font-display text-xl font-bold">Streamivo</span>
       </header>
 
       <section className="relative mx-auto max-w-6xl px-6 pb-12 pt-6">

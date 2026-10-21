@@ -15,13 +15,13 @@ export const Route = createFileRoute("/auth")({
   validateSearch: z.object({ returnTo: z.literal("/device-login").optional() }),
   head: () => ({
     meta: [
-      { title: "Sign in — Stream Deck" },
+      { title: "Sign in — Streamivo" },
       {
         name: "description",
         content:
-          "Sign in or create a Stream Deck account to watch your own IPTV playlists with favourites and resume.",
+          "Sign in or create a Streamivo account to watch your own IPTV playlists with favourites and resume.",
       },
-      { property: "og:title", content: "Sign in — Stream Deck" },
+      { property: "og:title", content: "Sign in — Streamivo" },
       {
         property: "og:description",
         content: "Access your playlists, favourites and continue watching.",
@@ -108,7 +108,7 @@ function AuthPage() {
           <span className="grid size-9 place-items-center rounded bg-primary text-primary-foreground">
             <Tv className="size-5" />
           </span>
-          <span className="font-display text-xl font-bold">Stream Deck</span>
+          <span className="font-display text-xl font-bold">Streamivo</span>
         </Link>
 
         {checkEmail ? (

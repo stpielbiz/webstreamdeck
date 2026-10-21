@@ -29,12 +29,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
   head: () => ({
     meta: [
-      { title: "Admin · Stream Deck" },
-      { name: "description", content: "Manage Stream Deck accounts, roles and cached title data." },
-      { property: "og:title", content: "Admin · Stream Deck" },
+      { title: "Admin · Streamivo" },
+      { name: "description", content: "Manage Streamivo accounts, roles and cached title data." },
+      { property: "og:title", content: "Admin · Streamivo" },
       {
         property: "og:description",
-        content: "Manage Stream Deck accounts, roles and cached title data.",
+        content: "Manage Streamivo accounts, roles and cached title data.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -11,12 +11,12 @@ export const Route = createFileRoute("/download")({
   validateSearch: z.object({ mode: z.literal("tv").optional() }),
   head: () => ({
     meta: [
-      { title: "Download the Stream Deck TV app for Fire TV" },
+      { title: "Download the Streamivo TV app for Fire TV" },
       {
         name: "description",
-        content: "Install the Stream Deck TV app on your Fire TV Stick for smooth playback of your own playlists.",
+        content: "Install the Streamivo TV app on your Fire TV Stick for smooth playback of your own playlists.",
       },
-      { property: "og:title", content: "Download the Stream Deck TV app" },
+      { property: "og:title", content: "Download the Streamivo TV app" },
       {
         property: "og:description",
         content: "Get the Fire TV app and install it in a few steps with the Downloader app.",
@@ -31,9 +31,9 @@ export const Route = createFileRoute("/download")({
 const STEPS = [
   "On your Fire TV, open Settings → My Fire TV → Developer options and turn on “Apps from Unknown Sources” (or allow it for Downloader).",
   "From the Fire TV app store, install the free “Downloader” app.",
-  "Open Downloader and type the Stream Deck website address, open Get the TV app, and press Download, then press Go.",
+  "Open Downloader and type the Streamivo website address, open Get the TV app, and press Download, then press Go.",
   "When the file finishes downloading, choose Install, then Open.",
-  "Stream Deck TV shows a code — enter it on your phone or PC at Log in another device.",
+  "Streamivo TV shows a code — enter it on your phone or PC at Log in another device.",
 ];
 
 function DownloadPage() {
@@ -52,7 +52,7 @@ function DownloadPage() {
           <span className="grid size-9 place-items-center rounded bg-primary text-primary-foreground">
             <Tv className="size-5" />
           </span>
-          <span className="font-display text-xl font-bold">Stream Deck</span>
+          <span className="font-display text-xl font-bold">Streamivo</span>
         </Link>
         <Button asChild variant="outline" size="sm">
           <Link to="/auth">Sign in</Link>
@@ -61,7 +61,7 @@ function DownloadPage() {
 
       <main className="mx-auto max-w-4xl px-6 pb-16">
         {mode === "tv" && <Button asChild variant="ghost" className="mb-6" data-tv-focus data-layer-back><Link to="/tv"><ArrowLeft className="size-4" /> Back to TV Home</Link></Button>}
-        <h1 className="text-3xl font-bold sm:text-5xl">Stream Deck TV app</h1>
+        <h1 className="text-3xl font-bold sm:text-5xl">Streamivo TV app</h1>
         <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
           The Fire TV app plays streams directly on your device, just like TiviMate, so providers
           that block the browser still work.
