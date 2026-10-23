@@ -142,11 +142,14 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
 }
 
 
+/** Open network per game; survives remounts so Back from playback finds the card again. */
+const openNetworks = new Map<string, string | null>();
+
 function GameBlock({ game, logo, label, first, channels, onPlay }: { game: ScheduledGame; logo?: string | undefined; label: string; first: boolean; channels?: CatalogItem[] | undefined; onPlay: (item: CatalogItem) => void }) {
-  const [network, setNetwork] = useState<string | null>(null);
-  const groups = useMemo(() => (channels ? channelsByNetwork({ ...game, league: label }, channels) : []), [channels, game, label]);
-  const mix = useMemo(() => (channels ? suggestChannels({ ...game, league: label }, channels, 8, channelsByNetwork({ ...game, league: label }, channels, 8)) : []), [channels, game, label]);
-  const picks = network ? groups.find((g) => g.network === network)?.items ?? [] : mix;
+  const [network, setNetworkState] = useState<string | null>(() => openNetworks.get(game.id) ?? null);
+  const setNetwork = (n: string | null) => { openNetworks.set(game.id, n); setNetworkState(n); };
+  const groups = useMemo(() => (channels ? channelsByNetwork({ ...game, league: label }, channels).filter((g) => g.items.length > 0) : []), [channels, game, label]);
+  const picks = network ? groups.find((g) => g.network === network)?.items ?? [] : [];
   const status = gameStatusLabel(game);
   const chip = "h-9 rounded-full border px-3 text-xs font-semibold outline-none transition-transform focus:scale-105 focus:border-primary focus:ring-2 focus:ring-primary";
   return (
@@ -158,10 +161,10 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
         <span className={cn("rounded px-2 py-0.5 text-xs font-semibold", game.state === "in" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>{status}</span>
         {game.detail && <span className="text-xs text-muted-foreground">{game.detail}</span>}
       </header>
-      {groups.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2" aria-label="Networks">
-          {[{ network: "All", items: mix }, ...groups].map((g, i) => {
-            const active = (network ?? "All") === g.network;
+      {groups.length > 0 ? (
+        <div className="flex flex-wrap gap-2" aria-label="Networks">
+          {groups.map((g, i) => {
+            const active = network === g.network;
             return (
               <button
                 key={g.network}
@@ -173,16 +176,17 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
                 data-zone-entry={first && i === 0 ? "true" : undefined}
                 data-focus-key={first && i === 0 ? "sports-first-card" : undefined}
                 aria-pressed={active}
-                onClick={() => setNetwork(g.network === "All" ? null : g.network)}
-                className={cn(chip, active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary", !g.items.length && "opacity-50")}
+                aria-expanded={active}
+                onClick={() => setNetwork(active ? null : g.network)}
+                className={cn(chip, active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary")}
               >
-                {g.network}{g.network !== "All" && <span className="ml-1 opacity-80">· {g.items.length || "none"}</span>}
+                {g.network}<span className="ml-1 opacity-80">· {g.items.length}</span>
               </button>
             );
           })}
         </div>
-      )}
-      {picks.length ? (
+      ) : <p className="text-xs text-muted-foreground">No matching channels in your playlist.</p>}
+      {picks.length > 0 && (
         <div className="grid grid-cols-4 gap-2">
           {picks.map((item) => {
             const { badge, title } = splitChannelName(item.name);
