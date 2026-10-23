@@ -18,3 +18,14 @@ describe("sports guide labels", () => {
     expect(visibleGames(games, start + 5.5 * 3600_000)).toHaveLength(1);
   });
 });
+
+import { periodLabel } from "./sports-leagues";
+describe("period labels", () => {
+  test("hockey periods, overtime and shootout", () => {
+    expect(periodLabel("hockey/nhl", 1)).toBe("1st period");
+    expect(periodLabel("hockey/nhl", 3)).toBe("3rd period");
+    expect(periodLabel("hockey/nhl", 4)).toBe("Overtime");
+    expect(periodLabel("hockey/nhl", 5)).toBe("Shootout");
+  });
+  test("soccer halves", () => { expect(periodLabel("soccer/eng.1", 2)).toBe("2nd half"); });
+});

@@ -45,3 +45,16 @@ export function visibleGames(games: ScheduledGame[], now = Date.now()): Schedule
     return now - end < 2 * 3600_000;
   });
 }
+
+export type ScoringPlay = { period: number; periodLabel: string; clock: string; team: string; logo: string; scorer: string; assists: string[]; text: string };
+
+/** Readable period name for a sport path like "hockey/nhl". */
+export function periodLabel(path: string, n: number): string {
+  const sport = path.split("/")[0];
+  const ord = (x: number) => `${x}${x === 1 ? "st" : x === 2 ? "nd" : x === 3 ? "rd" : "th"}`;
+  if (sport === "hockey") return n <= 3 ? `${ord(n)} period` : n === 4 ? "Overtime" : "Shootout";
+  if (sport === "football" || sport === "basketball") return n <= 4 ? `${ord(n)} quarter` : "Overtime";
+  if (sport === "baseball") return `${ord(n)} inning`;
+  if (sport === "soccer" || sport === "rugby") return n <= 2 ? `${ord(n)} half` : n <= 4 ? "Extra time" : "Penalties";
+  return `Period ${n}`;
+}

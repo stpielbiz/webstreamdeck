@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { GameInfo } from "@/lib/channel-suggest";
-import { SPORTS_LEAGUES, type ScheduledGame } from "@/lib/sports-leagues";
+import { SPORTS_LEAGUES, periodLabel, type ScheduledGame, type ScoringPlay } from "@/lib/sports-leagues";
 
 const LEAGUES: [string, string][] = [
   ["hockey/nhl", "NHL"], ["basketball/nba", "NBA"], ["football/nfl", "NFL"], ["baseball/mlb", "MLB"],
@@ -159,4 +159,41 @@ export const getLeagueSchedule = createServerFn({ method: "GET" })
     }));
     scheduleCache.set(`v5:${cacheKey}`, { at: Date.now(), value: out });
     return out;
+  });
+
+const summaryCache = new Map<string, { at: number; value: { plays: ScoringPlay[] } }>();
+type RawPlay = { scoringPlay?: boolean; period?: { number?: number }; clock?: { displayValue?: string }; team?: { id?: string }; text?: string; participants?: { type?: string; athlete?: { displayName?: string } }[] };
+
+/** Scoring summary (goals, assists, time, period) for one finished game; id is "path:eventId". */
+export const getGameSummary = createServerFn({ method: "GET" })
+  .inputValidator((input: { id: string }) => {
+    const id = String(input?.id ?? "");
+    const at = id.lastIndexOf(":");
+    const path = id.slice(0, at), event = id.slice(at + 1);
+    if (!SPORTS_LEAGUES.some((l) => l.paths.includes(path)) || !/^\d+$/.test(event)) throw new Error("Unknown game");
+    return { path, event };
+  })
+  .handler(async ({ data }): Promise<{ plays: ScoringPlay[] }> => {
+    const key = `${data.path}:${data.event}`;
+    const hit = summaryCache.get(key);
+    if (hit && Date.now() - hit.at < 6 * 3600_000) return hit.value;
+    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${data.path}/summary?event=${data.event}`, { headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36", accept: "application/json" } });
+    if (!res.ok) return { plays: [] };
+    const json = (await res.json()) as { scoringPlays?: RawPlay[]; plays?: RawPlay[]; keyEvents?: RawPlay[]; header?: { competitions?: { competitors?: { team?: { id?: string; abbreviation?: string; logos?: { href?: string }[]; logo?: string } }[] }[] } };
+    const teams = new Map<string, { abbr: string; logo: string }>();
+    for (const c of json.header?.competitions?.[0]?.competitors ?? []) if (c.team?.id) teams.set(c.team.id, { abbr: c.team.abbreviation ?? "", logo: c.team.logos?.[0]?.href ?? c.team.logo ?? "" });
+    const raw = json.scoringPlays?.length ? json.scoringPlays : (json.plays ?? []).filter((p) => p.scoringPlay).length ? (json.plays ?? []).filter((p) => p.scoringPlay) : (json.keyEvents ?? []).filter((p) => p.scoringPlay);
+    const plays = raw.map((p): ScoringPlay => {
+      const n = p.period?.number ?? 0;
+      const text = p.text ?? "";
+      const scorer = p.participants?.find((x) => x.type === "scorer")?.athlete?.displayName
+        ?? text.match(/\.\s*([^.(]+?)\s*\(/)?.[1]?.trim() ?? "";
+      let assists = (p.participants ?? []).filter((x) => x.type === "assister").map((x) => x.athlete?.displayName ?? "").filter(Boolean);
+      if (!assists.length) { const m = text.match(/Assisted by ([^.]+)/i); if (m?.[1]) assists = m[1].split(/\s*(?:,| and )\s*/).filter(Boolean); }
+      const t = teams.get(p.team?.id ?? "");
+      return { period: n, periodLabel: periodLabel(data.path, n), clock: p.clock?.displayValue ?? "", team: t?.abbr ?? "", logo: t?.logo ?? "", scorer, assists, text };
+    });
+    const value = { plays };
+    summaryCache.set(key, { at: Date.now(), value });
+    return value;
   });
