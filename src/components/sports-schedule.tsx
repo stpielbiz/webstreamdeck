@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Play } from "lucide-react";
-import { getLeagueSchedule } from "@/lib/game-broadcasts.functions";
+import { ChevronDown, Play } from "lucide-react";
+import { getGameSummary, getLeagueSchedule } from "@/lib/game-broadcasts.functions";
 import { channelsByNetwork, suggestChannels } from "@/lib/channel-suggest";
 import { SPORTS_LEAGUES, gameStatusLabel, visibleGames, type ScheduledGame } from "@/lib/sports-leagues";
 import { useSettings } from "@/lib/playlist-sync";
@@ -87,6 +87,7 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
     const t = window.setTimeout(() => { setReady((r) => r + 1); if (ready + 1 === games.length) trace(`Sports matching: ${games.length} games ready`, `${Math.round(performance.now() - started)} ms last step`); }, ready === 0 ? 300 : 16);
     return () => window.clearTimeout(t);
   }, [ready, games.length, channels]);
+  const [openFinal, setOpenFinal] = useState<string | null>(null);
   const loading = schedule.isLoading || (games.length > 0 && ready === 0);
 
   // Explicit remote movement over network buttons and channel cards by screen position.
@@ -133,7 +134,7 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
         return (
           <div key={game.id} className="space-y-3">
             {showDay && <h2 className="sticky top-0 z-10 -mx-3 bg-card px-3 py-1 font-display text-sm font-bold uppercase tracking-wide text-primary">{day}</h2>}
-            {game.state === "post" ? <FinalBlock game={game} first={gi === 0} /> : <GameBlock game={game} logo={logo} label={label} first={gi === 0} channels={channels} onPlay={onPlay} />}
+            {game.state === "post" ? <FinalBlock game={game} first={gi === 0} open={openFinal === game.id} onToggle={() => setOpenFinal((o) => (o === game.id ? null : game.id))} /> : <GameBlock game={game} logo={logo} label={label} first={gi === 0} channels={channels} onPlay={onPlay} />}
           </div>
         );
       })}
@@ -217,34 +218,67 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
   );
 }
 
-/** Finished game: final score only, no channel links; focusable so results can be browsed. */
-function FinalBlock({ game, first }: { game: ScheduledGame; first: boolean }) {
+/** Finished game: final score; OK opens the scoring summary underneath. */
+function FinalBlock({ game, first, open, onToggle }: { game: ScheduledGame; first: boolean; open: boolean; onToggle: () => void }) {
   const r = game.result ?? [];
   const nums = r.map((t) => Number(t.score));
   const best = Math.max(...nums);
   return (
-    <button
-      type="button"
-      data-tv-focus
-      data-focus-glow
-      data-sport-item
-      data-zone-entry={first ? "true" : undefined}
-      data-focus-key={first ? "sports-first-card" : `sport-final-${game.id}`}
-      aria-label={`Final: ${game.matchup}`}
-      className="flex w-full flex-wrap items-center gap-3 rounded-lg border border-border bg-background/40 p-3 text-left outline-none animate-in fade-in duration-500 focus:border-primary focus:ring-2 focus:ring-primary"
-    >
-      {r.length === 2 ? r.map((t, i) => (
-        <span key={i} className="flex items-center gap-2">
-          {i === 1 && <span className="text-muted-foreground">–</span>}
-          {i === 0 && t.logo && <img src={t.logo} alt="" className="size-8 object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
-          {i === 0 && <span className="font-display text-base font-semibold">{t.name}</span>}
-          <span className={cn("font-display text-xl tabular-nums", nums[i] === best && nums[0] !== nums[1] ? "font-bold" : "text-muted-foreground")}>{t.score}</span>
-          {i === 1 && <span className="font-display text-base font-semibold">{t.name}</span>}
-          {i === 1 && t.logo && <img src={t.logo} alt="" className="size-8 object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
-        </span>
-      )) : <span className="font-display text-base font-bold">{game.matchup}</span>}
-      <span className="rounded bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{game.final ?? "Final"}</span>
-    </button>
+    <section className="rounded-lg border border-border bg-background/40 animate-in fade-in duration-500">
+      <button
+        type="button"
+        data-tv-focus
+        data-focus-glow
+        data-sport-item
+        data-zone-entry={first ? "true" : undefined}
+        data-focus-key={first ? "sports-first-card" : `sport-final-${game.id}`}
+        aria-expanded={open}
+        aria-label={`Final: ${game.matchup}`}
+        onClick={onToggle}
+        className="flex w-full flex-wrap items-center gap-3 rounded-lg p-3 text-left outline-none focus:ring-2 focus:ring-primary"
+      >
+        {r.length === 2 ? r.map((t, i) => (
+          <span key={i} className="flex items-center gap-2">
+            {i === 1 && <span className="text-muted-foreground">–</span>}
+            {i === 0 && t.logo && <img src={t.logo} alt="" className="size-8 object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
+            {i === 0 && <span className="font-display text-base font-semibold">{t.name}</span>}
+            <span className={cn("font-display text-xl tabular-nums", nums[i] === best && nums[0] !== nums[1] ? "font-bold" : "text-muted-foreground")}>{t.score}</span>
+            {i === 1 && <span className="font-display text-base font-semibold">{t.name}</span>}
+            {i === 1 && t.logo && <img src={t.logo} alt="" className="size-8 object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
+          </span>
+        )) : <span className="font-display text-base font-bold">{game.matchup}</span>}
+        <span className="rounded bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{game.final ?? "Final"}</span>
+        <ChevronDown className={cn("ml-auto size-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+      </button>
+      {open && <ScoringSummary id={game.id} />}
+    </section>
+  );
+}
+
+function ScoringSummary({ id }: { id: string }) {
+  const fetchSummary = useServerFn(getGameSummary);
+  const q = useQuery({ queryKey: ["game-summary", id], queryFn: () => fetchSummary({ data: { id } }), staleTime: 24 * 3600_000, gcTime: Infinity, retry: 1 });
+  if (q.isLoading) return <div className="space-y-2 px-3 pb-3">{[0, 1, 2].map((i) => <div key={i} className="h-5 animate-pulse rounded bg-muted" />)}</div>;
+  const plays = q.data?.plays ?? [];
+  if (!plays.length) return <p className="px-3 pb-3 text-xs text-muted-foreground">Scoring details not available.</p>;
+  const periods = [...new Set(plays.map((p) => p.periodLabel))];
+  return (
+    <div className="space-y-2 border-t border-border px-3 py-2 animate-in fade-in duration-300">
+      {periods.map((label) => (
+        <div key={label}>
+          <h4 className="text-[11px] font-semibold uppercase tracking-wide text-primary">{label}</h4>
+          <ul className="mt-1 space-y-1">
+            {plays.filter((p) => p.periodLabel === label).map((p, i) => (
+              <li key={i} className="flex items-center gap-2 text-xs">
+                <span className="w-12 shrink-0 tabular-nums text-muted-foreground">{p.clock}</span>
+                {p.logo ? <img src={p.logo} alt={p.team} className="size-5 object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <span className="w-8 font-semibold">{p.team}</span>}
+                <span className="min-w-0 truncate"><span className="font-semibold">{p.scorer || p.text}</span>{p.scorer && <span className="text-muted-foreground"> ({p.assists.length ? p.assists.join(", ") : "unassisted"})</span>}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }
 
