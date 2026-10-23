@@ -133,7 +133,7 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
         return (
           <div key={game.id} className="space-y-3">
             {showDay && <h2 className="sticky top-0 z-10 -mx-3 bg-card px-3 py-1 font-display text-sm font-bold uppercase tracking-wide text-primary">{day}</h2>}
-            {game.state === "post" ? <FinalBlock game={game} /> : <GameBlock game={game} logo={logo} label={label} first={gi === games.findIndex((g) => g.state !== "post")} channels={channels} onPlay={onPlay} />}
+            {game.state === "post" ? <FinalBlock game={game} first={gi === 0} /> : <GameBlock game={game} logo={logo} label={label} first={gi === 0} channels={channels} onPlay={onPlay} />}
           </div>
         );
       })}
@@ -142,11 +142,14 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
 }
 
 
+/** Open network per game; survives remounts so Back from playback finds the card again. */
+const openNetworks = new Map<string, string | null>();
+
 function GameBlock({ game, logo, label, first, channels, onPlay }: { game: ScheduledGame; logo?: string | undefined; label: string; first: boolean; channels?: CatalogItem[] | undefined; onPlay: (item: CatalogItem) => void }) {
-  const [network, setNetwork] = useState<string | null>(null);
-  const groups = useMemo(() => (channels ? channelsByNetwork({ ...game, league: label }, channels) : []), [channels, game, label]);
-  const mix = useMemo(() => (channels ? suggestChannels({ ...game, league: label }, channels, 8, channelsByNetwork({ ...game, league: label }, channels, 8)) : []), [channels, game, label]);
-  const picks = network ? groups.find((g) => g.network === network)?.items ?? [] : mix;
+  const [network, setNetworkState] = useState<string | null>(() => openNetworks.get(game.id) ?? null);
+  const setNetwork = (n: string | null) => { openNetworks.set(game.id, n); setNetworkState(n); };
+  const groups = useMemo(() => (channels ? channelsByNetwork({ ...game, league: label }, channels).filter((g) => g.items.length > 0) : []), [channels, game, label]);
+  const picks = network ? groups.find((g) => g.network === network)?.items ?? [] : [];
   const status = gameStatusLabel(game);
   const chip = "h-9 rounded-full border px-3 text-xs font-semibold outline-none transition-transform focus:scale-105 focus:border-primary focus:ring-2 focus:ring-primary";
   return (
@@ -158,10 +161,10 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
         <span className={cn("rounded px-2 py-0.5 text-xs font-semibold", game.state === "in" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>{status}</span>
         {game.detail && <span className="text-xs text-muted-foreground">{game.detail}</span>}
       </header>
-      {groups.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2" aria-label="Networks">
-          {[{ network: "All", items: mix }, ...groups].map((g, i) => {
-            const active = (network ?? "All") === g.network;
+      {groups.length > 0 ? (
+        <div className="flex flex-wrap gap-2" aria-label="Networks">
+          {groups.map((g, i) => {
+            const active = network === g.network;
             return (
               <button
                 key={g.network}
@@ -173,16 +176,17 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
                 data-zone-entry={first && i === 0 ? "true" : undefined}
                 data-focus-key={first && i === 0 ? "sports-first-card" : undefined}
                 aria-pressed={active}
-                onClick={() => setNetwork(g.network === "All" ? null : g.network)}
-                className={cn(chip, active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary", !g.items.length && "opacity-50")}
+                aria-expanded={active}
+                onClick={() => setNetwork(active ? null : g.network)}
+                className={cn(chip, active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary")}
               >
-                {g.network}{g.network !== "All" && <span className="ml-1 opacity-80">· {g.items.length || "none"}</span>}
+                {g.network}<span className="ml-1 opacity-80">· {g.items.length}</span>
               </button>
             );
           })}
         </div>
-      )}
-      {picks.length ? (
+      ) : <p className="text-xs text-muted-foreground">No matching channels in your playlist.</p>}
+      {picks.length > 0 && (
         <div className="grid grid-cols-4 gap-2">
           {picks.map((item) => {
             const { badge, title } = splitChannelName(item.name);
@@ -208,18 +212,27 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
             );
           })}
         </div>
-      ) : <p className="text-xs text-muted-foreground">{network ? `No ${network} channels in your playlist.` : "No matching channels in your playlist."}</p>}
+      )}
     </section>
   );
 }
 
-/** Finished game: final score only, no channel links. */
-function FinalBlock({ game }: { game: ScheduledGame }) {
+/** Finished game: final score only, no channel links; focusable so results can be browsed. */
+function FinalBlock({ game, first }: { game: ScheduledGame; first: boolean }) {
   const r = game.result ?? [];
   const nums = r.map((t) => Number(t.score));
   const best = Math.max(...nums);
   return (
-    <section className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-background/40 p-3 animate-in fade-in duration-500">
+    <button
+      type="button"
+      data-tv-focus
+      data-focus-glow
+      data-sport-item
+      data-zone-entry={first ? "true" : undefined}
+      data-focus-key={first ? "sports-first-card" : `sport-final-${game.id}`}
+      aria-label={`Final: ${game.matchup}`}
+      className="flex w-full flex-wrap items-center gap-3 rounded-lg border border-border bg-background/40 p-3 text-left outline-none animate-in fade-in duration-500 focus:border-primary focus:ring-2 focus:ring-primary"
+    >
       {r.length === 2 ? r.map((t, i) => (
         <span key={i} className="flex items-center gap-2">
           {i === 1 && <span className="text-muted-foreground">–</span>}
@@ -229,9 +242,9 @@ function FinalBlock({ game }: { game: ScheduledGame }) {
           {i === 1 && <span className="font-display text-base font-semibold">{t.name}</span>}
           {i === 1 && t.logo && <img src={t.logo} alt="" className="size-8 object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
         </span>
-      )) : <h3 className="font-display text-base font-bold">{game.matchup}</h3>}
+      )) : <span className="font-display text-base font-bold">{game.matchup}</span>}
       <span className="rounded bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{game.final ?? "Final"}</span>
-    </section>
+    </button>
   );
 }
 
