@@ -18,9 +18,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/tv/show/$id")({
   head: () => ({
     meta: [
-      { title: "Show details — Streamivo" },
+      { title: "Show details — Jolzplay" },
       { name: "description", content: "Full show details with every season and episode, ready to play from your remote." },
-      { property: "og:title", content: "Show details — Streamivo" },
+      { property: "og:title", content: "Show details — Jolzplay" },
       { property: "og:description", content: "Seasons, episodes and show info on your TV." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

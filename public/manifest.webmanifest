@@ -1,16 +1,16 @@
 {
-  "name": "Streamivo",
-  "short_name": "Streamivo",
+  "name": "Jolzplay",
+  "short_name": "Jolzplay",
   "description": "Watch your own IPTV playlists — live TV, movies and series.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220",
+  "background_color": "#121826",
+  "theme_color": "#121826",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "48x48",
-      "type": "image/x-icon"
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }

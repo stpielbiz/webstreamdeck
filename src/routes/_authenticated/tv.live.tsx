@@ -38,12 +38,12 @@ export const Route = createFileRoute("/_authenticated/tv/live")({
   validateSearch: z.object({ channel: z.string().optional() }),
   head: () => ({
     meta: [
-      { title: "Live TV on your TV — Streamivo" },
+      { title: "Live TV on your TV — Jolzplay" },
       {
         name: "description",
         content: "Browse channels with your remote and watch live TV full screen.",
       },
-      { property: "og:title", content: "Live TV on your TV — Streamivo" },
+      { property: "og:title", content: "Live TV on your TV — Jolzplay" },
       { property: "og:description", content: "Remote-friendly channel list and player." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

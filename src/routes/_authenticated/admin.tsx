@@ -30,12 +30,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
   head: () => ({
     meta: [
-      { title: "Admin · Streamivo" },
-      { name: "description", content: "Manage Streamivo accounts, roles and cached title data." },
-      { property: "og:title", content: "Admin · Streamivo" },
+      { title: "Admin · Jolzplay" },
+      { name: "description", content: "Manage Jolzplay accounts, roles and cached title data." },
+      { property: "og:title", content: "Admin · Jolzplay" },
       {
         property: "og:description",
-        content: "Manage Streamivo accounts, roles and cached title data.",
+        content: "Manage Jolzplay accounts, roles and cached title data.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

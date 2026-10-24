@@ -1,3 +1,4 @@
+import { BrandMark, BrandName } from "@/components/brand";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -106,8 +107,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen flex-col bg-background">
         <header className="grid h-14 shrink-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-border px-3 sm:px-6">
           <Link to="/dashboard" className="flex min-w-0 items-center gap-2">
-            <span className="grid size-8 shrink-0 place-items-center rounded bg-primary text-primary-foreground"><Tv className="size-4" /></span>
-            <span className="truncate font-display text-lg font-bold">Streamivo</span><AccountExpiryBadge />
+            <BrandMark className="size-8 shrink-0" />
+            <span className="truncate font-display text-lg font-bold"><BrandName /></span><AccountExpiryBadge />
           </Link>
           <span className="hidden text-sm text-muted-foreground sm:block">{playlists.find((item) => item.id === activeId)?.name ?? "No playlist"}</span>
           <div className="flex items-center gap-1">
@@ -127,10 +128,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-background">
       <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-5 md:flex">
         <Link to="/dashboard" className="mb-6 flex items-center gap-2 px-2">
-          <span className="grid size-8 place-items-center rounded bg-primary text-primary-foreground">
-            <Tv className="size-4" />
-          </span>
-          <span className="font-display text-lg font-bold tracking-tight">Streamivo</span><AccountExpiryBadge />
+          <BrandMark className="size-8" />
+          <span className="font-display text-lg font-bold tracking-tight"><BrandName /></span><AccountExpiryBadge />
         </Link>
 
         <nav className="flex flex-col gap-1">

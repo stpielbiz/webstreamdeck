@@ -61,7 +61,7 @@ export function FullUpdateCard() {
     <section data-remote-row className="flex flex-wrap items-center gap-4 rounded-lg border border-primary/40 bg-card p-4">
       <Zap className="size-6 shrink-0 text-primary" />
       <div className="min-w-0 flex-1">
-        <h2 className="font-display text-base font-bold">{phase === "done" ? "All set — everything is saved on this device" : "Get a faster Streamivo"}</h2>
+        <h2 className="font-display text-base font-bold">{phase === "done" ? "All set — everything is saved on this device" : "Get a faster Jolzplay"}</h2>
         {phase === "idle" && <>
           <p className="text-sm text-muted-foreground">Run a full update to save your channels, movies, shows and their details on this device. Browsing then loads from your device and feels faster.</p>
           <p className="text-xs text-muted-foreground">Last full update: {ago(rec.lastAt)}</p>

@@ -32,4 +32,4 @@
 - Multi-view: one player per screen; Recents capped at 10/playlist.
 - Public homepage copy, actions and feature cards live in src/content/homepage.ts — edit content without touching layout.
 - Subdirectory notes: `native-app/AGENTS.md` covers the Fire TV app (JS bridge, packaging, recording, in-app upgrades) — read it before changing files there.
-- The brand shown to users is **Streamivo**; internal names keep the original `streamdeck` spelling (bridge `window.StreamDeckNative` / `__streamDeck*`, `applicationId` `app.streamdeck.tv`, `streamdeck.*` storage keys, `stream-deck-tv.apk`, repo and domain, keystore alias) because renaming them breaks installed apps, in-place updates and saved on-device data.
+- Visible branding uses the shared BrandMark/BrandName components; internal names keep the original `streamdeck` spelling (bridge `window.StreamDeckNative` / `__streamDeck*`, `applicationId` `app.streamdeck.tv`, `streamdeck.*` storage keys, `stream-deck-tv.apk`, repo and domain, keystore alias) because renaming them breaks installed apps, in-place updates and saved on-device data.

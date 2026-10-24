@@ -15,12 +15,14 @@ export const Route = createFileRoute("/_authenticated/tv/watch/movie/$id")({
   validateSearch: z.object({ from: z.enum(["home", "favorites", "movies"]).optional() }),
   head: () => ({
     meta: [
-      { title: "Watch a film on your TV — Streamivo" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:type", content: "website" },
+      { title: "Watch a film on your TV — Jolzplay" },
       {
         name: "description",
         content: "Full-screen film playback with remote controls and resume from where you stopped.",
       },
-      { property: "og:title", content: "Watch a film on your TV — Streamivo" },
+      { property: "og:title", content: "Watch a film on your TV — Jolzplay" },
       { property: "og:description", content: "Big-screen film playback." },
       { name: "robots", content: "noindex" },
     ],

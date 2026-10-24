@@ -6,12 +6,14 @@ export const Route = createFileRoute("/_authenticated/guide")({
   },
   head: () => ({
     meta: [
-      { title: "TV guide — Streamivo" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:type", content: "website" },
+      { title: "TV guide — Jolzplay" },
       {
         name: "description",
         content: "See what's on now and next across your channels, and the full day's listings.",
       },
-      { property: "og:title", content: "TV guide — Streamivo" },
+      { property: "og:title", content: "TV guide — Jolzplay" },
       { property: "og:description", content: "Now, next and today's listings." },
     ],
   }),
