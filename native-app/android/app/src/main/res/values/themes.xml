@@ -3,6 +3,6 @@
     <style name="StreamDeckTheme" parent="android:Theme.DeviceDefault.NoActionBar.Fullscreen">
         <item name="android:windowBackground">@color/background</item>
     </style>
-    <color name="background">#0B1220</color>
-    <color name="accent">#F5A524</color>
+    <color name="background">#121826</color>
+    <color name="accent">#79DA8D</color>
 </resources>

@@ -19,7 +19,7 @@ import android.webkit.WebViewClient
 import org.json.JSONObject
 
 /**
- * Hosts the Streamivo website full screen. When the site asks to play
+ * Hosts the Jolzplay website full screen. When the site asks to play
  * something, playback is handed to [PlayerActivity], which fetches the stream
  * over this device's own connection (VPN included) — like TiviMate does.
  */

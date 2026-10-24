@@ -6,12 +6,14 @@ export const Route = createFileRoute("/_authenticated/connect-tv")({
   },
   head: () => ({
     meta: [
-      { title: "Log in another device — Streamivo" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:type", content: "website" },
+      { title: "Log in another device — Jolzplay" },
       {
         name: "description",
         content: "Enter the one-time code shown on another device.",
       },
-      { property: "og:title", content: "Log in another device — Streamivo" },
+      { property: "og:title", content: "Log in another device — Jolzplay" },
       { property: "og:description", content: "Sign in another device with a one-time code." },
     ],
   }),

@@ -84,20 +84,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Streamivo — Watch your IPTV playlists anywhere" },
+      { title: "Jolzplay — Watch your IPTV playlists anywhere" },
       {
         name: "description",
         content:
           "Sign in, add your Xtream Codes or M3U playlist, and watch live TV, movies and series with favourites and resume where you left off.",
       },
-      { property: "og:title", content: "Streamivo — Watch your IPTV playlists anywhere" },
+      { property: "og:title", content: "Jolzplay — Watch your IPTV playlists anywhere" },
       {
         property: "og:description",
         content: "Your own IPTV subscriptions, in one fast player with favourites and resume.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "theme-color", content: "#0b1220" },
+      { name: "theme-color", content: "#121826" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -107,7 +107,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),

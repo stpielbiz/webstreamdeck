@@ -84,7 +84,7 @@ export function SubscriptionBanner() {
           <ul className="list-disc space-y-1 pl-5 text-sm">
             <li>Make sure you sent {PAYMENT.price} to <strong>{PAYMENT.email}</strong>.</li>
             <li>It must be <strong>Friends and Family</strong>, not Goods and Services.</li>
-            <li>Your Streamivo login email must be in the PayPal note so we can match it.</li>
+            <li>Your Jolzplay login email must be in the PayPal note so we can match it.</li>
             <li>Once the funds arrive we'll activate your account for a year. Your access stays open until {date}.</li>
           </ul>
           <Button data-tv-focus autoFocus onClick={() => setSent(false)}>OK</Button>

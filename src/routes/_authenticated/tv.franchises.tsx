@@ -5,9 +5,9 @@ import { TvShell } from "@/components/tv-shell";
 
 export const Route = createFileRoute("/_authenticated/tv/franchises")({
   head: () => ({ meta: [
-    { title: "Saved franchises on TV — Streamivo" },
+    { title: "Saved franchises on TV — Jolzplay" },
     { name: "description", content: "Browse saved movie and show franchises with your TV remote." },
-    { property: "og:title", content: "Saved franchises on TV — Streamivo" },
+    { property: "og:title", content: "Saved franchises on TV — Jolzplay" },
     { property: "og:description", content: "Remote-friendly saved franchise collections." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

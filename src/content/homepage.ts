@@ -16,7 +16,7 @@ export const HOME_HERO = {
   title: "Your IPTV subscription, finally with a player worth using.",
   body: "Add your Xtream Codes login or M3U link and watch live TV, movies and shows on your Fire Stick, TV, phone or computer.",
   note: "Your first day is free. A yearly subscription activates your account after the trial.",
-  disclaimer: "Streamivo hosts no channels of its own — you use your own subscription details.",
+  disclaimer: "Jolzplay hosts no channels of its own — you use your own subscription details.",
 };
 
 export const HOME_ACTIONS: HomeAction[] = [
@@ -49,4 +49,4 @@ export const HOME_STEPS: { title: string; body: string }[] = [
   { title: "Watch", body: "Live TV, movies and shows with favourites and resume." },
 ];
 
-export const HOME_FOOTER = "Streamivo is a player. You supply the playlist and are responsible for the content you access.";
+export const HOME_FOOTER = "Jolzplay is a player. You supply the playlist and are responsible for the content you access.";

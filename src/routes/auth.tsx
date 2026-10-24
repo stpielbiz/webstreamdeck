@@ -1,3 +1,4 @@
+import { BrandMark, BrandName } from "@/components/brand";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Tv } from "lucide-react";
@@ -15,13 +16,15 @@ export const Route = createFileRoute("/auth")({
   validateSearch: z.object({ returnTo: z.literal("/device-login").optional() }),
   head: () => ({
     meta: [
-      { title: "Sign in — Streamivo" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:type", content: "website" },
+      { title: "Sign in — Jolzplay" },
       {
         name: "description",
         content:
-          "Sign in or create a Streamivo account to watch your own IPTV playlists with favourites and resume.",
+          "Sign in or create a Jolzplay account to watch your own IPTV playlists with favourites and resume.",
       },
-      { property: "og:title", content: "Sign in — Streamivo" },
+      { property: "og:title", content: "Sign in — Jolzplay" },
       {
         property: "og:description",
         content: "Access your playlists, favourites and continue watching.",
@@ -105,10 +108,8 @@ function AuthPage() {
           </Link>
         </Button>
         <Link to="/" className="mb-8 flex items-center justify-center gap-2">
-          <span className="grid size-9 place-items-center rounded bg-primary text-primary-foreground">
-            <Tv className="size-5" />
-          </span>
-          <span className="font-display text-xl font-bold">Streamivo</span>
+          <BrandMark className="size-9" />
+          <span className="font-display text-xl font-bold"><BrandName /></span>
         </Link>
 
         {checkEmail ? (

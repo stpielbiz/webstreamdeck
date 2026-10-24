@@ -8,7 +8,7 @@ export const PAYMENT = {
     "Enter Streamivotv@gmail.com as the recipient.",
     "Enter $60.00 and make sure the currency is USD.",
     "Choose \"Sending to a friend\" (Friends and Family).",
-    "In the note, write the email you use to sign in to Streamivo.",
+    "In the note, write the email you use to sign in to Jolzplay.",
     "Review and tap Send Payment.",
     "Come back here and press \"PayPal transfer sent\".",
   ],

@@ -53,7 +53,7 @@ class AppUpdater(private val activity: Activity) {
                 when {
                     release == null -> if (manual) Toast.makeText(activity, "Could not check for updates. Please try again.", Toast.LENGTH_LONG).show()
                     release.versionCode > BuildConfig.VERSION_CODE -> showUpdatePrompt(release)
-                    manual -> Toast.makeText(activity, "Streamivo is up to date (${BuildConfig.VERSION_NAME}).", Toast.LENGTH_LONG).show()
+                    manual -> Toast.makeText(activity, "Jolzplay is up to date (${BuildConfig.VERSION_NAME}).", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -92,7 +92,7 @@ class AppUpdater(private val activity: Activity) {
     private fun showUpdatePrompt(release: Release) {
         if (activity.isFinishing || activity.isDestroyed) return
         val dialog = AlertDialog.Builder(activity)
-            .setTitle("Streamivo update available")
+            .setTitle("Jolzplay update available")
             .setMessage(
                 "Installed: ${BuildConfig.VERSION_NAME}\n" +
                     "Available: ${release.versionName}\n\n" +
@@ -110,7 +110,7 @@ class AppUpdater(private val activity: Activity) {
         if (destination.exists()) destination.delete()
 
         val request = DownloadManager.Request(Uri.parse(apkUrl))
-            .setTitle("Streamivo update")
+            .setTitle("Jolzplay update")
             .setDescription("Downloading the latest Fire TV app")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setDestinationInExternalFilesDir(
@@ -169,7 +169,7 @@ class AppUpdater(private val activity: Activity) {
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             permissionRequested = true
-            Toast.makeText(activity, "Allow Streamivo to install updates, then return.", Toast.LENGTH_LONG).show()
+            Toast.makeText(activity, "Allow Jolzplay to install updates, then return.", Toast.LENGTH_LONG).show()
             activity.startActivity(
                 Intent(
                     Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,

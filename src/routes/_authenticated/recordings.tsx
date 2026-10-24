@@ -6,9 +6,9 @@ import { RecordingsList } from "@/components/recordings-list";
 export const Route = createFileRoute("/_authenticated/recordings")({
   head: () => ({
     meta: [
-      { title: "Recordings — Streamivo" },
+      { title: "Recordings — Jolzplay" },
       { name: "description", content: "Record live TV channels on your Fire TV and watch them later." },
-      { property: "og:title", content: "Recordings — Streamivo" },
+      { property: "og:title", content: "Recordings — Jolzplay" },
       { property: "og:description", content: "Live TV recordings saved on your Fire TV." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

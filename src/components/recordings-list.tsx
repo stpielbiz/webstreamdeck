@@ -16,10 +16,10 @@ export function RecordingsList({ tv }: { tv?: boolean }) {
   if (!supported) {
     return (
       <div className="max-w-2xl space-y-3 rounded border border-border bg-card p-5">
-        <p className="font-semibold">Recording works in the Streamivo app on Fire TV.</p>
+        <p className="font-semibold">Recording works in the Jolzplay app on Fire TV.</p>
         <p className="text-sm text-muted-foreground">
           On a computer, a website can only record while its tab stays open, so recording is Fire TV only for now.
-          You need a Fire TV Stick with the latest Streamivo app and some free storage. Recordings stay on the Fire TV that made them.
+          You need a Fire TV Stick with the latest Jolzplay app and some free storage. Recordings stay on the Fire TV that made them.
         </p>
         <p className="text-sm text-muted-foreground">To record, hold OK on a channel in Live TV and choose Record.</p>
         {!tv && (

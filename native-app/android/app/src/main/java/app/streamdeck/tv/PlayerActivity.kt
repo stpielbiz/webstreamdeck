@@ -57,7 +57,7 @@ class PlayerActivity : Activity() {
         /** Side of a recent-channel tile, in dp. */
         private const val TILE_DP = 160
         /** Accent ring colour for a focused recent-channel tile. */
-        private val ACCENT = Color.rgb(59, 130, 246)
+        private val ACCENT = Color.rgb(121, 218, 141)
 
         @Volatile
         var listener: Listener? = null
@@ -377,7 +377,7 @@ class PlayerActivity : Activity() {
     private fun tileBackground(focused: Boolean) = GradientDrawable().apply {
         shape = GradientDrawable.RECTANGLE
         cornerRadius = dp(14).toFloat()
-        setColor(if (focused) Color.argb(235, 22, 34, 54) else Color.argb(150, 26, 26, 26))
+        setColor(if (focused) Color.argb(235, 33, 57, 59) else Color.argb(150, 26, 26, 26))
         setStroke(dp(3), if (focused) ACCENT else Color.argb(90, 255, 255, 255))
     }
 

@@ -1,5 +1,5 @@
 /**
- * Helpers for handing a stream to a player outside the browser: the Streamivo
+ * Helpers for handing a stream to a player outside the browser: the Jolzplay
  * Android TV app's built-in player (via its JS bridge) or VLC / MX Player.
  * These play over the device's own connection, which providers that block
  * servers (or that only serve plain http) still allow.

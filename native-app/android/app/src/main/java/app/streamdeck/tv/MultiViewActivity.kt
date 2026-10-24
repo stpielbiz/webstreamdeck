@@ -144,7 +144,7 @@ class MultiViewActivity : Activity() {
             val active = index == selected
             screen.player.volume = if (active) 1f else 0f
             screen.frame.foreground = if (active && !enlarged) GradientDrawable().apply {
-                setStroke(8, 0xFF3B82F6.toInt()); setColor(Color.TRANSPARENT)
+                setStroke(8, 0xFF79DA8D.toInt()); setColor(Color.TRANSPARENT)
             } else null
         }
     }

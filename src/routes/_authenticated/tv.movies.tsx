@@ -6,12 +6,12 @@ import { TvShell } from "@/components/tv-shell";
 export const Route = createFileRoute("/_authenticated/tv/movies")({
   head: () => ({
     meta: [
-      { title: "Movies on your TV — Streamivo" },
+      { title: "Movies on your TV — Jolzplay" },
       {
         name: "description",
         content: "Browse your movie library with the remote and pick up where you left off.",
       },
-      { property: "og:title", content: "Movies on your TV — Streamivo" },
+      { property: "og:title", content: "Movies on your TV — Jolzplay" },
       { property: "og:description", content: "Big-screen movie library." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -150,7 +150,7 @@ export function ChannelActionMenu({
           {step === "when" && "When should the recording start?"}
           {step === "later" && "Pick the day and start time."}
           {step === "length" && "How long should it record?"}
-          {step === "unsupported" && "Recording needs the Streamivo Fire TV app."}
+          {step === "unsupported" && "Recording needs the Jolzplay Fire TV app."}
         </DialogDescription>
 
         <div className="mt-2 flex flex-col gap-2">
@@ -229,9 +229,9 @@ export function ChannelActionMenu({
           {step === "unsupported" && (
             <div className="space-y-3 text-sm">
               <p>
-                Recording works in the Streamivo app on Fire TV. On a computer, a website can only record while its tab stays open, so recording is Fire TV only for now.
+                Recording works in the Jolzplay app on Fire TV. On a computer, a website can only record while its tab stays open, so recording is Fire TV only for now.
               </p>
-              <p>What you need: a Fire TV Stick with the latest Streamivo app, and some free storage on it.</p>
+              <p>What you need: a Fire TV Stick with the latest Jolzplay app, and some free storage on it.</p>
               {!tv && (
                 <div data-remote-row className="flex flex-col">
                   <Button asChild data-tv-focus variant="secondary" className="h-11">

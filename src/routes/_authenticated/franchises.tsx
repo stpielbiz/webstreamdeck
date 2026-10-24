@@ -4,9 +4,9 @@ import { SavedFranchiseBrowser } from "@/components/saved-franchise-browser";
 
 export const Route = createFileRoute("/_authenticated/franchises")({
   head: () => ({ meta: [
-    { title: "Saved franchises — Streamivo" },
-    { name: "description", content: "Open the movie and show franchises saved to your Streamivo account." },
-    { property: "og:title", content: "Saved franchises — Streamivo" },
+    { title: "Saved franchises — Jolzplay" },
+    { name: "description", content: "Open the movie and show franchises saved to your Jolzplay account." },
+    { property: "og:title", content: "Saved franchises — Jolzplay" },
     { property: "og:description", content: "Your saved movie and show franchise collections." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
