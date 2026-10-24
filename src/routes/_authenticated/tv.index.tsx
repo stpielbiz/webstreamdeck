@@ -23,6 +23,7 @@ import { DetailsUpdateHint } from "@/components/details-update-hint";
 import { adminRefreshTitles } from "@/lib/metadata.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { SubscriptionBanner } from "@/components/subscription-banner";
+import { FullUpdateCard } from "@/components/full-update-card";
 import { useAccountAccess } from "@/lib/account-access";
 
 export const Route = createFileRoute("/_authenticated/tv/")({
@@ -125,6 +126,7 @@ function TvHome() {
           {focusedSection === "Home" ? (
             <div className="space-y-5 pb-6">
               <SubscriptionBanner />
+              {!expired && <FullUpdateCard />}
               {!expired && activeId && <div className="sticky top-0 z-20 bg-background pb-3"><GlobalSearch /></div>}
               {!expired && <>
               <div className="pb-1">

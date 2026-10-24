@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Tv } from "lucide-react";
 
 import { SubscriptionBanner } from "@/components/subscription-banner";
+import { FullUpdateCard } from "@/components/full-update-card";
 import { usePlaylists } from "@/components/playlist-context";
 import { EmptyState, PosterGrid, PosterTile, Shelf } from "@/components/media";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,7 @@ function Dashboard() {
     <div className="space-y-10 p-6">
       <SectionMenu current="Home" />
       <SubscriptionBanner />
+      {!expired && <FullUpdateCard />}
       {expired ? null : <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
