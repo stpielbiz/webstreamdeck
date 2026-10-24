@@ -47,9 +47,7 @@ export function TvShell({
       }
     >
       <header className="grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-3 py-2 sm:gap-3 sm:px-6 sm:py-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded bg-primary text-primary-foreground sm:size-10">
-          <Tv className="size-5" />
-        </span>
+        <BrandMark className="size-9 sm:size-10" />
         <div className="min-w-0">
           <p className="flex min-w-0 items-baseline gap-2"><span className="truncate font-display text-lg font-bold"><BrandName /></span><AccountExpiryBadge /></p>
           <p className="truncate text-xs text-muted-foreground">{title}</p>
