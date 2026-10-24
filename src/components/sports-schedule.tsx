@@ -145,12 +145,14 @@ export function SportsSchedulePanel({ leagueKey, channels, onPlay, onExitLeft, o
 
 /** Open network per game; survives remounts so Back from playback finds the card again. */
 const openNetworks = new Map<string, string | null>();
+const SCORE = "__score__";
 
 function GameBlock({ game, logo, label, first, channels, onPlay }: { game: ScheduledGame; logo?: string | undefined; label: string; first: boolean; channels?: CatalogItem[] | undefined; onPlay: (item: CatalogItem) => void }) {
   const [network, setNetworkState] = useState<string | null>(() => openNetworks.get(game.id) ?? null);
   const setNetwork = (n: string | null) => { openNetworks.set(game.id, n); setNetworkState(n); };
   const groups = useMemo(() => (channels ? channelsByNetwork({ ...game, league: label }, channels).filter((g) => g.items.length > 0) : []), [channels, game, label]);
-  const picks = network ? groups.find((g) => g.network === network)?.items ?? [] : [];
+  const live = game.state === "in";
+  const picks = network && network !== SCORE ? groups.find((g) => g.network === network)?.items ?? [] : [];
   const status = gameStatusLabel(game);
   const chip = "h-9 rounded-full border px-3 text-xs font-semibold outline-none transition-transform focus:scale-105 focus:border-primary focus:ring-2 focus:ring-primary";
   return (
@@ -162,10 +164,27 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
         <span className={cn("rounded px-2 py-0.5 text-xs font-semibold", game.state === "in" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>{status}</span>
         {game.detail && <span className="text-xs text-muted-foreground">{game.detail}</span>}
       </header>
-      {groups.length > 0 ? (
+      {(groups.length > 0 || live) && (
         <div className="flex flex-wrap gap-2" aria-label="Networks">
+          {live && (
+            <button
+              type="button"
+              data-tv-focus
+              data-focus-glow
+              data-sport-item
+              data-zone-entry={first ? "true" : undefined}
+              data-focus-key={first ? "sports-first-card" : `sport-score-${game.id}`}
+              aria-pressed={network === SCORE}
+              aria-expanded={network === SCORE}
+              onClick={() => setNetwork(network === SCORE ? null : SCORE)}
+              className={cn(chip, network === SCORE ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary")}
+            >
+              Score details
+            </button>
+          )}
           {groups.map((g, i) => {
             const active = network === g.network;
+            const entry = first && i === 0 && !live;
             return (
               <button
                 key={g.network}
@@ -174,8 +193,8 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
                 data-focus-glow
                 data-sport-item
                 data-sport-network
-                data-zone-entry={first && i === 0 ? "true" : undefined}
-                data-focus-key={first && i === 0 ? "sports-first-card" : undefined}
+                data-zone-entry={entry ? "true" : undefined}
+                data-focus-key={entry ? "sports-first-card" : undefined}
                 aria-pressed={active}
                 aria-expanded={active}
                 onClick={() => setNetwork(active ? null : g.network)}
@@ -186,7 +205,9 @@ function GameBlock({ game, logo, label, first, channels, onPlay }: { game: Sched
             );
           })}
         </div>
-      ) : <p className="text-xs text-muted-foreground">No matching channels in your playlist.</p>}
+      )}
+      {groups.length === 0 && <p className={cn("text-xs text-muted-foreground", live && "mt-2")}>No matching channels in your playlist.</p>}
+      {network === SCORE && live && <div className="mt-2 rounded border border-border"><ScoringSummary id={game.id} live /></div>}
       {picks.length > 0 && (
         <div className="grid grid-cols-4 gap-2">
           {picks.map((item) => {
@@ -255,12 +276,12 @@ function FinalBlock({ game, first, open, onToggle }: { game: ScheduledGame; firs
   );
 }
 
-function ScoringSummary({ id }: { id: string }) {
+function ScoringSummary({ id, live = false }: { id: string; live?: boolean }) {
   const fetchSummary = useServerFn(getGameSummary);
-  const q = useQuery({ queryKey: ["game-summary", id], queryFn: () => fetchSummary({ data: { id } }), staleTime: 24 * 3600_000, gcTime: Infinity, retry: 1 });
-  if (q.isLoading) return <div className="space-y-2 px-3 pb-3">{[0, 1, 2].map((i) => <div key={i} className="h-5 animate-pulse rounded bg-muted" />)}</div>;
+  const q = useQuery({ queryKey: ["game-summary", id, live], queryFn: () => fetchSummary({ data: { id } }), staleTime: live ? 60_000 : 24 * 3600_000, refetchInterval: live ? 60_000 : false, gcTime: live ? 5 * 60_000 : Infinity, retry: 1 });
+  if (q.isLoading) return <div className="space-y-2 p-3">{[0, 1, 2].map((i) => <div key={i} className="h-5 animate-pulse rounded bg-muted" />)}</div>;
   const plays = q.data?.plays ?? [];
-  if (!plays.length) return <p className="px-3 pb-3 text-xs text-muted-foreground">Scoring details not available.</p>;
+  if (!plays.length) return <p className="p-3 text-xs text-muted-foreground">{live ? "No goals yet." : "Scoring details not available."}</p>;
   const periods = [...new Set(plays.map((p) => p.periodLabel))];
   return (
     <div className="space-y-2 border-t border-border px-3 py-2 animate-in fade-in duration-300">
