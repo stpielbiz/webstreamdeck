@@ -133,6 +133,7 @@ class PlayerActivity : Activity() {
         currentTitle = intent.getStringExtra(EXTRA_TITLE) ?: ""
         live = intent.getBooleanExtra(EXTRA_LIVE, false)
         val startSeconds = intent.getDoubleExtra(EXTRA_START, 0.0)
+        android.util.Log.i("JolzplayPlayer", "Resume requested at ${startSeconds}s")
         candidates = alternates(url)
 
         val httpFactory = DefaultHttpDataSource.Factory()
@@ -198,7 +199,19 @@ class PlayerActivity : Activity() {
             override fun onPlaybackStateChanged(state: Int) {
                 when (state) {
                     Player.STATE_BUFFERING -> if (bufferingSince == 0L) bufferingSince = SystemClock.elapsedRealtime()
-                    Player.STATE_READY -> bufferingSince = 0L
+                    Player.STATE_READY -> {
+                        bufferingSince = 0L
+                        // Some provider streams ignore the start position given with the
+                        // media item; jump there once ready, retrying once.
+                        if (pendingStartMs > 0) {
+                            if (player.currentPosition < pendingStartMs - 5_000 && seekRetries < 2 && player.isCurrentMediaItemSeekable) {
+                                seekRetries += 1
+                                player.seekTo(pendingStartMs)
+                            } else {
+                                pendingStartMs = 0L
+                            }
+                        }
+                    }
                     Player.STATE_ENDED -> {
                         if (live) {
                             scheduleReconnect()
@@ -239,6 +252,8 @@ class PlayerActivity : Activity() {
         lastPosition = -1L
         lastProgressAt = SystemClock.elapsedRealtime()
         bufferingSince = 0L
+        pendingStartMs = startMs
+        seekRetries = 0
         player.setMediaItem(builder.build(), startMs)
         player.prepare()
         player.playWhenReady = true
