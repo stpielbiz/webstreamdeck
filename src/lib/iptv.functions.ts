@@ -585,6 +585,18 @@ export const saveProgress = createServerFn({ method: "POST" })
       { onConflict: "user_id,playlist_id,item_kind,item_id" },
     );
     if (error) throw new Error(error.message);
+    // Starting an episode means earlier unfinished ones were watched
+    // (people often skip the credits).
+    if (data.itemKind === "episode" && data.seriesId && data.season != null && data.episode != null) {
+      await context.supabase
+        .from("watch_progress")
+        .update({ completed: true })
+        .eq("user_id", context.userId)
+        .eq("playlist_id", data.playlistId)
+        .eq("series_id", data.seriesId)
+        .eq("completed", false)
+        .or(`season.lt.${data.season},and(season.eq.${data.season},episode.lt.${data.episode})`);
+    }
     return { ok: true, completed: completedFlag };
   });
 
