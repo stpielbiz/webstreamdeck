@@ -98,7 +98,7 @@ function TvWatchSeries() {
         <div className="lg:order-2">
           <VideoPlayer
             onStop={stopEpisode}
-            src={current ? playback.data?.url ?? null : null}
+            src={current && (progress.isSuccess || progress.isError) ? playback.data?.url ?? null : null}
             fallbackSrc={current ? playback.data?.directUrl ?? null : null}
             title={current?.title ?? ""}
             poster={current?.image ?? show?.image ?? null}
