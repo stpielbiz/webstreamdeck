@@ -36,7 +36,9 @@ export function mergeGuide(client: QueryClient, playlistId: string, entries: { c
   });
 }
 
-export interface SyncStatus { running: boolean; done: number; total: number }
+export interface SyncStatus { running: boolean; done: number; total: number; firstLoad?: boolean }
+/** When each playlist's last full (forced) update finished; background runs skip right after it. */
+const lastFullRunAt = new Map<string, number>();
 
 export interface LibrarySectionStatus {
   total: number;
@@ -232,6 +234,7 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
     };
 
     const run = async () => {
+      if (!force && Date.now() - (lastFullRunAt.get(playlistId) ?? 0) < GUIDE_TTL) return;
       if (force) {
         phase("Clearing saved copy");
         await clearPlaylistEntries(playlistId);
@@ -241,7 +244,7 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
         phase("Channels");
       }
       const first = client.getQueryData(["tv-live-items", playlistId, ""]) === undefined;
-      if (first) setStatus({ running: true, done: 0, total: 0 });
+      if (first) setStatus({ running: true, done: 0, total: 0, firstLoad: true });
       await refresh(["tv-live-categories", playlistId], () => fetchCategories({ data: { playlistId, kind: "live" } }));
       const channels = await refresh<CatalogItem[]>(["tv-live-items", playlistId, ""], () => fetchItems({ data: { playlistId, kind: "live" } }));
       if (cancelled) return;
@@ -252,6 +255,7 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
       const finish = () => {
         setStatus({ running: false, done: 0, total: 0 });
         if (force && !cancelled) {
+          lastFullRunAt.set(playlistId, Date.now());
           setRefresh({ running: false, phase: "", done: 0, total: 0 });
           refreshRequest = null; emit();
           toast.success("Library updated");
@@ -264,7 +268,7 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
       const now = Date.now();
       const due = channels.slice(0, GUIDE_MAX_CHANNELS).map((c) => c.id).filter((id) => !store[id] || now - store[id]!.at > GUIDE_TTL);
       if (due.length === 0) { finish(); return; }
-      setStatus({ running: true, done: 0, total: due.length });
+      setStatus({ running: true, done: 0, total: due.length, firstLoad: first });
       phase("TV guide", 0, due.length);
       // Merge every few batches: each merge rebuilds the saved guide, which is slow on a Fire Stick.
       let collected: { channelId: string; programmes: Programme[] }[] = [];
@@ -290,7 +294,7 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
         } catch {
           /* provider hiccup — retry next sync */
         }
-        setStatus({ running: true, done: Math.min(due.length, i + GUIDE_BATCH), total: due.length });
+        setStatus({ running: true, done: Math.min(due.length, i + GUIDE_BATCH), total: due.length, firstLoad: first });
         phase("TV guide", Math.min(due.length, i + GUIDE_BATCH), due.length);
         await new Promise((resolve) => window.setTimeout(resolve, 250));
       }
