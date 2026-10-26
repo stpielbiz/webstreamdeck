@@ -14,6 +14,7 @@ import {
   Star,
   Tv,
   CircleDot,
+  MessageSquare,
 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
@@ -46,6 +47,7 @@ const NAV = [
   { to: "/settings", label: "Settings", icon: Settings },
   { to: "/device-login", label: "Log in another device", icon: LogIn },
   { to: "/download", label: "Get the TV app", icon: MonitorPlay },
+  { to: "/contact", label: "Contact us", icon: MessageSquare },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

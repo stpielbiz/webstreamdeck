@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CircleDot, Clapperboard, Download, Home, Layers, ListVideo, Loader2, MonitorPlay, RefreshCw, Settings, ShieldCheck, Star, Tv } from "lucide-react";
+import { CircleDot, Clapperboard, Download, Home, Layers, ListVideo, Loader2, MessageSquare, MonitorPlay, RefreshCw, Settings, ShieldCheck, Star, Tv } from "lucide-react";
 import { useIsAdmin } from "@/lib/use-admin";
 import { useEffect, useRef, useState, type FocusEvent } from "react";
 
@@ -61,6 +61,7 @@ export function SectionMenu({
     { to: "/playlists" as const, label: "Playlists", icon: ListVideo },
     { to: "/settings" as const, label: "Settings", icon: Settings },
     { to: "/download" as const, label: "Get the TV app", icon: Download },
+    { to: "/contact" as const, label: "Contact us", icon: MessageSquare },
     ...(isAdmin ? [{ to: "/admin" as const, label: "Admin", icon: ShieldCheck }] : []),
   ];
   const handleFocus = (event: FocusEvent<HTMLElement>) => {
