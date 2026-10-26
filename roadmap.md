@@ -1,5 +1,8 @@
 # Roadmap
 
+- [done] Set up notify.jolzplay.com app emails and the Contact us support/feedback form; preview and five rule tests pass, desktop/mobile checked.
+- [blocked] Verify live contact email delivery after notify.jolzplay.com finishes DNS verification; current sends correctly report domain_not_verified.
+
 - [done] Rename visible branding to Jolzplay and match the supplied green/dark palette; preserve payment recipient, installed-app identity and saved data. Browser Home/TV branding verified; native launcher and player branding require the next APK update.
 
 - [done] Recent-channel buttons are equal square tiles with the name wrapped on two lines and a grow + glowing-edge focus animation (Fire TV player bar + web player strip)

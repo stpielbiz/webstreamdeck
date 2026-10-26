@@ -106,7 +106,7 @@ function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground">{HOME_FOOTER}</footer>
+      <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground"><p>{HOME_FOOTER}</p><Button asChild variant="link" className="mt-2"><Link to="/contact" data-tv-focus>Contact us</Link></Button></footer>
     </div>
   );
 }

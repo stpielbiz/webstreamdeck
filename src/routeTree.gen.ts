@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DeviceLoginRouteImport } from './routes/device-login'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as GetAppRouteImport } from './routes/get-app'
@@ -40,6 +41,7 @@ import { Route as AuthenticatedTvRecordingsRouteImport } from './routes/_authent
 import { Route as AuthenticatedTvSeriesRouteImport } from './routes/_authenticated/tv.series'
 import { Route as ApiPublicStreamRouteImport } from './routes/api/public/stream'
 import { Route as AuthenticatedTvShowIdRouteImport } from './routes/_authenticated/tv.show.$id'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as AuthenticatedTvWatchMovieIdRouteImport } from './routes/_authenticated/tv.watch.movie.$id'
 import { Route as AuthenticatedTvWatchSeriesIdRouteImport } from './routes/_authenticated/tv.watch.series.$id'
 
@@ -55,6 +57,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DeviceLoginRoute = DeviceLoginRouteImport.update({
@@ -202,6 +209,12 @@ const AuthenticatedTvShowIdRoute = AuthenticatedTvShowIdRouteImport.update({
   path: '/tv/show/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedTvWatchMovieIdRoute =
   AuthenticatedTvWatchMovieIdRouteImport.update({
     id: '/tv/watch/movie/$id',
@@ -218,6 +231,7 @@ const AuthenticatedTvWatchSeriesIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/contact': typeof ContactRoute
   '/device-login': typeof DeviceLoginRoute
   '/download': typeof DownloadRoute
   '/get-app': typeof GetAppRoute
@@ -246,12 +260,14 @@ export interface FileRoutesByFullPath {
   '/series/': typeof AuthenticatedSeriesIndexRoute
   '/tv/': typeof AuthenticatedTvIndexRoute
   '/tv/show/$id': typeof AuthenticatedTvShowIdRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
   '/tv/watch/series/$id': typeof AuthenticatedTvWatchSeriesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/contact': typeof ContactRoute
   '/device-login': typeof DeviceLoginRoute
   '/download': typeof DownloadRoute
   '/get-app': typeof GetAppRoute
@@ -280,6 +296,7 @@ export interface FileRoutesByTo {
   '/series': typeof AuthenticatedSeriesIndexRoute
   '/tv': typeof AuthenticatedTvIndexRoute
   '/tv/show/$id': typeof AuthenticatedTvShowIdRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
   '/tv/watch/series/$id': typeof AuthenticatedTvWatchSeriesIdRoute
 }
@@ -288,6 +305,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/contact': typeof ContactRoute
   '/device-login': typeof DeviceLoginRoute
   '/download': typeof DownloadRoute
   '/get-app': typeof GetAppRoute
@@ -316,6 +334,7 @@ export interface FileRoutesById {
   '/_authenticated/series/': typeof AuthenticatedSeriesIndexRoute
   '/_authenticated/tv/': typeof AuthenticatedTvIndexRoute
   '/_authenticated/tv/show/$id': typeof AuthenticatedTvShowIdRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/_authenticated/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
   '/_authenticated/tv/watch/series/$id': typeof AuthenticatedTvWatchSeriesIdRoute
 }
@@ -324,6 +343,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/contact'
     | '/device-login'
     | '/download'
     | '/get-app'
@@ -352,12 +372,14 @@ export interface FileRouteTypes {
     | '/series/'
     | '/tv/'
     | '/tv/show/$id'
+    | '/lovable/email/transactional/preview'
     | '/tv/watch/movie/$id'
     | '/tv/watch/series/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/contact'
     | '/device-login'
     | '/download'
     | '/get-app'
@@ -386,6 +408,7 @@ export interface FileRouteTypes {
     | '/series'
     | '/tv'
     | '/tv/show/$id'
+    | '/lovable/email/transactional/preview'
     | '/tv/watch/movie/$id'
     | '/tv/watch/series/$id'
   id:
@@ -393,6 +416,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/contact'
     | '/device-login'
     | '/download'
     | '/get-app'
@@ -421,6 +445,7 @@ export interface FileRouteTypes {
     | '/_authenticated/series/'
     | '/_authenticated/tv/'
     | '/_authenticated/tv/show/$id'
+    | '/lovable/email/transactional/preview'
     | '/_authenticated/tv/watch/movie/$id'
     | '/_authenticated/tv/watch/series/$id'
   fileRoutesById: FileRoutesById
@@ -429,11 +454,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ContactRoute: typeof ContactRoute
   DeviceLoginRoute: typeof DeviceLoginRoute
   DownloadRoute: typeof DownloadRoute
   GetAppRoute: typeof GetAppRoute
   TvPairRoute: typeof TvPairRoute
   ApiPublicStreamRoute: typeof ApiPublicStreamRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -457,6 +484,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/device-login': {
@@ -655,6 +689,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTvShowIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/tv/watch/movie/$id': {
       id: '/_authenticated/tv/watch/movie/$id'
       path: '/tv/watch/movie/$id'
@@ -735,11 +776,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ContactRoute: ContactRoute,
   DeviceLoginRoute: DeviceLoginRoute,
   DownloadRoute: DownloadRoute,
   GetAppRoute: GetAppRoute,
   TvPairRoute: TvPairRoute,
   ApiPublicStreamRoute: ApiPublicStreamRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

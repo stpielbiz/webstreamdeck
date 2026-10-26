@@ -1,6 +1,6 @@
 import { hardReload } from "@/lib/hard-reload";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Clapperboard, Download, ListVideo, MonitorPlay, Settings, ShieldCheck, Star, Tv, CircleDot } from "lucide-react";
+import { Clapperboard, Download, ListVideo, MessageSquare, MonitorPlay, Settings, ShieldCheck, Star, Tv, CircleDot } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { syncedResumeRows, useSyncPlaylists } from "@/lib/playlist-sync";
@@ -263,6 +263,7 @@ const PREVIEWS = {
   Playlists: { icon: ListVideo, title: "Playlists", body: "Add or switch the IPTV source used by Jolzplay.", to: "/playlists", action: "Manage playlists" },
   "Get the TV app": { icon: Download, title: "Get the TV app", body: "Download the latest Jolzplay app for Fire TV.", to: "/download", action: "Open download page" },
   Admin: { icon: ShieldCheck, title: "Admin", body: "Manage organisation tools and connection logs.", to: "/admin", action: "Open admin" },
+  "Contact us": { icon: MessageSquare, title: "Contact us", body: "Support and feedback.", to: "/contact", action: "Contact us" },
 } as const;
 
 function SectionPreview({ section, resumeCount, favouriteCount, isAdmin, library, hasPlaylist, sync }: { section: string; resumeCount: number; favouriteCount: number; isAdmin: boolean; library: ReturnType<typeof useLibraryOverview>; hasPlaylist: boolean; sync: { running: boolean; done: number; total: number } }) {
@@ -273,7 +274,7 @@ function SectionPreview({ section, resumeCount, favouriteCount, isAdmin, library
     <div className="py-1">
       <section className="w-full max-w-3xl">
         <div data-remote-row className="sticky top-0 z-20 flex flex-wrap gap-2 bg-background pb-2">        <Button asChild size="lg" className="mb-5">
-          <Link to={preview.to} search={section === "Playlists" || section === "Settings" || section === "Get the TV app" || section === "Admin" ? { mode: "tv" } : {}} preload={false} data-tv-focus data-zone-entry="true">{preview.action}</Link>
+          <Link to={preview.to} search={section === "Playlists" || section === "Settings" || section === "Get the TV app" || section === "Admin" || section === "Contact us" ? { mode: "tv" } : {}} preload={false} data-tv-focus data-zone-entry="true">{preview.action}</Link>
         </Button>
 {section === "Movies" && isAdmin && <BulkRefresh kind="movie" />}{section === "Shows" && isAdmin && <BulkRefresh kind="series" />}</div>
         <Icon className="size-10 text-primary" />
