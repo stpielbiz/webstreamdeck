@@ -88,7 +88,7 @@ export function VideoPlayer({
   // Lock the resume point when a stream starts; later progress saves must not move it.
   const startRef = useRef({ src: null as string | null, at: 0 });
   if (startRef.current.src !== src) startRef.current = { src: src ?? null, at: startPosition };
-  else if (startRef.current.at === 0 && startPosition > 0 && !false) startRef.current.at = startPosition;
+  else if (startRef.current.at === 0 && startPosition > 0) startRef.current.at = startPosition;
 
   const [activeSrc, setActiveSrc] = useState<string | null>(src);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
