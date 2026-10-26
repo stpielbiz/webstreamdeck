@@ -534,6 +534,21 @@ export const saveProgress = createServerFn({ method: "POST" })
     let positionSeconds = data.positionSeconds;
     let durationSeconds = data.durationSeconds ?? null;
     let completedFlag = completed;
+    // A stream still opening reports tiny positions; never let them wipe a
+    // later saved spot (that caused resumes at ~46s instead of ~15 min).
+    if (!data.external && data.positionSeconds < 10) {
+      const { data: existing } = await context.supabase
+        .from("watch_progress")
+        .select("position_seconds, completed")
+        .eq("user_id", context.userId)
+        .eq("playlist_id", data.playlistId)
+        .eq("item_kind", data.itemKind)
+        .eq("item_id", data.itemId)
+        .maybeSingle();
+      if (existing && !existing.completed && existing.position_seconds > 30) {
+        return { ok: true, completed: false };
+      }
+    }
     if (data.external && data.positionSeconds === 0) {
       const { data: existing } = await context.supabase
         .from("watch_progress")

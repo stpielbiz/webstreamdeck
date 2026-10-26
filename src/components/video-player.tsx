@@ -85,6 +85,10 @@ export function VideoPlayer({
   const shellRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(onProgress);
   progressRef.current = onProgress;
+  // Lock the resume point when a stream starts; later progress saves must not move it.
+  const startRef = useRef({ src: null as string | null, at: 0 });
+  if (startRef.current.src !== src) startRef.current = { src: src ?? null, at: startPosition };
+  else if (startRef.current.at === 0 && startPosition > 0) startRef.current.at = startPosition;
 
   const [activeSrc, setActiveSrc] = useState<string | null>(src);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -154,9 +158,10 @@ export function VideoPlayer({
   // fetches the stream over the device's own connection.
   const startNative = useCallback(() => {
     if (!fallbackSrc) return false;
-    debugLog("native", "Handing stream to the TV app player", { url: redactUrl(fallbackSrc), live, startPosition });
-    return playNative({ url: fallbackSrc, title: title ?? "", live, startPosition });
-  }, [fallbackSrc, title, live, startPosition]);
+    const startAt = startRef.current.at;
+    debugLog("native", "Handing stream to the TV app player", { url: redactUrl(fallbackSrc), live, startPosition: startAt });
+    return playNative({ url: fallbackSrc, title: title ?? "", live, startPosition: startAt });
+  }, [fallbackSrc, title, live]);
 
   useEffect(() => {
     if (!allowNative || !src || !fallbackSrc || !hasNativePlayer()) {
@@ -506,7 +511,8 @@ export function VideoPlayer({
           onLoadedMetadata={(event) => {
             const video = event.currentTarget;
             setDuration(Number.isFinite(video.duration) ? video.duration : 0);
-            const resumeAt = resumeAtRef.current > 5 ? resumeAtRef.current : startPosition;
+            const resumeAt = resumeAtRef.current > 5 ? resumeAtRef.current : startRef.current.at;
+            debugLog("player", "Resume point", { resumeAt });
             resumeAtRef.current = 0;
             if (!live && resumeAt > 5 && resumeAt < video.duration - 10) {
               video.currentTime = resumeAt;

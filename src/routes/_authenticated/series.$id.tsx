@@ -167,7 +167,7 @@ function SeriesDetail() {
           </div>
           <div className="min-w-0 lg:order-2">
           <VideoPlayer
-            src={playback.data?.url ?? null}
+            src={progress.isSuccess || progress.isError ? playback.data?.url ?? null : null}
             fallbackSrc={playback.data?.directUrl ?? null}
             title={`${show.name} — S${current.season} E${current.episode} ${current.title}`}
             poster={current.image ?? show.image}
