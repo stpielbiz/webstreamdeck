@@ -33,3 +33,4 @@
 - Public homepage copy, actions and feature cards live in src/content/homepage.ts — edit content without touching layout.
 - Subdirectory notes: `native-app/AGENTS.md` covers the Fire TV app (JS bridge, packaging, recording, in-app upgrades) — read it before changing files there.
 - Visible branding uses the shared BrandMark/BrandName components; internal names keep the original `streamdeck` spelling (bridge `window.StreamDeckNative` / `__streamDeck*`, `applicationId` `app.streamdeck.tv`, `streamdeck.*` storage keys, `stream-deck-tv.apk`, repo and domain, keystore alias) because renaming them breaks installed apps, in-place updates and saved on-device data.
+- App emails use the managed server-only template sender, with feature-specific validated triggers and no local email queue; `/lovable/` previews authenticate themselves and bypass app redirects.
