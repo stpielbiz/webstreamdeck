@@ -19,7 +19,7 @@ function ContactMessage({ type = "Support", name, accountEmail, subject, message
 }
 export const template = {
   component: ContactMessage,
-  subject: (data) => `[${data.type === "Feedback" ? "Feedback" : "Support"}] ${data.subject ?? "Jolzplay contact"}`,
+  subject: (data) => `[${data['type'] === "Feedback" ? "Feedback" : "Support"}] ${data['subject'] ?? "Jolzplay contact"}`,
   displayName: "Contact us — Support or Feedback",
   to: "payment@jolzplay.com",
   previewData: { type: "Support", name: "Alex", accountEmail: "alex@example.com", subject: "Playlist question", message: "I have a question about adding my playlist.", device: "Browser", signedIn: true, sentAt: "2026-10-26T00:00:00Z" },

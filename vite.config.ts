@@ -8,7 +8,7 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { loadEnv } from "vite";
 import path from "node:path";
 
-Object.assign(process.env, loadEnv(process.env.NODE_ENV || "development", process.cwd(), ""));
+Object.assign(process.env, loadEnv(process.env['NODE_ENV'] || "development", process.cwd(), ""));
 
 export default defineConfig({
   vite: {

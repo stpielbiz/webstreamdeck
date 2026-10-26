@@ -13,7 +13,7 @@ import { isFireTvDevice } from "@/lib/fire-tv-device";
 import { sendContactMessage } from "@/lib/contact.functions";
 
 export const Route = createFileRoute("/contact")({
-  validateSearch: (search: Record<string, unknown>) => ({ mode: search.mode === "tv" ? "tv" : undefined }),
+  validateSearch: (search: Record<string, unknown>): { mode?: string } => search['mode'] === "tv" ? { mode: "tv" } : {},
   head: () => ({ meta: [
     { title: "Contact us — Jolzplay" },
     { name: "description", content: "Contact Jolzplay for account support or share your feedback." },
