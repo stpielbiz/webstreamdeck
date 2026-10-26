@@ -171,7 +171,7 @@ function TvShowDetails() {
         <div data-tv-zone="show-player" className="fixed inset-0 z-50 bg-background">
           <VideoPlayer
             onStop={stopEpisode}
-            src={playback.data?.url ?? null}
+            src={progress.isSuccess || progress.isError ? playback.data?.url ?? null : null}
             fallbackSrc={playback.data?.directUrl ?? null}
             title={`S${current.season} E${current.episode} — ${current.title}`}
             poster={current.image ?? show?.image ?? null}

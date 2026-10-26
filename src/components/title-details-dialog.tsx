@@ -229,7 +229,7 @@ function TitleDetailsContent({
             </div>
             <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
               {playing && mediaId ? (
-                <VideoPlayer onStop={close} src={playback.data?.url ?? null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
+                <VideoPlayer onStop={close} src={progress.isSuccess || progress.isError ? playback.data?.url ?? null : null} fallbackSrc={playback.data?.directUrl ?? null} title={title ?? ""} poster={poster ?? null} startPosition={resumeAt} onProgress={(position, duration) => record(position, duration)} onExternalLaunch={() => record(resumeAt, null, true)} {...(kind === "series" ? { onEnded: playNext } : {})} />
               ) : (
                  <div className="relative grid h-full w-full place-items-center bg-card/80">
                    {poster && <img src={poster} alt="" className="absolute inset-0 h-full w-full object-contain" />}

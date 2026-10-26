@@ -71,7 +71,7 @@ function TvWatchMovie() {
       </div>
       <div className="min-w-0 lg:order-2">
       <VideoPlayer
-        src={playback.data?.url ?? null}
+        src={progress.isSuccess || progress.isError ? playback.data?.url ?? null : null}
             fallbackSrc={playback.data?.directUrl ?? null}
         title={film?.name ?? ""}
         poster={film?.image ?? null}
