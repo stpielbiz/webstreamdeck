@@ -40,6 +40,7 @@ import { Route as AuthenticatedTvRecordingsRouteImport } from './routes/_authent
 import { Route as AuthenticatedTvSeriesRouteImport } from './routes/_authenticated/tv.series'
 import { Route as ApiPublicStreamRouteImport } from './routes/api/public/stream'
 import { Route as AuthenticatedTvShowIdRouteImport } from './routes/_authenticated/tv.show.$id'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as AuthenticatedTvWatchMovieIdRouteImport } from './routes/_authenticated/tv.watch.movie.$id'
 import { Route as AuthenticatedTvWatchSeriesIdRouteImport } from './routes/_authenticated/tv.watch.series.$id'
 
@@ -202,6 +203,12 @@ const AuthenticatedTvShowIdRoute = AuthenticatedTvShowIdRouteImport.update({
   path: '/tv/show/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedTvWatchMovieIdRoute =
   AuthenticatedTvWatchMovieIdRouteImport.update({
     id: '/tv/watch/movie/$id',
@@ -246,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/series/': typeof AuthenticatedSeriesIndexRoute
   '/tv/': typeof AuthenticatedTvIndexRoute
   '/tv/show/$id': typeof AuthenticatedTvShowIdRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
   '/tv/watch/series/$id': typeof AuthenticatedTvWatchSeriesIdRoute
 }
@@ -280,6 +288,7 @@ export interface FileRoutesByTo {
   '/series': typeof AuthenticatedSeriesIndexRoute
   '/tv': typeof AuthenticatedTvIndexRoute
   '/tv/show/$id': typeof AuthenticatedTvShowIdRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
   '/tv/watch/series/$id': typeof AuthenticatedTvWatchSeriesIdRoute
 }
@@ -316,6 +325,7 @@ export interface FileRoutesById {
   '/_authenticated/series/': typeof AuthenticatedSeriesIndexRoute
   '/_authenticated/tv/': typeof AuthenticatedTvIndexRoute
   '/_authenticated/tv/show/$id': typeof AuthenticatedTvShowIdRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/_authenticated/tv/watch/movie/$id': typeof AuthenticatedTvWatchMovieIdRoute
   '/_authenticated/tv/watch/series/$id': typeof AuthenticatedTvWatchSeriesIdRoute
 }
@@ -352,6 +362,7 @@ export interface FileRouteTypes {
     | '/series/'
     | '/tv/'
     | '/tv/show/$id'
+    | '/lovable/email/transactional/preview'
     | '/tv/watch/movie/$id'
     | '/tv/watch/series/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/series'
     | '/tv'
     | '/tv/show/$id'
+    | '/lovable/email/transactional/preview'
     | '/tv/watch/movie/$id'
     | '/tv/watch/series/$id'
   id:
@@ -421,6 +433,7 @@ export interface FileRouteTypes {
     | '/_authenticated/series/'
     | '/_authenticated/tv/'
     | '/_authenticated/tv/show/$id'
+    | '/lovable/email/transactional/preview'
     | '/_authenticated/tv/watch/movie/$id'
     | '/_authenticated/tv/watch/series/$id'
   fileRoutesById: FileRoutesById
@@ -434,6 +447,7 @@ export interface RootRouteChildren {
   GetAppRoute: typeof GetAppRoute
   TvPairRoute: typeof TvPairRoute
   ApiPublicStreamRoute: typeof ApiPublicStreamRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -655,6 +669,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTvShowIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/tv/watch/movie/$id': {
       id: '/_authenticated/tv/watch/movie/$id'
       path: '/tv/watch/movie/$id'
@@ -740,6 +761,7 @@ const rootRouteChildren: RootRouteChildren = {
   GetAppRoute: GetAppRoute,
   TvPairRoute: TvPairRoute,
   ApiPublicStreamRoute: ApiPublicStreamRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
