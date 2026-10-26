@@ -321,8 +321,13 @@ class PlayerActivity : Activity() {
         return list
     }
 
+    private var pendingStartMs = 0L
+    private var seekRetries = 0
+
     private fun reportProgress() {
         if (live || !::player.isInitialized) return
+        // Don't overwrite the saved spot while the resume jump is still pending.
+        if (pendingStartMs > 0) return
         val position = player.currentPosition / 1000.0
         val duration = if (player.duration > 0) player.duration / 1000.0 else 0.0
         if (position > 0) listener?.onProgress(position, duration)
