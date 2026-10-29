@@ -9,9 +9,16 @@ function playing() {
   return [...document.querySelectorAll("video")].some((v) => !v.paused && !v.ended);
 }
 
+/** Someone is filling in a form — reloading would throw away what they typed. */
+export function busyWithForm(doc: Document = document) {
+  const active = doc.activeElement as HTMLElement | null;
+  if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) return true;
+  return !!doc.querySelector("[data-unsaved-form]");
+}
+
 /**
  * Detects a newly published website version (e.g. after the Fire TV app wakes
- * from sleep) and reloads the page when nothing is playing.
+ * from sleep) and reloads the page when nothing is playing and no form is open.
  */
 export function useWebUpdateWatcher() {
   useEffect(() => {
@@ -21,11 +28,13 @@ export function useWebUpdateWatcher() {
     let pending = false;
     const check = async () => {
       try {
-        const res = await fetch(`/?v=${Date.now()}`, { cache: "no-store" });
-        const next = fingerprint(await res.text());
-        if (next && next !== current) pending = true;
+        if (!pending) {
+          const res = await fetch(`/?v=${Date.now()}`, { cache: "no-store" });
+          const next = fingerprint(await res.text());
+          if (next && next !== current) pending = true;
+        }
       } catch { /* offline */ }
-      if (pending && !playing()) window.location.reload();
+      if (pending && !playing() && !busyWithForm()) window.location.reload();
     };
     const onVisible = () => { if (!document.hidden) void check(); };
     document.addEventListener("visibilitychange", onVisible);
