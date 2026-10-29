@@ -57,7 +57,7 @@ function PlaylistsPage() {
     } catch (error) {
       outcome = { ok: false, ms: 0, message: error instanceof Error ? error.message : "The test failed." };
     }
-    debugLog?.("Playlist test", `${outcome.ok ? "ok" : "failed"}: ${outcome.message}`);
+    debugLog("Playlist test", `${outcome.ok ? "ok" : "failed"}: ${outcome.message}`);
     setTests((t) => ({ ...t, [playlistId]: outcome }));
   };
   const [kind, setKind] = useState<Kind>("xtream");
@@ -213,7 +213,7 @@ function PlaylistsPage() {
                 </div>
                 <div className="flex gap-2">
                   {playlist.id !== activeId && <Button size="sm" data-pl-row={index} data-pl-col={0} onClick={() => { setActiveId(playlist.id); toast.success(`Now using ${playlist.name}`); }}>Use</Button>}
-                  <Button size="sm" variant="outline" data-pl-row={index} data-pl-col={0.5} disabled={tests[playlist.id] === "running"} onClick={() => void runTest(playlist.id)}>
+                  <Button size="sm" variant="outline" data-pl-row={index} data-pl-col={0.5} onClick={() => void runTest(playlist.id)}>
                     {tests[playlist.id] === "running" ? <><Loader2 className="size-4 animate-spin" /> Testing…</> : <><Wifi className="size-4" /> Test</>}
                   </Button>
                   <Button size="sm" variant="outline" data-pl-row={index} data-pl-col={1} onClick={() => startEdit(playlist)}><Pencil className="size-4" /> Edit</Button>
