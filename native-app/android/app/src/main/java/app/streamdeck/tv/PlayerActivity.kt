@@ -53,6 +53,7 @@ class PlayerActivity : Activity() {
         private const val USER_AGENT = "TiviMate/4.7.0 (Linux; Android 9)"
         private const val STALL_MS = 12_000L
         private const val GIVE_UP_MS = 180_000L
+        private const val OFFLINE_GIVE_UP_MS = 15_000L
         private const val STEADY_MS = 60_000L
         /** Side of a recent-channel tile, in dp. */
         private const val TILE_DP = 160
