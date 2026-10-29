@@ -37,6 +37,22 @@ type Step = "list" | "type" | "details" | "testing" | "result" | "delete";
 interface Form { name: string; serverUrl: string; username: string; password: string; m3uUrl: string }
 const emptyForm: Form = { name: "", serverUrl: "", username: "", password: "", m3uUrl: "" };
 
+const DRAFT_KEY = "streamdeck.playlistDraft";
+type Draft = { kind: Kind; form: Omit<Form, "password"> };
+function readDraft(): Draft | null {
+  try {
+    const raw = window.sessionStorage.getItem(DRAFT_KEY);
+    const draft = raw ? (JSON.parse(raw) as Draft) : null;
+    return draft && (draft.kind === "xtream" || draft.kind === "m3u") ? draft : null;
+  } catch { return null; }
+}
+function writeDraft(draft: Draft) {
+  try { window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* storage full/blocked */ }
+}
+function clearDraft() {
+  try { window.sessionStorage.removeItem(DRAFT_KEY); } catch { /* blocked */ }
+}
+
 function PlaylistsPage() {
   const { mode } = Route.useSearch();
   const { playlists, refetch, activeId, setActiveId } = usePlaylists();
@@ -66,6 +82,25 @@ function PlaylistsPage() {
   const [deleting, setDeleting] = useState<PlaylistSummary | null>(null);
   const [result, setResult] = useState<{ ok: true; name: string; id: string; summary: ConnectionSummary; forced: boolean } | { ok: false; message: string } | null>(null);
   const root = useRef<HTMLDivElement>(null);
+
+  // Keep a half-filled "add source" form for this tab (never the password), so a
+  // reload while the user is copying details elsewhere doesn't wipe it.
+  const draftRestored = useRef(false);
+  useEffect(() => {
+    if (draftRestored.current) return;
+    draftRestored.current = true;
+    const draft = readDraft();
+    if (!draft) return;
+    debugLog("connect", "Restored unsaved source form");
+    setKind(draft.kind);
+    setForm({ ...emptyForm, ...draft.form, password: "" });
+    setStep("details");
+  }, []);
+  useEffect(() => {
+    if (!draftRestored.current) return;
+    if (step === "details" && !editing) writeDraft({ kind, form: { name: form.name, serverUrl: form.serverUrl, username: form.username, m3uUrl: form.m3uUrl } });
+    else if (step === "list" || step === "type" || step === "delete") clearDraft();
+  }, [step, kind, form.name, form.serverUrl, form.username, form.m3uUrl, editing]);
 
   // Focus the first control of each step so the remote always lands somewhere useful.
   useEffect(() => {
