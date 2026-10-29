@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { parseXtreamFromM3u } from "./m3u-xtream";
 
 describe("parseXtreamFromM3u", () => {
