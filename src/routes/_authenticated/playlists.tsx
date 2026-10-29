@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, Link2, Loader2, Pencil, Plus, Server, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Link2, Loader2, Pencil, Plus, Server, Trash2, Wifi, XCircle } from "lucide-react";
+import { useTestConnection } from "@/lib/device-provider";
+import type { ConnectionTest } from "@/lib/iptv-provider";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -44,6 +46,20 @@ function PlaylistsPage() {
   const remove = useServerFn(deletePlaylist);
 
   const [step, setStep] = useState<Step>("list");
+  const testFn = useTestConnection();
+  const [tests, setTests] = useState<Record<string, ConnectionTest | "running">>({});
+  const runTest = async (playlistId: string) => {
+    if (tests[playlistId] === "running") return;
+    setTests((t) => ({ ...t, [playlistId]: "running" }));
+    let outcome: ConnectionTest;
+    try {
+      outcome = await testFn({ data: { playlistId } });
+    } catch (error) {
+      outcome = { ok: false, ms: 0, message: error instanceof Error ? error.message : "The test failed." };
+    }
+    debugLog?.("Playlist test", `${outcome.ok ? "ok" : "failed"}: ${outcome.message}`);
+    setTests((t) => ({ ...t, [playlistId]: outcome }));
+  };
   const [kind, setKind] = useState<Kind>("xtream");
   const [form, setForm] = useState<Form>(emptyForm);
   const [editing, setEditing] = useState<PlaylistSummary | null>(null);
@@ -197,9 +213,22 @@ function PlaylistsPage() {
                 </div>
                 <div className="flex gap-2">
                   {playlist.id !== activeId && <Button size="sm" data-pl-row={index} data-pl-col={0} onClick={() => { setActiveId(playlist.id); toast.success(`Now using ${playlist.name}`); }}>Use</Button>}
+                  <Button size="sm" variant="outline" data-pl-row={index} data-pl-col={0.5} disabled={tests[playlist.id] === "running"} onClick={() => void runTest(playlist.id)}>
+                    {tests[playlist.id] === "running" ? <><Loader2 className="size-4 animate-spin" /> Testing…</> : <><Wifi className="size-4" /> Test</>}
+                  </Button>
                   <Button size="sm" variant="outline" data-pl-row={index} data-pl-col={1} onClick={() => startEdit(playlist)}><Pencil className="size-4" /> Edit</Button>
                   <Button size="sm" variant="outline" data-pl-row={index} data-pl-col={2} onClick={() => { setDeleting(playlist); setStep("delete"); }}><Trash2 className="size-4 text-destructive" /> Delete</Button>
                 </div>
+                {(() => {
+                  const t = tests[playlist.id];
+                  if (!t || t === "running") return null;
+                  return (
+                    <p role="status" className={`flex w-full items-start gap-2 text-sm ${t.ok ? "text-primary" : "text-destructive"}`}>
+                      {t.ok ? <CheckCircle2 className="mt-0.5 size-4 shrink-0" /> : <XCircle className="mt-0.5 size-4 shrink-0" />}
+                      <span>{t.message}</span>
+                    </p>
+                  );
+                })()}
               </div>
             ))}
           </div>
