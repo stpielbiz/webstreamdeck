@@ -19,6 +19,7 @@ import {
   getPlaylistSource,
   getSchedule,
   getSchedules,
+  testPlaylistConnection,
 } from "./iptv.functions";
 import type { CatalogKind, ChannelSchedule } from "./iptv-types";
 
@@ -235,4 +236,11 @@ export function useGetPlayback() {
     const upstream = await provider.resolveStreamUrl(row, d.kind, d.itemId, d.ext ?? undefined);
     return { url: upstream, directUrl: upstream as string | null, live: d.kind === "live" };
   });
+}
+
+/** Checks a saved playlist answers now — on the Fire TV's own connection when available. */
+export function useTestConnection() {
+  return useDeviceFn(useServerFn(testPlaylistConnection) as Remote<{ playlistId: string }>, (row) =>
+    provider.testConnection(row),
+  );
 }
