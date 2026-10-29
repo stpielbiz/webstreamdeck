@@ -17,6 +17,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { usePlaylists } from "@/components/playlist-context";
@@ -72,6 +73,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const allowedWhileExpired = pathname === "/dashboard" || pathname === "/tv" || pathname === "/settings";
   useEffect(() => {
     if (expired && !allowedWhileExpired) {
+      // Say why the page closed — a silent bounce looked like the form crashing.
+      toast.error("Your Jolzplay account has expired", {
+        id: "account-expired",
+        description: "Renew from Home to use this page again.",
+      });
       void navigate({ to: tvMode ? "/tv" : "/dashboard", replace: true });
     }
   }, [allowedWhileExpired, expired, navigate, tvMode]);
