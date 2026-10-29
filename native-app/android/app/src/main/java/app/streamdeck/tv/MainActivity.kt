@@ -64,7 +64,25 @@ class MainActivity : Activity() {
             if (isResumed && ::webView.isInitialized && !PlayerActivity.isOpen && !MultiViewActivity.isOpen) {
                 val now = SystemClock.elapsedRealtime()
                 val stuck = now - lastPong > STUCK_MS || slowPongs >= SLOW_PONGS_LIMIT
-                if (stuck && ((reloadedAt > 0 && now - reloadedAt > STUCK_MS) || now - lastRecovery < RECOVERY_COOLDOWN_MS)) {
+                if (offlineView != null) {
+                    // Waiting on the connection: come back by ourselves once it returns.
+                    lastPong = now
+                    slowPongs = 0
+                    if (NetworkStatus.isOnline(this@MainActivity)) {
+                        NativeLog.add("Connection is back, reloading page")
+                        hideOffline()
+                        reloadedAt = 0L
+                        webView.reload()
+                    }
+                } else if (stuck && !NetworkStatus.isOnline(this@MainActivity)) {
+                    // No internet: reloading or restarting can't help and loops. Say so instead.
+                    NativeLog.add("Watchdog: page not answering and device is offline, showing No connection (${beatInfo()})")
+                    lastPong = now
+                    slowPongs = 0
+                    pingInFlight = false
+                    reloadedAt = 0L
+                    showOffline()
+                } else if (stuck && ((reloadedAt > 0 && now - reloadedAt > STUCK_MS) || now - lastRecovery < RECOVERY_COOLDOWN_MS)) {
                     // A reload didn't help (or it froze again soon after): restart the app.
                     NativeLog.add("Watchdog: page still stuck after reload, restarting app (${beatInfo()})")
                     restartApp()
@@ -97,6 +115,67 @@ class MainActivity : Activity() {
             // stops mid-playback is noticed (no recovery here, just a note).
             watchdog.postDelayed(this, 3_000)
         }
+    }
+
+    private var offlineView: android.view.View? = null
+
+    /** Full-screen "No connection" message drawn natively, so it works even when the page is stuck. */
+    private fun showOffline() {
+        if (offlineView != null || isFinishing) return
+        val dp = resources.displayMetrics.density
+        fun button(label: String, onClick: () -> Unit) = android.widget.Button(this).apply {
+            text = label
+            textSize = 18f
+            isFocusable = true
+            setPadding((24 * dp).toInt(), (12 * dp).toInt(), (24 * dp).toInt(), (12 * dp).toInt())
+            setOnClickListener { onClick() }
+        }
+        val retry = button("Try again") {
+            if (NetworkStatus.isOnline(this)) {
+                hideOffline(); reloadedAt = 0L; lastPong = SystemClock.elapsedRealtime(); webView.reload()
+            } else android.widget.Toast.makeText(this, "Still no connection.", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        val settings = button("Network settings") {
+            try { startActivity(Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)) }
+            catch (_: Exception) { try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (_: Exception) {} }
+        }
+        val buttons = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER
+            addView(retry)
+            addView(android.widget.Space(this@MainActivity), android.widget.LinearLayout.LayoutParams((16 * dp).toInt(), 1))
+            addView(settings)
+        }
+        val box = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            gravity = android.view.Gravity.CENTER
+            setBackgroundColor(0xFF121826.toInt())
+            isClickable = true
+            addView(android.widget.TextView(this@MainActivity).apply {
+                text = "No connection"
+                textSize = 32f
+                setTextColor(0xFF79DA8D.toInt())
+                gravity = android.view.Gravity.CENTER
+            })
+            addView(android.widget.TextView(this@MainActivity).apply {
+                text = "Jolzplay can't reach the internet or your provider.\nCheck your connection. This screen closes by itself when it's back."
+                textSize = 18f
+                setTextColor(0xFFE6EAF0.toInt())
+                gravity = android.view.Gravity.CENTER
+                setPadding(0, (12 * dp).toInt(), 0, (24 * dp).toInt())
+            })
+            addView(buttons)
+        }
+        addContentView(box, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
+        offlineView = box
+        retry.requestFocus()
+    }
+
+    private fun hideOffline() {
+        val v = offlineView ?: return
+        offlineView = null
+        (v.parent as? android.view.ViewGroup)?.removeView(v)
+        webView.requestFocus()
     }
 
     /** Relaunch the app in a fresh process (the page's stuck process goes with it). */
@@ -197,6 +276,7 @@ class MainActivity : Activity() {
         val old = webView
         bodies.clear()
         webView = createWebView()
+        offlineView = null
         setContentView(webView)
         try { old.destroy() } catch (_: Exception) {}
         lastPong = SystemClock.elapsedRealtime()
@@ -318,6 +398,10 @@ class MainActivity : Activity() {
     private var keysLoggedAfterClose = 0
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (offlineView != null) {
+            if (event.keyCode == KeyEvent.KEYCODE_BACK) return true
+            return super.dispatchKeyEvent(event)
+        }
         if (event.keyCode == KeyEvent.KEYCODE_SEARCH || event.keyCode == KeyEvent.KEYCODE_VOICE_ASSIST) {
             if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) {
                 webView.evaluateJavascript("window.dispatchEvent(new CustomEvent('streamdeck-app-search'))", null)

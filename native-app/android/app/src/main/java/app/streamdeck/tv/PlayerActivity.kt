@@ -53,6 +53,7 @@ class PlayerActivity : Activity() {
         private const val USER_AGENT = "TiviMate/4.7.0 (Linux; Android 9)"
         private const val STALL_MS = 12_000L
         private const val GIVE_UP_MS = 180_000L
+        private const val OFFLINE_GIVE_UP_MS = 15_000L
         private const val STEADY_MS = 60_000L
         /** Side of a recent-channel tile, in dp. */
         private const val TILE_DP = 160
@@ -264,10 +265,13 @@ class PlayerActivity : Activity() {
         val now = SystemClock.elapsedRealtime()
         if (!live && player.currentPosition > 0) lastKnownPositionMs = player.currentPosition
         if (failingSince == 0L) failingSince = now
-        if (now - failingSince > GIVE_UP_MS) {
+        val offline = !NetworkStatus.isOnline(this)
+        if (now - failingSince > GIVE_UP_MS || (offline && now - failingSince > OFFLINE_GIVE_UP_MS)) {
+            NativeLog.add("Player giving up (offline=$offline, reason=$reason)")
             Toast.makeText(
                 this,
-                "Your provider stopped this channel" + (reason?.let { " ($it)" } ?: "") + ".",
+                if (offline) "No connection. Check your internet and try again."
+                else "No data from your provider" + (reason?.let { " ($it)" } ?: "") + ". Try again in a moment.",
                 Toast.LENGTH_LONG,
             ).show()
             closing = true
