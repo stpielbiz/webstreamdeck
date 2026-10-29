@@ -580,3 +580,59 @@ export async function resolveStreamUrl(
   const segment = kind === "movie" ? "movie" : "series";
   return `${base}/${segment}/${auth}/${itemId}.${ext || "mp4"}`;
 }
+
+/* ------------------------------------------------------------- Test link */
+
+export interface ConnectionTest {
+  ok: boolean;
+  ms: number;
+  message: string;
+}
+
+const TEST_TIMEOUT_MS = 15_000;
+
+/** Checks a saved playlist answers right now. Changes nothing. */
+export async function testConnection(playlist: PlaylistRow): Promise<ConnectionTest> {
+  const started = Date.now();
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { ok: false, ms: 0, message: "No internet connection on this device." };
+  }
+  const work = (async () => {
+    if (playlist.kind === "xtream") {
+      const info = await verifyXtream(playlist);
+      const status = info.status || "Active";
+      if (!/active/i.test(status)) throw new Error(`The provider says this account is ${status.toLowerCase()}.`);
+      const exp = info.expiresAt ? Number(info.expiresAt) : NaN;
+      if (Number.isFinite(exp) && exp > 0) {
+        const date = new Date(exp * 1000);
+        if (date.getTime() < Date.now()) throw new Error("This account has expired at the provider.");
+        return `${status}, expires ${date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+      }
+      return status;
+    }
+    if (!playlist.m3u_url) throw new Error("This playlist has no link saved.");
+    let response: Response;
+    try {
+      response = await providerFetch(playlist.m3u_url);
+    } catch {
+      throw new Error("Could not reach the playlist link.");
+    }
+    if (!response.ok) throw new Error(describeProviderStatus(response.status, "The playlist link"));
+    const count = parseM3u(await response.text()).length;
+    if (count === 0) throw new Error("The link answered but the playlist is empty.");
+    return `${count.toLocaleString()} entries found`;
+  })();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("The provider didn't answer within 15 seconds.")), TEST_TIMEOUT_MS);
+  });
+  try {
+    const detail = await Promise.race([work, timeout]);
+    const ms = Date.now() - started;
+    return { ok: true, ms, message: `Connected in ${(ms / 1000).toFixed(1)} s · ${detail}` };
+  } catch (error) {
+    return { ok: false, ms: Date.now() - started, message: error instanceof Error ? error.message : "The test failed." };
+  } finally {
+    clearTimeout(timer);
+  }
+}
