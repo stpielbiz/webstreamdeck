@@ -12,6 +12,6 @@ export function parseXtreamFromM3u(raw: string): XtreamLogin | null {
     return username && password ? { serverUrl: server, username, password } : null;
   }
   const match = url.pathname.match(/^\/playlist\/([^/]+)\/([^/]+)(?:\/[^/]*)?$/i);
-  if (match) return { serverUrl: server, username: decodeURIComponent(match[1]), password: decodeURIComponent(match[2]) };
+  if (match) return { serverUrl: server, username: decodeURIComponent(match[1] ?? ""), password: decodeURIComponent(match[2] ?? "") };
   return null;
 }
