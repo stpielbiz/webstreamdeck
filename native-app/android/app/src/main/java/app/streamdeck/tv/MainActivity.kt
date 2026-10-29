@@ -364,6 +364,22 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun isPlayerOpen(): Boolean = PlayerActivity.isOpen
 
+        /** Private backup of the sign-in so a lost web view session doesn't need a new code. */
+        @JavascriptInterface
+        fun saveAuthBackup(value: String) {
+            getSharedPreferences("streamdeck.auth", MODE_PRIVATE).edit().putString("session", value.take(20000)).apply()
+        }
+
+        @JavascriptInterface
+        fun readAuthBackup(): String =
+            getSharedPreferences("streamdeck.auth", MODE_PRIVATE).getString("session", "") ?: ""
+
+        @JavascriptInterface
+        fun clearAuthBackup() {
+            getSharedPreferences("streamdeck.auth", MODE_PRIVATE).edit().remove("session").apply()
+            NativeLog.add("Sign-in backup cleared")
+        }
+
         @JavascriptInterface
         fun nativeLog(): String = NativeLog.json()
 

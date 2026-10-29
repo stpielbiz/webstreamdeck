@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWebUpdateWatcher } from "@/lib/web-update";
 import { installTrace } from "@/lib/trace-installer";
 import { trace } from "@/lib/debug-log";
+import { refreshOnce, saveAuthBackup } from "@/lib/session-keeper";
 
 function NotFoundComponent() {
   return (
@@ -164,6 +165,15 @@ function RootComponent() {
     });
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
+
+  useEffect(() => {
+    // Renew the sign-in when the app comes back on screen (e.g. Fire Stick wakes).
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshOnce();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
