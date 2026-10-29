@@ -614,3 +614,12 @@ export const clearProgress = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const testPlaylistConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ playlistId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const provider = await import("./iptv.server");
+    const playlist = await loadPlaylist(context.supabase, data.playlistId);
+    return provider.testConnection(playlist);
+  });
