@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { debugLog, redactUrl } from "@/lib/debug-log";
 import { requestLibraryRefresh } from "@/lib/library-sync";
+import { parseXtreamFromM3u } from "@/lib/m3u-xtream";
 import type { PlaylistSummary } from "@/lib/iptv.functions";
 
 export const Route = createFileRoute("/_authenticated/playlists")({
@@ -165,11 +166,16 @@ function PlaylistsPage() {
   }, [step]);
 
   const set = (key: keyof Form) => (value: string) => setForm((prev) => ({ ...prev, [key]: value }));
+  const [useXtream, setUseXtream] = useState(true);
+  const xtreamFromLink = kind === "m3u" ? parseXtreamFromM3u(form.m3uUrl) : null;
 
   const connect = useMutation({
     mutationFn: (force?: boolean) => {
-      debugLog("connect", `${editing ? "Updating" : "Adding"} ${kind} source`, { server: redactUrl(kind === "xtream" ? form.serverUrl : form.m3uUrl), force: !!force });
-      const data = kind === "xtream"
+      const converted = xtreamFromLink && useXtream ? xtreamFromLink : null;
+      debugLog("connect", `${editing ? "Updating" : "Adding"} ${converted ? "xtream (from m3u)" : kind} source`, { server: redactUrl(kind === "xtream" ? form.serverUrl : form.m3uUrl), force: !!force });
+      const data = converted
+        ? { name: form.name, kind: "xtream" as const, ...converted, force }
+        : kind === "xtream"
         ? { name: form.name, kind, serverUrl: form.serverUrl, username: form.username, password: form.password, force }
         : { name: form.name, kind, m3uUrl: form.m3uUrl, force };
       return editing ? update({ data: { ...data, id: editing.id } }) : create({ data });
@@ -292,7 +298,18 @@ function PlaylistsPage() {
               <Field label="Password" value={form.password} onChange={set("password")} type="password" placeholder={editing ? "Leave blank to keep the current password" : undefined} />
             </>
           ) : (
-            <Field label="Playlist link" value={form.m3uUrl} onChange={set("m3uUrl")} placeholder="http://example.com/get.php?username=...&type=m3u_plus" />
+            <>
+              <Field label="Playlist link" value={form.m3uUrl} onChange={set("m3uUrl")} placeholder="http://example.com/get.php?username=...&type=m3u_plus" />
+              {xtreamFromLink && (
+                <div className="space-y-2 rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm">
+                  <p>This link is an Xtream Codes login — it loads much faster that way.</p>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" data-tv-focus data-pl-item checked={useXtream} onChange={(e) => setUseXtream(e.target.checked)} className="size-4 accent-primary" />
+                    Use Xtream Codes ({xtreamFromLink.serverUrl} · {xtreamFromLink.username})
+                  </label>
+                </div>
+              )}
+            </>
           )}
           <div className="flex gap-2 pt-2">
             <Button type="submit" data-tv-focus data-pl-item disabled={!canConnect}>{editing ? "Save and connect" : "Connect"}</Button>
