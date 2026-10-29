@@ -18,7 +18,7 @@ function bridge(): AuthBackupBridge | null {
 }
 
 /** True only when the server clearly rejected the sign-in (not a connection failure). */
-export function isAuthRejection(error: { status?: number; code?: string; name?: string; message?: string } | null | undefined): boolean {
+export function isAuthRejection(error: { status?: number | undefined; code?: string | undefined; name?: string; message?: string } | null | undefined): boolean {
   if (!error) return false;
   const code = error.code ?? "";
   if (["session_not_found", "refresh_token_not_found", "refresh_token_already_used", "user_not_found", "bad_jwt", "session_expired"].includes(code)) return true;
