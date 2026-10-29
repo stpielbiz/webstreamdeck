@@ -146,10 +146,14 @@ function RootComponent() {
     let currentUser: string | null | undefined;
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       const nextUser = session?.user?.id ?? null;
+      if (session && (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
+        saveAuthBackup(session);
+      }
       if (event === "INITIAL_SESSION") {
         currentUser = nextUser;
         return;
       }
+      if (event === "SIGNED_OUT") trace("Sign-in event SIGNED_OUT on this device");
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       const changed = nextUser !== currentUser;
       currentUser = nextUser;
