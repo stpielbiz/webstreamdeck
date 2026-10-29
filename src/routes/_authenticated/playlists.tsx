@@ -282,7 +282,7 @@ function PlaylistsPage() {
       )}
 
       {step === "details" && (
-        <form className="space-y-4 rounded-xl border border-border bg-card p-5" onSubmit={(event) => { event.preventDefault(); if (canConnect) connect.mutate(false); }}>
+        <form data-unsaved-form className="space-y-4 rounded-xl border border-border bg-card p-5" onSubmit={(event) => { event.preventDefault(); if (canConnect) connect.mutate(false); }}>
           <h1 className="font-display text-xl font-bold">{editing ? `Edit ${editing.name}` : kind === "xtream" ? "Xtream Codes details" : "M3U link details"}</h1>
           <Field entry label="Name" value={form.name} onChange={set("name")} placeholder="Living room" />
           {kind === "xtream" ? (
