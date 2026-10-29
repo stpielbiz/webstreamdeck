@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWebUpdateWatcher } from "@/lib/web-update";
 import { installTrace } from "@/lib/trace-installer";
 import { trace } from "@/lib/debug-log";
+import { refreshOnce, saveAuthBackup } from "@/lib/session-keeper";
 
 function NotFoundComponent() {
   return (
@@ -146,10 +147,14 @@ function RootComponent() {
     let currentUser: string | null | undefined;
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       const nextUser = session?.user?.id ?? null;
+      if (session && (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
+        saveAuthBackup(session);
+      }
       if (event === "INITIAL_SESSION") {
         currentUser = nextUser;
         return;
       }
+      if (event === "SIGNED_OUT") trace("Sign-in event SIGNED_OUT on this device");
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       const changed = nextUser !== currentUser;
       currentUser = nextUser;
@@ -160,6 +165,15 @@ function RootComponent() {
     });
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
+
+  useEffect(() => {
+    // Renew the sign-in when the app comes back on screen (e.g. Fire Stick wakes).
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshOnce();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -28,6 +28,8 @@ import { useTvScreenSize } from "@/lib/playlist-sync";
 import { useAccountAccess } from "@/lib/account-access";
 import { AccountExpiryBadge } from "@/components/account-expiry-badge";
 import { signedOutPath } from "@/lib/fire-tv-device";
+import { clearAuthBackup } from "@/lib/session-keeper";
+import { trace } from "@/lib/debug-log";
 import {
   Select,
   SelectContent,
@@ -97,6 +99,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await queryClient.cancelQueries();
     queryClient.clear();
+    trace("Signed out: pressed Sign out");
+    clearAuthBackup();
     await supabase.auth.signOut();
     navigate({ to: signedOutPath(), replace: true });
   };
