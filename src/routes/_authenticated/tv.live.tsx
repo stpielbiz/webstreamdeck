@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GUIDE_TTL, guideKey, mergeGuide, type GuideStore } from "@/lib/library-sync";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Star, Tv, X } from "lucide-react";
+import { ArrowLeft, Star, Tv, X } from "lucide-react";
 import { z } from "zod";
 import { normalizeSchedule } from "@/lib/epg-normalize";
 
