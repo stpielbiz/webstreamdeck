@@ -801,7 +801,28 @@ function TvLive() {
             {!items.isLoading && visibleChannels.map((item, index) => {
               const programmes = (scheduleMap.get(item.id) ?? []).filter((p) => { const st = Date.parse(p.start ?? ""); const en = Date.parse(p.end ?? ""); return Number.isFinite(st) && Number.isFinite(en) && en > windowStart && st < windowEnd; });
               return (
-                <div key={item.id} data-guide-row className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
+                <div key={item.id} data-guide-row className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}
+                  onKeyDownCapture={(event) => {
+                    const last = index === visibleChannels.length - 1 && page < pageCount - 1;
+                    const first = index === 0 && page > 0;
+                    if (!((event.key === "ArrowDown" && last) || (event.key === "ArrowUp" && first))) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const next = event.key === "ArrowDown" ? page + 1 : page - 1;
+                    const target = event.key === "ArrowDown" ? channels[next * PAGE_SIZE] : channels[Math.min(channels.length, (next + 1) * PAGE_SIZE) - 1];
+                    setPage(next);
+                    if (target) {
+                      setFocusedId(target.id);
+                      let tries = 0;
+                      const focus = () => {
+                        const el = guideRef.current?.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(target.id)}"]`);
+                        if (el) { el.focus(); el.scrollIntoView({ block: "nearest" }); }
+                        else if (tries++ < 10) requestAnimationFrame(focus);
+                      };
+                      requestAnimationFrame(focus);
+                    }
+                  }}
+                >
                   <ChannelNameButton
                     label={item.name}
                     starred={isFavorite(favorites.data, activeId, "live", item.id)}
