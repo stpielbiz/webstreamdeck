@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GUIDE_TTL, guideKey, mergeGuide, type GuideStore } from "@/lib/library-sync";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Star, Tv, X } from "lucide-react";
+import { ArrowLeft, Star, Tv, X } from "lucide-react";
 import { z } from "zod";
 import { normalizeSchedule } from "@/lib/epg-normalize";
 
@@ -174,7 +174,7 @@ function TvLive() {
   // is never handed to the player while the new one is still resolving.
   const [urlFor, setUrlFor] = useState<string | null>(null);
   const [clock, setClock] = useState(() => Date.now());
-  const [page, setPage] = useState(0);
+  const [limit, setLimit] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   useAppSearchFocus("live-search");
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
@@ -231,10 +231,9 @@ function TvLive() {
     const source = !term && categoryId === RECENT_CATEGORY ? orderByRecent(items.data ?? [], recent.rows) : (items.data ?? []);
     return source.filter((item) => !term || item.name.toLocaleLowerCase().includes(term) || String(item.number ?? "").includes(term));
   }, [items.data, search, categoryId, recent.rows, favorites.data, activeId]);
-  const pageCount = Math.max(1, Math.ceil(channels.length / PAGE_SIZE));
   const visibleChannels = useMemo(
-    () => channels.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
-    [channels, page],
+    () => channels.slice(0, limit),
+    [channels, limit],
   );
   const queryClient = useQueryClient();
   const guideStore = useQuery<GuideStore>({
@@ -282,7 +281,7 @@ function TvLive() {
     if (!channel || channels.length === 0) return;
     const initial = channels.find((item) => item.id === channel);
     if (!initial) return;
-    setPage(Math.floor(channels.indexOf(initial) / PAGE_SIZE));
+    setLimit((value) => Math.max(value, channels.indexOf(initial) + PAGE_SIZE));
     // Opened from favourites: start the channel straight away instead of
     // only focusing its row, then drop the parameter so Back or a refresh
     // doesn't restart playback.
@@ -364,7 +363,7 @@ function TvLive() {
     if (focusTimer.current) window.clearTimeout(focusTimer.current);
     setCategoryId(id);
     setSearch("");
-    setPage(0);
+    setLimit(PAGE_SIZE);
     setFocusedId(null);
     guideRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -749,7 +748,7 @@ function TvLive() {
         <section className="flex min-h-0 min-w-0 flex-col">
           <div data-tv-zone="live-actions" data-tv-zone-order="2" data-remote-row className="mb-2 flex shrink-0 items-center gap-2">
             <div className="relative min-w-0 flex-1">
-              <SearchField aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-app-search="true" data-focus-key="live-search" data-zone-entry="true" className="h-9 text-sm" onValueChange={(value) => { setSearch(value); setPage(0); }} onKeyDown={(event) => { if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); (document.querySelector<HTMLElement>('[data-focus-key="sports-first-card"]') ?? guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]'))?.focus(); } }} />
+              <SearchField aria-label="Search all channels" placeholder="Search all channels" value={search} data-tv-focus data-app-search="true" data-focus-key="live-search" data-zone-entry="true" className="h-9 text-sm" onValueChange={(value) => { setSearch(value); setLimit(PAGE_SIZE); }} onKeyDown={(event) => { if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); (document.querySelector<HTMLElement>('[data-focus-key="sports-first-card"]') ?? guideRef.current?.querySelector<HTMLElement>('[data-focus-key^="channel-"]'))?.focus(); } }} />
             </div>
             <Button data-tv-focus size="sm" variant="secondary" onClick={jumpToNow}>Now</Button>
             <Button data-tv-focus variant="secondary" size="sm" disabled={updatingChannels} onClick={() => void updateChannels()}>{updatingChannels ? "Updating…" : "Update channels"}</Button>
@@ -762,7 +761,7 @@ function TvLive() {
               <p className="truncate text-xs text-muted-foreground">{currentProgramme ? `On now · ${currentProgramme.title}` : `${channels.length} ${searching ? "matches" : "channels"} · ${formatWindow(windowStart, windowStart + 3 * 60 * 60_000)}`}</p>
             </div>
             <div className="flex shrink-0 items-center gap-3">
-              {pageCount > 1 && <span className="text-xs tabular-nums text-muted-foreground">Channels {page * PAGE_SIZE + 1}–{Math.min(channels.length, (page + 1) * PAGE_SIZE)}</span>}
+              {channels.length > PAGE_SIZE && <span className="text-xs tabular-nums text-muted-foreground">Showing {Math.min(limit, channels.length)} of {channels.length} channels</span>}
             </div>
           </div>
 
@@ -790,38 +789,11 @@ function TvLive() {
 
             {(items.isLoading || (categoryId === FAVOURITES_CATEGORY && favorites.isLoading)) && <p className="sticky left-0 p-6 text-muted-foreground">Loading channels…</p>}
             {!items.isLoading && !(categoryId === FAVOURITES_CATEGORY && favorites.isLoading) && channels.length === 0 && <p className="sticky left-0 p-4 text-sm text-muted-foreground">{searching ? `No channels match “${search.trim()}”.` : categoryId === FAVOURITES_CATEGORY ? "No favourite channels in this playlist yet." : "No channels in this category."}</p>}
-            {!items.isLoading && page > 0 && (
-              <div data-guide-pagination className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}>
-                <Button variant="ghost" data-tv-focus data-zone-edge-left="true" onClick={() => setPage((value) => Math.max(0, value - 1))} className="sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start rounded-none border-r border-border bg-card px-2 text-xs">
-                  <ChevronLeft className="size-5" /> Previous channels
-                </Button>
-                <div className="flex h-full w-[2880px] shrink-0 items-center bg-muted/20 px-4 text-sm text-muted-foreground">Previous group of {PAGE_SIZE} channels</div>
-              </div>
-            )}
             {!items.isLoading && visibleChannels.map((item, index) => {
               const programmes = (scheduleMap.get(item.id) ?? []).filter((p) => { const st = Date.parse(p.start ?? ""); const en = Date.parse(p.end ?? ""); return Number.isFinite(st) && Number.isFinite(en) && en > windowStart && st < windowEnd; });
               return (
                 <div key={item.id} data-guide-row className="flex min-w-max border-b border-border/60" style={{ height: ROW_HEIGHT }}
-                  onKeyDownCapture={(event) => {
-                    const last = index === visibleChannels.length - 1 && page < pageCount - 1;
-                    const first = index === 0 && page > 0;
-                    if (!((event.key === "ArrowDown" && last) || (event.key === "ArrowUp" && first))) return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const next = event.key === "ArrowDown" ? page + 1 : page - 1;
-                    const target = event.key === "ArrowDown" ? channels[next * PAGE_SIZE] : channels[Math.min(channels.length, (next + 1) * PAGE_SIZE) - 1];
-                    setPage(next);
-                    if (target) {
-                      setFocusedId(target.id);
-                      let tries = 0;
-                      const focus = () => {
-                        const el = guideRef.current?.querySelector<HTMLElement>(`[data-focus-key="channel-${CSS.escape(target.id)}"]`);
-                        if (el) { el.focus(); el.scrollIntoView({ block: "nearest" }); }
-                        else if (tries++ < 10) requestAnimationFrame(focus);
-                      };
-                      requestAnimationFrame(focus);
-                    }
-                  }}
+                  onFocusCapture={() => { if (index >= limit - 10 && limit < channels.length) setLimit((value) => Math.min(channels.length, value + PAGE_SIZE)); }}
                 >
                   <ChannelNameButton
                     label={item.name}
@@ -833,7 +805,7 @@ function TvLive() {
                       focusedId === item.id && "bg-secondary",
                     )}
                   >
-                    <span className="w-6 shrink-0 text-center text-xs tabular-nums text-muted-foreground">{item.number ?? page * PAGE_SIZE + index + 1}</span>
+                    <span className="w-6 shrink-0 text-center text-xs tabular-nums text-muted-foreground">{item.number ?? index + 1}</span>
                     {item.image && !failedImages.has(item.image) && <img src={item.image} alt="" loading="lazy" className="size-6 shrink-0 object-contain" onError={() => { const image = item.image; if (image) setFailedImages((previous) => new Set(previous).add(image)); }} />}
                     <span className="min-w-0 flex-1 line-clamp-2 break-words text-xs font-semibold leading-4">{item.name}</span>
                   </ChannelNameButton>
@@ -878,14 +850,6 @@ function TvLive() {
                 </div>
               );
             })}
-            {!items.isLoading && page < pageCount - 1 && (
-              <div data-guide-pagination className="flex min-w-max" style={{ height: ROW_HEIGHT }}>
-                <Button variant="ghost" data-tv-focus data-guide-next data-zone-edge-left="true" onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))} className="sticky left-0 z-20 h-full w-[300px] shrink-0 justify-start rounded-none border-r border-border bg-card px-2 text-xs">
-                  <ChevronRight className="size-5" /> Next channels
-                </Button>
-                <div className="flex h-full w-[2880px] shrink-0 items-center bg-muted/20 px-4 text-sm text-muted-foreground">Next group of {PAGE_SIZE} channels</div>
-              </div>
-            )}
           </div>
         </section>
       </div>
