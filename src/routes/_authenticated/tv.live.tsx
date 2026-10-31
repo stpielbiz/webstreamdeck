@@ -1,7 +1,8 @@
 import { useGetCategories, useGetItems, useGetSchedules, useGetPlayback } from "@/lib/device-provider";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { GUIDE_TTL, guideKey, mergeGuide, type GuideStore } from "@/lib/library-sync";
+import { GUIDE_SPAN, guideKey, mergeGuide, needsGuide, type GuideStore } from "@/lib/library-sync";
+import { waitForIdle } from "@/lib/background-gate";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { ArrowLeft, Star, Tv, X } from "lucide-react";
@@ -242,40 +243,54 @@ function TvLive() {
     enabled: !!activeId,
     staleTime: Infinity,
   });
-  // Only ask the provider for channels the saved guide doesn't cover yet.
-  const scheduleChannels = useMemo(() => {
-    const now = Date.now();
-    return visibleChannels.filter((item) => {
-      const saved = guideStore.data?.[item.id];
-      return !saved || now - saved.at > GUIDE_TTL;
-    });
-  }, [visibleChannels, guideStore.data]);
+  // Guide details load in small batches around the focused channel, only
+  // after the remote pauses and the device is idle, so scrolling never waits.
+  const requestedRef = useRef(new Set<string>());
+  const [guideTick, setGuideTick] = useState(0);
+  useEffect(() => { requestedRef.current = new Set(); }, [activeId]);
+  useEffect(() => {
+    if (!activeId || visibleChannels.length === 0) return;
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const store = queryClient.getQueryData<GuideStore>(guideKey(activeId)) ?? {};
+      const at = Math.max(0, visibleChannels.findIndex((item) => item.id === focusedId));
+      const batch = visibleChannels
+        .map((item, index) => ({ item, distance: index >= at ? index - at : (at - index) * 2 }))
+        .filter(({ item }) => !requestedRef.current.has(item.id) && needsGuide(store[item.id]))
+        .sort((x, y) => x.distance - y.distance)
+        .slice(0, 10)
+        .map(({ item }) => item.id);
+      if (batch.length === 0) return;
+      await waitForIdle(() => cancelled);
+      if (cancelled) return;
+      batch.forEach((id) => requestedRef.current.add(id));
+      try {
+        const now = Date.now();
+        const result = await fetchSchedules({ data: { playlistId: activeId, channelIds: batch, start: new Date(now - 60 * 60_000).toISOString(), end: new Date(now + GUIDE_SPAN).toISOString() } });
+        await waitForIdle(() => cancelled);
+        const answered = new Set(result.map((entry) => entry.channelId));
+        mergeGuide(queryClient, activeId, [...result, ...batch.filter((id) => !answered.has(id)).map((channelId) => ({ channelId, programmes: [] }))]);
+      } catch {
+        batch.forEach((id) => requestedRef.current.delete(id));
+      }
+      if (!cancelled) setGuideTick((tick) => tick + 1);
+    }, 300);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, visibleChannels, focusedId, guideTick]);
 
-  const schedules = useQuery({
-    queryKey: ["tv-live-schedules", activeId, scheduleChannels.map((item) => item.id).join(","), windowStart],
-    queryFn: async () => {
-      if (!activeId) throw new Error("No active playlist");
-      const result = await fetchSchedules({
-        data: {
-          playlistId: activeId,
-          channelIds: scheduleChannels.map((item) => item.id),
-          start: new Date(windowStart).toISOString(),
-          end: new Date(windowStart + 24 * 60 * 60_000).toISOString(),
-        },
-      });
-      mergeGuide(queryClient, activeId, result);
-      return result;
-    },
-    enabled: !!activeId && scheduleChannels.length > 0,
-    staleTime: 5 * 60_000,
-  });
-
+  // Normalise each channel once per saved fetch, not every channel on every update.
+  const normalizedRef = useRef(new Map<string, { at: number; p: Programme[] }>());
   const scheduleMap = useMemo(() => {
     const map = new Map<string, Programme[]>();
-    for (const [id, value] of Object.entries(guideStore.data ?? {})) map.set(id, normalizeSchedule(value.p));
-    for (const entry of schedules.data ?? []) map.set(entry.channelId, normalizeSchedule(entry.programmes));
+    const cache = normalizedRef.current;
+    for (const [id, value] of Object.entries(guideStore.data ?? {})) {
+      let hit = cache.get(id);
+      if (!hit || hit.at !== value.at) { hit = { at: value.at, p: normalizeSchedule(value.p) }; cache.set(id, hit); }
+      map.set(id, hit.p);
+    }
     return map;
-  }, [schedules.data, guideStore.data]);
+  }, [guideStore.data]);
 
   useEffect(() => {
     if (!channel || channels.length === 0) return;
