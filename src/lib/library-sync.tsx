@@ -15,13 +15,21 @@ import { debugLog, trace } from "@/lib/debug-log";
 
 export const GUIDE_TTL = 4 * 60 * 60_000;
 const LIBRARY_TTL = 12 * 60 * 60_000;
-const GUIDE_SPAN = 24 * 60 * 60_000;
+export const GUIDE_SPAN = 48 * 60 * 60_000;
 const GUIDE_BATCH = 40;
 const GUIDE_MAX_CHANNELS = 1500;
 
 /** Saved guide: channelId -> programmes + when they were fetched. */
 export type GuideStore = Record<string, { p: Programme[]; at: number }>;
 export const guideKey = (playlistId: string | null) => ["device-guide", playlistId] as const;
+
+/** A channel needs fetching when nothing is saved or its saved programmes end within 3 hours. */
+export function needsGuide(saved: { p: Programme[]; at: number } | undefined, now = Date.now()): boolean {
+  if (!saved) return true;
+  if (saved.p.length === 0) return now - saved.at > GUIDE_TTL;
+  const last = Math.max(...saved.p.map((programme) => Date.parse(programme.end ?? "") || 0));
+  return last - now < 3 * 60 * 60_000;
+}
 
 export function mergeGuide(client: QueryClient, playlistId: string, entries: { channelId: string; programmes: Programme[] }[]) {
   const now = Date.now();
@@ -266,7 +274,7 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
       // Guide: only channels missing from the saved copy or older than the TTL.
       const store = client.getQueryData<GuideStore>(guideKey(playlistId)) ?? {};
       const now = Date.now();
-      const due = channels.slice(0, GUIDE_MAX_CHANNELS).map((c) => c.id).filter((id) => !store[id] || now - store[id]!.at > GUIDE_TTL);
+      const due = channels.slice(0, GUIDE_MAX_CHANNELS).map((c) => c.id).filter((id) => needsGuide(store[id], now));
       if (due.length === 0) { finish(); return; }
       setStatus({ running: true, done: 0, total: due.length, firstLoad: first });
       phase("TV guide", 0, due.length);
