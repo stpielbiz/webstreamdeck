@@ -213,13 +213,7 @@ class PlayerActivity : Activity() {
                                 pendingStartMs = 0L
                                 // Some streams land well before the requested spot; check once
                                 // more after playback settles and jump again if needed.
-                                handler.postDelayed({
-                                    if (::player.isInitialized && !closing) {
-                                        val landed = player.currentPosition
-                                        android.util.Log.i("StreamDeckPlayer", "Resume target ${target / 1000}s, landed ${landed / 1000}s")
-                                        if (landed < target - 30_000 && player.isCurrentMediaItemSeekable) player.seekTo(target)
-                                    }
-                                }, 3_000)
+                                checkResumeLanding(target, 0)
                             }
                         }
                     }
@@ -338,6 +332,20 @@ class PlayerActivity : Activity() {
     private var pendingStartMs = 0L
     private var seekRetries = 0
 
+    /** Re-check where a resume jump landed, retrying until within 10 s of the target. */
+    private fun checkResumeLanding(target: Long, attempt: Int) {
+        handler.postDelayed({
+            if (::player.isInitialized && !closing) {
+                val landed = player.currentPosition
+                NativeLog.add("Resume target ${target / 1000}s, landed ${landed / 1000}s (check ${attempt + 1})")
+                if (landed < target - 10_000 && attempt < 3 && player.isCurrentMediaItemSeekable) {
+                    player.seekTo(target)
+                    checkResumeLanding(target, attempt + 1)
+                }
+            }
+        }, 3_000)
+    }
+
     private fun reportProgress() {
         if (live || !::player.isInitialized) return
         // Don't overwrite the saved spot while the resume jump is still pending.
@@ -431,6 +439,9 @@ class PlayerActivity : Activity() {
                 }
                 closing = true
                 handler.removeCallbacks(reconnectRunnable)
+                if (::player.isInitialized && !live) {
+                    NativeLog.add("Back pressed at ${player.currentPosition / 1000}s of ${player.duration / 1000}s${if (pendingStartMs > 0) " (resume jump still pending)" else ""}")
+                }
                 reportProgress()
                 if (::player.isInitialized) player.pause()
                 notifyClosed()
