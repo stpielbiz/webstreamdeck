@@ -100,10 +100,10 @@ function TvWatchSeries() {
       void navigate({ to: "/tv" });
       return;
     }
-    const episodeId = current?.id;
+    const stoppedEpisodeId = current?.id;
     setCurrent(null);
     window.requestAnimationFrame(() => {
-      if (episodeId) document.querySelector<HTMLElement>(`[data-focus-key="episode-${CSS.escape(episodeId)}"]`)?.focus();
+      if (stoppedEpisodeId) document.querySelector<HTMLElement>(`[data-focus-key="episode-${CSS.escape(stoppedEpisodeId)}"]`)?.focus();
     });
   };
 
