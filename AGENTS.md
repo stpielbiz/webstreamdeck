@@ -16,6 +16,7 @@
 - The TV home uses a persistent menu/details workspace: focus previews a section, OK opens it, and content rows remain independently remote-navigable.
 - Remote focus uses a shared inset :focus indicator and action-only targets; rows navigate by order, dialogs isolate focus — reliable selection. A control drawing its own focus look opts out with `data-focus-glow`.
 - Continue watching uses horizontal shelves; Home and Favourites share compact three-column channel/movie/show lists with action-only row focus and shared title dialogs.
+- Continue Watching episode links carry the selected episode ID and season/episode coordinates; playback resolves them through selectResumeEpisode before starting, so playlist sync cannot send users to the season picker or a different episode.
 - Navigation preserves device mode: TV routes and TV-opened shared screens return to `/tv`, while regular browser screens return to `/dashboard` — keeps remote users out of the desktop shell.
 - Live TV is the single guide destination and uses a persistent category rail with a horizontally navigable programme timeline — no duplicate Guide.
 - Library data is persisted on-device in IndexedDB (device-cache.ts), refreshed by useLibrarySync (the only refresher of the full channel list, shared by Live TV and search); heavy saves/sync/backfill wait on `background-gate.ts` (player, remote idle) and yield in slices — Fire Stick main-thread stalls froze the remote.
