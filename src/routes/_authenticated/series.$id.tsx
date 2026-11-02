@@ -13,6 +13,7 @@ import { VideoPlayer } from "@/components/video-player";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { selectResumeEpisode } from "@/lib/resume-episode";
 import {
   isFavorite,
   useFavorites,
@@ -22,7 +23,7 @@ import {
 } from "@/lib/library-hooks";
 
 export const Route = createFileRoute("/_authenticated/series/$id")({
-  validateSearch: z.object({ play: z.boolean().optional() }),
+  validateSearch: z.object({ play: z.boolean().optional(), episodeId: z.string().optional(), season: z.number().optional(), episode: z.number().optional() }),
   head: () => ({
     meta: [
       { name: "twitter:card", content: "summary" },
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/series/$id")({
 
 function SeriesDetail() {
   const { id } = Route.useParams();
-  const { play } = Route.useSearch();
+  const { play, episodeId, season: resumeSeason, episode: resumeEpisode } = Route.useSearch();
   const { activeId } = usePlaylists();
   const fetchSeries = useGetSeries();
   const fetchPlayback = useGetPlayback();
@@ -92,19 +93,19 @@ function SeriesDetail() {
   // Coming from a "continue watching" tile: start the right episode straight away.
   const autoStarted = useRef(false);
   useEffect(() => {
-    if (play !== true || autoStarted.current || current || seasons.length === 0) return;
+    if (play !== true || autoStarted.current || current || seasons.length === 0 || (!progress.isSuccess && !progress.isError)) return;
     const all = seasons.flatMap((entry, index) =>
       entry.episodes.map((episode) => ({ episode, index })),
     );
-    const target = lastWatched
-      ? all.find((entry) => entry.episode.id === lastWatched.itemId)
-      : undefined;
-    const chosen = target ?? all[0];
+    const target = episodeId
+      ? selectResumeEpisode(seasons, { itemId: episodeId, season: resumeSeason, episode: resumeEpisode })
+      : lastWatched ? selectResumeEpisode(seasons, lastWatched) : undefined;
+    const chosen = target ?? (episodeId ? undefined : all[0]);
     if (!chosen) return;
     autoStarted.current = true;
     setSeasonIndex(chosen.index);
     setCurrent(chosen.episode);
-  }, [play, current, seasons, lastWatched]);
+  }, [play, current, seasons, lastWatched, episodeId, resumeSeason, resumeEpisode, progress.isSuccess, progress.isError]);
 
   const progressFor = (episodeId: string) => {
     const row = (progress.data ?? []).find(

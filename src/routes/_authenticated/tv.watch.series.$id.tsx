@@ -3,7 +3,8 @@ import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { selectResumeEpisode } from "@/lib/resume-episode";
 
 import { getPlayback, getSeries } from "@/lib/iptv.functions";
 import type { EpisodeItem } from "@/lib/iptv-types";
@@ -15,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/tv/watch/series/$id")({
-  validateSearch: z.object({ from: z.enum(["home", "favorites", "series"]).optional() }),
+  validateSearch: z.object({ from: z.enum(["home", "favorites", "series"]).optional(), episodeId: z.string().optional(), season: z.number().optional(), episode: z.number().optional(), position: z.number().nonnegative().optional() }),
   head: () => ({
     meta: [
       { name: "twitter:card", content: "summary" },
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/tv/watch/series/$id")({
 
 function TvWatchSeries() {
   const { id } = Route.useParams();
-  const { from } = Route.useSearch();
+  const { from, episodeId, season: resumeSeason, episode: resumeEpisode, position } = Route.useSearch();
   const navigate = useNavigate();
   const { activeId } = usePlaylists();
   const fetchSeries = useGetSeries();
@@ -73,8 +74,18 @@ function TvWatchSeries() {
   const seasons = show?.seasons ?? [];
   const season = seasons[seasonIndex];
 
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!episodeId || autoStarted.current || !show) return;
+    const target = selectResumeEpisode(show.seasons, { itemId: episodeId, season: resumeSeason, episode: resumeEpisode });
+    autoStarted.current = true;
+    if (!target) return;
+    setSeasonIndex(target.index);
+    setCurrent(target.episode);
+  }, [episodeId, resumeSeason, resumeEpisode, show]);
+
   const resumeAt =
-    ((r) => (r && !r.completed ? r.positionSeconds : 0))(current ? findResume(progress.data, activeId, { itemId: current.id, title: current.title, season: current.season, episode: current.episode }, syncPlaylists) : undefined);
+    ((r) => (r ? !r.completed ? r.positionSeconds : 0 : episodeId && (current?.id === episodeId || (current?.season === resumeSeason && current?.episode === resumeEpisode)) ? position ?? 0 : 0))(current ? findResume(progress.data, activeId, { itemId: current.id, title: current.title, season: current.season, episode: current.episode }, syncPlaylists) : undefined);
 
   const playNext = () => {
     if (!current || !season) return;
@@ -85,10 +96,14 @@ function TvWatchSeries() {
     setCurrent(next);
   };
   const stopEpisode = () => {
-    const episodeId = current?.id;
+    if (episodeId && from === "home") {
+      void navigate({ to: "/tv" });
+      return;
+    }
+    const stoppedEpisodeId = current?.id;
     setCurrent(null);
     window.requestAnimationFrame(() => {
-      if (episodeId) document.querySelector<HTMLElement>(`[data-focus-key="episode-${CSS.escape(episodeId)}"]`)?.focus();
+      if (stoppedEpisodeId) document.querySelector<HTMLElement>(`[data-focus-key="episode-${CSS.escape(stoppedEpisodeId)}"]`)?.focus();
     });
   };
 
@@ -96,7 +111,7 @@ function TvWatchSeries() {
     <TvShell title={show?.name ?? "Loading…"} onBack={() => { if (current) stopEpisode(); else void navigate({ to: from === "favorites" ? "/tv/favorites" : from === "home" ? "/tv" : "/tv/series" }); }}>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(20rem,1fr)_minmax(28rem,1.35fr)]">
         <div className="lg:order-2">
-          <VideoPlayer
+          {(!episodeId || (current && playback.data?.url && (progress.isSuccess || progress.isError))) ? <VideoPlayer
             onStop={stopEpisode}
             src={current && (progress.isSuccess || progress.isError) ? playback.data?.url ?? null : null}
             fallbackSrc={current ? playback.data?.directUrl ?? null : null}
@@ -137,9 +152,9 @@ function TvWatchSeries() {
                 durationSeconds: duration ?? current.durationSeconds,
               })
             }
-          />
+          /> : <p role="status" className="py-6 text-lg text-muted-foreground">{series.isError || playback.isError ? "Unable to load this episode." : show && autoStarted.current && !current ? "This episode is no longer available in your playlist." : "Starting episode…"}</p>}
           <p className="mt-3 text-2xl font-semibold">
-            {current ? `S${current.season} E${current.episode} — ${current.title}` : "Pick an episode"}
+            {current ? `S${current.season} E${current.episode} — ${current.title}` : episodeId ? "" : "Pick an episode"}
           </p>
         </div>
 

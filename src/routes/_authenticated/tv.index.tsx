@@ -147,7 +147,7 @@ function TvHome() {
                     progress={row.external ? null : row.durationSeconds ? row.positionSeconds / row.durationSeconds : null}
                     zoneEntry={index === 0}
                     edgeLeft={index === 0}
-                    onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId }, search: { from: "home" } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })}
+                    onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId }, search: { from: "home", episodeId: row.itemId, season: row.season ?? undefined, episode: row.episode ?? undefined, position: row.positionSeconds } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })}
                     onLongPress={() => setRemoving(row)}
                   />
                 ))}
