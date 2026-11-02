@@ -209,7 +209,17 @@ class PlayerActivity : Activity() {
                                 seekRetries += 1
                                 player.seekTo(pendingStartMs)
                             } else {
+                                val target = pendingStartMs
                                 pendingStartMs = 0L
+                                // Some streams land well before the requested spot; check once
+                                // more after playback settles and jump again if needed.
+                                handler.postDelayed({
+                                    if (::player.isInitialized && !closing) {
+                                        val landed = player.currentPosition
+                                        android.util.Log.i("StreamDeckPlayer", "Resume target ${target / 1000}s, landed ${landed / 1000}s")
+                                        if (landed < target - 30_000 && player.isCurrentMediaItemSeekable) player.seekTo(target)
+                                    }
+                                }, 3_000)
                             }
                         }
                     }

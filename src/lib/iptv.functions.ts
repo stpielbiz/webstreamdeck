@@ -524,29 +524,34 @@ export const saveProgress = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const completed =
-      !!data.durationSeconds && data.durationSeconds > 0
-        ? data.positionSeconds / data.durationSeconds > 0.95
-        : false;
+    const { isFinished } = await import("@/lib/finished");
+    const completed = isFinished(data.positionSeconds, data.durationSeconds);
 
     // An external hand-off carries no position; keep any real resume point
     // already saved instead of wiping it.
     let positionSeconds = data.positionSeconds;
     let durationSeconds = data.durationSeconds ?? null;
     let completedFlag = completed;
-    // A stream still opening reports tiny positions; never let them wipe a
-    // later saved spot (that caused resumes at ~46s instead of ~15 min).
-    if (!data.external && data.positionSeconds < 10) {
+    if (!data.external) {
       const { data: existing } = await context.supabase
         .from("watch_progress")
-        .select("position_seconds, completed")
+        .select("position_seconds, completed, updated_at")
         .eq("user_id", context.userId)
         .eq("playlist_id", data.playlistId)
         .eq("item_kind", data.itemKind)
         .eq("item_id", data.itemId)
         .maybeSingle();
-      if (existing && !existing.completed && existing.position_seconds > 30) {
+      // A stream still opening reports tiny positions; never let them wipe a
+      // later saved spot (that caused resumes at ~46s instead of ~15 min).
+      if (data.positionSeconds < 10 && existing && !existing.completed && existing.position_seconds > 30) {
         return { ok: true, completed: false };
+      }
+      // A slower save from a few seconds earlier must not overwrite the
+      // stop point. Big drops are deliberate rewinds and still save.
+      if (existing && !existing.completed) {
+        const age = Date.now() - new Date(existing.updated_at).getTime();
+        const drop = existing.position_seconds - data.positionSeconds;
+        if (age < 8_000 && drop > 0 && drop < 120) return { ok: true, completed: false };
       }
     }
     if (data.external && data.positionSeconds === 0) {
