@@ -543,6 +543,9 @@ export const saveProgress = createServerFn({ method: "POST" })
         .maybeSingle();
       // A stream still opening reports tiny positions; never let them wipe a
       // later saved spot (that caused resumes at ~46s instead of ~15 min).
+      if (data.itemKind && existing && Math.abs(existing.position_seconds - data.positionSeconds) > 60) {
+        console.log(`[progress] ${data.title}: saved ${Math.round(existing.position_seconds)}s -> incoming ${Math.round(data.positionSeconds)}s`);
+      }
       if (data.positionSeconds < 10 && existing && !existing.completed && existing.position_seconds > 30) {
         return { ok: true, completed: false };
       }
