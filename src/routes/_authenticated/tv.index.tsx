@@ -143,7 +143,7 @@ function TvHome() {
                     kind="continue"
                     title={row.title}
                     image={row.posterUrl}
-                    subtitle={row.external ? "External player" : row.itemKind === "episode" ? `S${row.season} E${row.episode}` : row.durationSeconds ? `${Math.max(1, Math.round((row.durationSeconds - row.positionSeconds) / 60))} min left` : null}
+                    subtitle={row.external ? "External player" : row.itemKind === "episode" ? `S${row.season} E${row.episode} · Resume ${Math.floor(row.positionSeconds / 60)}:${String(Math.floor(row.positionSeconds % 60)).padStart(2, "0")}` : row.durationSeconds ? `${Math.max(1, Math.round((row.durationSeconds - row.positionSeconds) / 60))} min left` : null}
                     progress={row.external ? null : row.durationSeconds ? row.positionSeconds / row.durationSeconds : null}
                     zoneEntry={index === 0}
                     edgeLeft={index === 0}
