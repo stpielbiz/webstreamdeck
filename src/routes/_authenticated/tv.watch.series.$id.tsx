@@ -111,7 +111,7 @@ function TvWatchSeries() {
     <TvShell title={show?.name ?? "Loading…"} onBack={() => { if (current) stopEpisode(); else void navigate({ to: from === "favorites" ? "/tv/favorites" : from === "home" ? "/tv" : "/tv/series" }); }}>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(20rem,1fr)_minmax(28rem,1.35fr)]">
         <div className="lg:order-2">
-          {(!episodeId || current) ? <VideoPlayer
+          {(!episodeId || (current && playback.data?.url && (progress.isSuccess || progress.isError))) ? <VideoPlayer
             onStop={stopEpisode}
             src={current && (progress.isSuccess || progress.isError) ? playback.data?.url ?? null : null}
             fallbackSrc={current ? playback.data?.directUrl ?? null : null}
@@ -152,7 +152,7 @@ function TvWatchSeries() {
                 durationSeconds: duration ?? current.durationSeconds,
               })
             }
-          /> : <p role="status" className="py-6 text-lg text-muted-foreground">{series.isError ? "Unable to load this episode." : show && autoStarted.current ? "This episode is no longer available in your playlist." : "Starting episode…"}</p>}
+          /> : <p role="status" className="py-6 text-lg text-muted-foreground">{series.isError || playback.isError ? "Unable to load this episode." : show && autoStarted.current && !current ? "This episode is no longer available in your playlist." : "Starting episode…"}</p>}
           <p className="mt-3 text-2xl font-semibold">
             {current ? `S${current.season} E${current.episode} — ${current.title}` : episodeId ? "" : "Pick an episode"}
           </p>
