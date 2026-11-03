@@ -40,6 +40,14 @@ const ALIASES: Record<string, string[]> = {
   tnt: ["tnt"],
   msg: ["msg"],
   "fox": ["fox"],
+  cbs: ["cbs"],
+  nbc: ["nbc"],
+  abc: ["abc"],
+  espn2: ["espn2", "espn 2"],
+  netflix: ["netflix"],
+  peacock: ["peacock"],
+  ctv: ["ctv"],
+  "nfl redzone": ["nfl redzone", "redzone", "red zone"],
   supersport: ["supersport", "ss rugby", "ss variety", "ss grandstand", "ss action"],
   "sky sport": ["sky sport", "sky sports"],
   "stan sport": ["stan sport"],
@@ -103,9 +111,74 @@ export function gameFeedChannels(game: GameInfo, channels: CatalogItem[], max = 
   return out;
 }
 
+/** NFL team nickname -> market words and local station call letters. */
+const NFL_MARKETS: Record<string, string[]> = {
+  cardinals: ["phoenix", "arizona", "kpho", "ksaz", "kpnx", "knxv"], falcons: ["atlanta", "wgcl", "wagatv", "waga", "wxia", "wsb"],
+  ravens: ["baltimore", "wjz", "wbff", "wbal", "wmar"], bills: ["buffalo", "wivb", "wutv", "wgrz", "wkbw"],
+  panthers: ["charlotte", "wbtv", "wjzy", "wcnc", "wsoc"], bears: ["chicago", "wbbm", "wfld", "wmaq", "wls"],
+  bengals: ["cincinnati", "wkrc", "wxix", "wlwt", "wcpo"], browns: ["cleveland", "wois", "wjw", "wkyc", "wews"],
+  cowboys: ["dallas", "fort worth", "ktvt", "kdfw", "kxas", "wfaa"], broncos: ["denver", "kcnc", "kdvr", "kusa", "kmgh"],
+  lions: ["detroit", "wwj", "wjbk", "wdiv", "wxyz"], packers: ["green bay", "milwaukee", "wfrv", "wluk", "wtmj", "wisn", "witi", "wdjt"],
+  texans: ["houston", "khou", "kriv", "kprc", "ktrk"], colts: ["indianapolis", "wttv", "wxin", "wthr", "wrtv"],
+  jaguars: ["jacksonville", "wjax", "wfox", "wtlv", "wjxx"], chiefs: ["kansas city", "kctv", "wdaf", "kshb", "kmbc"],
+  raiders: ["las vegas", "klas", "kvvu", "ksnv", "ktnv"], chargers: ["los angeles", "kcbs", "kttv", "knbc", "kabc"],
+  rams: ["los angeles", "kcbs", "kttv", "knbc", "kabc"], dolphins: ["miami", "wfor", "wsvn", "wtvj", "wplg"],
+  vikings: ["minneapolis", "minnesota", "wcco", "kmsp", "kare", "kstp"], patriots: ["boston", "new england", "wbz", "wfxt", "wbts", "wcvb"],
+  saints: ["new orleans", "wwl", "wvue", "wdsu", "wgno"], giants: ["new york", "wcbs", "wnyw", "wnbc", "wabc"],
+  jets: ["new york", "wcbs", "wnyw", "wnbc", "wabc"], eagles: ["philadelphia", "kyw", "wtxf", "wcau", "wpvi"],
+  steelers: ["pittsburgh", "kdka", "wpgh", "wpxi", "wtae"], "49ers": ["san francisco", "bay area", "kpix", "ktvu", "kntv", "kgo"],
+  seahawks: ["seattle", "kiro", "kcpq", "king", "komo"], buccaneers: ["tampa", "wtog", "wtvt", "wfla", "wfts"],
+  titans: ["nashville", "wtvf", "wztv", "wsmv", "wkrn"], commanders: ["washington", "wusa", "wttg", "wrc", "wjla"],
+};
+const BROADCAST = new Set(["cbs", "fox", "nbc", "abc"]);
+/** Same brand, not the game: news, business and sister cable channels. */
+const NOT_GAME = / (news|business|msnbc|sports|soccer|deportes|comedy|life|kids|movies|classic|family|weather|nation|now|fx|fxx|reality|crime|drama|food|kitchen|soul|e) /;
+export const CANADA_LIKELY = "Canada (likely)";
+export const NFL_REDZONE = "NFL RedZone";
+
+function nflNetworks(game: GameInfo, channels: CatalogItem[], names: string[], max: number): NetworkChannels[] {
+  const nicks = game.teams.filter((_, i) => i % 2 === 1).map((t) => normalizeChannel(t).trim());
+  const markets = nicks.map((n) => ({ team: n, words: NFL_MARKETS[n] ?? [] }));
+  const isLocal = (n: string) => markets.some((m) => m.words.some((w) => has(n, w)));
+  const nets = [...new Set(game.broadcasts)];
+  if (!nets.some((b) => normalizeChannel(b).trim() === "nfl network")) nets.push("NFL Network");
+  const match = (network: string) => {
+    const key = normalizeChannel(network).trim();
+    const pats = patternsFor(network);
+    const out: { item: CatalogItem; rank: number }[] = [];
+    for (let i = 0; i < channels.length; i++) {
+      const n = names[i]!;
+      if (!pats.some((p) => has(n, p))) continue;
+      if (BROADCAST.has(key) && NOT_GAME.test(n)) continue;
+      if (key === "espn" && (has(n, "espn plus") || has(n, "espn deportes") || has(n, "espnews"))) continue;
+      out.push({ item: channels[i]!, rank: isEventFeed(n) ? 2 : BROADCAST.has(key) && isLocal(n) ? 0 : 1 });
+    }
+    return out.sort((a, b) => a.rank - b.rank || a.item.name.localeCompare(b.item.name));
+  };
+  const groups: NetworkChannels[] = [];
+  const local: CatalogItem[] = [];
+  for (const network of nets) {
+    const hits = match(network);
+    hits.filter((h) => h.rank === 0).forEach((h) => local.push(h.item));
+    groups.push({ network, items: hits.slice(0, max).map((h) => h.item) });
+  }
+  const start = new Date(game.startsAt);
+  if (start.getUTCDay() === 0 && start.getUTCHours() < 23) groups.push({ network: NFL_REDZONE, items: match("NFL RedZone").slice(0, max).map((h) => h.item) });
+  const ca = ["TSN", "CTV", "RDS"].flatMap((n) => match(n).map((h) => h.item));
+  groups.push({ network: CANADA_LIKELY, items: [...new Map(ca.map((c) => [c.id, c])).values()].slice(0, max) });
+  const nick = game.teams[1] ?? game.teams[0] ?? "";
+  if (local.length) groups.unshift({ network: `Local to ${markets.filter((m) => m.words.length).map((m) => m.team.replace(/\b\w/g, (c) => c.toUpperCase())).join(" / ") || nick}`, items: local.slice(0, max) });
+  return groups;
+}
+
 /** Matching playlist channels grouped per listed network (real channels before event feeds). */
 export function channelsByNetwork(game: GameInfo, channels: CatalogItem[], max = 16): NetworkChannels[] {
   const names = namesOf(channels);
+  if (game.league === "NFL") {
+    const feeds = gameFeedChannels(game, channels, max);
+    const groups = nflNetworks(game, channels, names, max);
+    return feeds.length ? [{ network: THIS_GAME, items: feeds }, ...groups] : groups;
+  }
   const nets = [...game.broadcasts];
   const leagueNet = LEAGUE_NETWORK[game.league];
   if (leagueNet && !nets.some((b) => normalizeChannel(b) === normalizeChannel(leagueNet))) nets.unshift(leagueNet);

@@ -50,3 +50,21 @@ test("team-named feeds come first; NHL Network always offered", () => {
   const kings = { ...g, teams: ["Los Angeles Kings", "Kings", "San Jose Sharks", "Sharks"] };
   expect(byNet(kings, ch)[0].items.map((c) => c.name)).not.toContain("Kings TV");
 });
+
+describe("NFL channels", () => {
+  const nfl = { matchup: "Cowboys at Giants", startsAt: "2026-11-08T18:00:00Z", league: "NFL", teams: ["Dallas Cowboys", "Cowboys", "New York Giants", "Giants"], broadcasts: ["FOX"] };
+  const list = ["US: FOX News", "US: FOX Business", "US: FOX 5 New York WNYW", "US: FOX 4 Dallas KDFW", "US: FOX 13 Seattle", "CA: TSN 1", "US: NFL RedZone", "US: ESPN+ 004", "US: ESPN"].map((name) => ({ id: name, name }));
+  const groups = byNet(nfl, list);
+  const of = (n) => groups.find((g) => g.network === n)?.items.map((c) => c.name) ?? [];
+  test("FOX News never matches a FOX game", () => expect(of("FOX")).not.toContain("US: FOX News"));
+  test("home-market stations rank first", () => {
+    expect(groups[0].network).toBe("Local to Cowboys / Giants");
+    expect(of("FOX").slice(0, 2)).toEqual(["US: FOX 4 Dallas KDFW", "US: FOX 5 New York WNYW"]);
+  });
+  test("Canadian TSN appears only as likely", () => expect(of("Canada (likely)")).toEqual(["CA: TSN 1"]));
+  test("Sunday afternoon adds RedZone", () => expect(of("NFL RedZone")).toEqual(["US: NFL RedZone"]));
+  test("Monday ESPN game skips ESPN+ event feeds", () => {
+    const mon = byNet({ ...nfl, startsAt: "2026-11-10T01:15:00Z", broadcasts: ["ESPN"] }, list);
+    expect(mon.find((g) => g.network === "ESPN").items.map((c) => c.name)).toEqual(["US: ESPN"]);
+  });
+});
