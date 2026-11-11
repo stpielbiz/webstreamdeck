@@ -1,3 +1,4 @@
+import { debugLog } from "@/lib/debug-log";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback } from "react";
@@ -96,11 +97,17 @@ export function useSaveProgress() {
       durationSeconds?: number | null;
       external?: boolean;
     }) => {
-      try {
-        await save({ data: input });
-        void queryClient.invalidateQueries({ queryKey: ["progress"] });
-      } catch {
-        /* progress saving is best-effort */
+      // Retry a few times (e.g. while sign-in renews) instead of dropping it.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          await save({ data: input });
+          if (attempt > 0) debugLog("progress", `Saved after retry: ${input.title}`, { positionSeconds: Math.round(input.positionSeconds) });
+          void queryClient.invalidateQueries({ queryKey: ["progress"] });
+          return;
+        } catch (error) {
+          debugLog("progress", `Save failed (attempt ${attempt + 1}): ${input.title}`, { positionSeconds: Math.round(input.positionSeconds), error: String(error) });
+          await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+        }
       }
     },
     [save, queryClient],

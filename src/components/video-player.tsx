@@ -124,6 +124,7 @@ export function VideoPlayer({
   const playingSinceRef = useRef(0);
   const resumeAtRef = useRef(0);
   const lastNativePositionRef = useRef(0);
+  const lastNativeDurationRef = useRef<number | null>(null);
   const recoveryRef = useRef({ attempts: 0, since: 0 });
   const reconnectTimerRef = useRef<number | null>(null);
   const reconnect = useCallback((): boolean => {
@@ -172,9 +173,16 @@ export function VideoPlayer({
     window.__streamDeckProgress = (position, duration) => {
       if (live) return;
       lastNativePositionRef.current = position;
+      if (Number.isFinite(duration) && duration > 0) lastNativeDurationRef.current = duration;
       progressRef.current?.(position, Number.isFinite(duration) && duration > 0 ? duration : null);
     };
-    window.__streamDeckEnded = () => endedRef.current?.();
+    window.__streamDeckEnded = () => {
+      // Always record the end so the episode counts as watched.
+      const d = lastNativeDurationRef.current;
+      debugLog("progress", "TV app reported end of video", { durationSeconds: d });
+      if (!live && d) progressRef.current?.(d, d);
+      endedRef.current?.();
+    };
     let closed = false;
     const close = (reason = "app reported close") => {
       debugLog("native", `Player closed (${reason})`, { alreadyClosed: closed, hasStop: !!stopRef.current });
@@ -182,6 +190,10 @@ export function VideoPlayer({
       if (!live) debugLog("native", "Stop position reported by TV app", { positionSeconds: Math.round(lastNativePositionRef.current) });
       if (closed) return;
       closed = true;
+      // Save the stop point even if periodic saves were missed.
+      if (!live && lastNativePositionRef.current > 0) {
+        progressRef.current?.(lastNativePositionRef.current, lastNativeDurationRef.current);
+      }
       markPlayerOpen(false);
       setNativeActive(false);
       trace("Player close: handing back to the screen");
