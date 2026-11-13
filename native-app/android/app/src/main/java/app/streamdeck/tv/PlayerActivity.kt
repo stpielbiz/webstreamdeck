@@ -19,6 +19,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.media3.common.C
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -50,6 +51,8 @@ class PlayerActivity : Activity() {
         const val EXTRA_TITLE = "title"
         const val EXTRA_LIVE = "live"
         const val EXTRA_START = "start"
+        /** Shows: a next episode exists; the Next button ends this one so the website starts it. */
+        const val EXTRA_HAS_NEXT = "hasNext"
         private const val USER_AGENT = "TiviMate/4.7.0 (Linux; Android 9)"
         private const val STALL_MS = 12_000L
         private const val GIVE_UP_MS = 180_000L
@@ -82,6 +85,18 @@ class PlayerActivity : Activity() {
     private var live = false
     private var ended = false
     private var closing = false
+
+    /** End this title as watched; the website then starts the next episode. */
+    private fun finishEpisode(reason: String) {
+        if (ended) return
+        NativeLog.add("Player: $reason")
+        reportProgress()
+        ended = true
+        // Let the website open the next episode straight away.
+        isOpen = false
+        listener?.onEnded()
+        finish()
+    }
     private var closedNotified = false
 
     /** Tell the website right away; Android may destroy this activity seconds later. */
@@ -156,7 +171,20 @@ class PlayerActivity : Activity() {
             .build()
 
         playerView = PlayerView(this).apply {
-            player = this@PlayerActivity.player
+            val hasNext = !live && intent.getBooleanExtra(EXTRA_HAS_NEXT, false)
+            // The stock controls always draw Next/Previous, greyed out for a single
+            // stream. Previous is never used; Next is live only when an episode follows.
+            player = if (hasNext) object : ForwardingPlayer(this@PlayerActivity.player) {
+                override fun isCommandAvailable(command: Int): Boolean =
+                    command == Player.COMMAND_SEEK_TO_NEXT || command == Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM || super.isCommandAvailable(command)
+                override fun getAvailableCommands(): Player.Commands = super.getAvailableCommands().buildUpon()
+                    .add(Player.COMMAND_SEEK_TO_NEXT).add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM).build()
+                override fun hasNextMediaItem(): Boolean = true
+                override fun seekToNext() = finishEpisode("Next pressed")
+                override fun seekToNextMediaItem() = finishEpisode("Next pressed")
+            } else this@PlayerActivity.player
+            setShowPreviousButton(false)
+            setShowNextButton(hasNext)
             useController = true
             controllerShowTimeoutMs = 3_000
             keepScreenOn = true
@@ -221,10 +249,7 @@ class PlayerActivity : Activity() {
                         if (live) {
                             scheduleReconnect()
                         } else {
-                            ended = true
-                            reportProgress()
-                            listener?.onEnded()
-                            finish()
+                            finishEpisode("Episode ended")
                         }
                     }
                 }

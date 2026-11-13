@@ -524,6 +524,7 @@ class MainActivity : Activity() {
                 putExtra(PlayerActivity.EXTRA_TITLE, request.optString("title"))
                 putExtra(PlayerActivity.EXTRA_LIVE, request.optBoolean("live"))
                 putExtra(PlayerActivity.EXTRA_START, request.optDouble("startPosition", 0.0))
+                putExtra(PlayerActivity.EXTRA_HAS_NEXT, request.optBoolean("hasNext"))
             }
             runOnUiThread { startActivity(intent) }
         }

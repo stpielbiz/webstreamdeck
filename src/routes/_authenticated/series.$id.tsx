@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { selectResumeEpisode } from "@/lib/resume-episode";
+import { nextEpisode } from "@/lib/next-episode";
 import {
   isFavorite,
   useFavorites,
@@ -23,7 +24,7 @@ import {
 } from "@/lib/library-hooks";
 
 export const Route = createFileRoute("/_authenticated/series/$id")({
-  validateSearch: z.object({ play: z.boolean().optional(), episodeId: z.string().optional(), season: z.number().optional(), episode: z.number().optional() }),
+  validateSearch: z.object({ play: z.boolean().optional(), episodeId: z.string().optional(), season: z.number().optional(), episode: z.number().optional(), next: z.boolean().optional() }),
   head: () => ({
     meta: [
       { name: "twitter:card", content: "summary" },
@@ -43,7 +44,7 @@ export const Route = createFileRoute("/_authenticated/series/$id")({
 
 function SeriesDetail() {
   const { id } = Route.useParams();
-  const { play, episodeId, season: resumeSeason, episode: resumeEpisode } = Route.useSearch();
+  const { play, episodeId, season: resumeSeason, episode: resumeEpisode, next: upNext } = Route.useSearch();
   const { activeId } = usePlaylists();
   const fetchSeries = useGetSeries();
   const fetchPlayback = useGetPlayback();
@@ -100,7 +101,7 @@ function SeriesDetail() {
     const target = episodeId
       ? selectResumeEpisode(seasons, { itemId: episodeId, season: resumeSeason, episode: resumeEpisode })
       : lastWatched ? selectResumeEpisode(seasons, lastWatched) : undefined;
-    const chosen = target ?? (episodeId ? undefined : all[0]);
+    const chosen = upNext && target ? nextEpisode(seasons, target.episode) : target ?? (episodeId ? undefined : all[0]);
     if (!chosen) return;
     autoStarted.current = true;
     setSeasonIndex(chosen.index);
@@ -119,13 +120,13 @@ function SeriesDetail() {
 
   const playNext = () => {
     if (!current || !season) return;
-    const index = season.episodes.findIndex((episode) => episode.id === current.id);
-    const next = season.episodes[index + 1] ?? seasons[seasonIndex + 1]?.episodes[0];
+    const next = nextEpisode(seasons, current);
     if (next) {
-      if (!season.episodes[index + 1]) setSeasonIndex((value) => value + 1);
-      setCurrent(next);
+      setSeasonIndex(next.index);
+      setCurrent(next.episode);
     }
   };
+  const hasNext = !!nextEpisode(seasons, current);
 
   if (series.isLoading) {
     return (
@@ -164,7 +165,7 @@ function SeriesDetail() {
           <div className="min-w-0 lg:order-1">
             <h2 className="text-xl font-semibold">S{current.season} E{current.episode} — {current.title}</h2>
             {current.plot && <p className="mt-2 text-sm text-muted-foreground">{current.plot}</p>}
-            <Button className="mt-3" variant="outline" size="sm" onClick={playNext}>Next episode</Button>
+            {hasNext && <Button className="mt-3" variant="outline" size="sm" onClick={playNext}>Next episode</Button>}
           </div>
           <div className="min-w-0 lg:order-2">
           <VideoPlayer
@@ -208,6 +209,7 @@ function SeriesDetail() {
               })
             }
             onEnded={playNext}
+            hasNext={hasNext}
           />
           </div>
         </div>

@@ -10,6 +10,8 @@ export interface NativePlayRequest {
   title: string;
   live: boolean;
   startPosition: number;
+  /** Shows: a next episode exists, so the player enables its Next button. */
+  hasNext?: boolean;
 }
 
 interface StreamDeckNativeBridge {

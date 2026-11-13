@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { selectResumeEpisode } from "@/lib/resume-episode";
+import { nextEpisode } from "@/lib/next-episode";
+import { toast } from "sonner";
 
 import { getPlayback, getSeries } from "@/lib/iptv.functions";
 import type { EpisodeItem } from "@/lib/iptv-types";
@@ -16,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/tv/watch/series/$id")({
-  validateSearch: z.object({ from: z.enum(["home", "favorites", "series"]).optional(), episodeId: z.string().optional(), season: z.number().optional(), episode: z.number().optional(), position: z.number().nonnegative().optional() }),
+  validateSearch: z.object({ from: z.enum(["home", "favorites", "series"]).optional(), episodeId: z.string().optional(), season: z.number().optional(), episode: z.number().optional(), position: z.number().nonnegative().optional(), next: z.boolean().optional() }),
   head: () => ({
     meta: [
       { name: "twitter:card", content: "summary" },
@@ -36,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/tv/watch/series/$id")({
 
 function TvWatchSeries() {
   const { id } = Route.useParams();
-  const { from, episodeId, season: resumeSeason, episode: resumeEpisode, position } = Route.useSearch();
+  const { from, episodeId, season: resumeSeason, episode: resumeEpisode, position, next: upNext } = Route.useSearch();
   const navigate = useNavigate();
   const { activeId } = usePlaylists();
   const fetchSeries = useGetSeries();
@@ -77,24 +79,31 @@ function TvWatchSeries() {
   const autoStarted = useRef(false);
   useEffect(() => {
     if (!episodeId || autoStarted.current || !show) return;
-    const target = selectResumeEpisode(show.seasons, { itemId: episodeId, season: resumeSeason, episode: resumeEpisode });
+    const found = selectResumeEpisode(show.seasons, { itemId: episodeId, season: resumeSeason, episode: resumeEpisode });
+    const target = upNext && found ? nextEpisode(show.seasons, found.episode) : found;
     autoStarted.current = true;
-    if (!target) return;
+    if (!target) {
+      if (upNext && found) {
+        toast.info("You've watched every episode of this show.");
+        void navigate({ to: "/tv" });
+      }
+      return;
+    }
     setSeasonIndex(target.index);
     setCurrent(target.episode);
-  }, [episodeId, resumeSeason, resumeEpisode, show]);
+  }, [episodeId, resumeSeason, resumeEpisode, show, upNext, navigate]);
 
   const resumeAt =
     ((r) => (r ? !r.completed ? r.positionSeconds : 0 : episodeId && (current?.id === episodeId || (current?.season === resumeSeason && current?.episode === resumeEpisode)) ? position ?? 0 : 0))(current ? findResume(progress.data, activeId, { itemId: current.id, title: current.title, season: current.season, episode: current.episode }, syncPlaylists) : undefined);
 
   const playNext = () => {
     if (!current || !season) return;
-    const index = season.episodes.findIndex((episode) => episode.id === current.id);
-    const next = season.episodes[index + 1] ?? seasons[seasonIndex + 1]?.episodes[0];
+    const next = nextEpisode(seasons, current);
     if (!next) return;
-    if (!season.episodes[index + 1]) setSeasonIndex((value) => value + 1);
-    setCurrent(next);
+    setSeasonIndex(next.index);
+    setCurrent(next.episode);
   };
+  const hasNext = !!nextEpisode(seasons, current);
   const stopEpisode = () => {
     if (episodeId && from === "home") {
       void navigate({ to: "/tv" });
@@ -120,6 +129,7 @@ function TvWatchSeries() {
             startPosition={resumeAt}
             className="aspect-video w-full overflow-hidden rounded-xl"
             onEnded={playNext}
+            hasNext={hasNext}
             onExternalLaunch={() =>
               activeId &&
               current &&

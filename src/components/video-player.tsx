@@ -35,6 +35,8 @@ export interface VideoPlayerProps {
   className?: string;
   onProgress?: (positionSeconds: number, durationSeconds: number | null) => void;
   onEnded?: () => void;
+  /** Shows: a next episode exists (enables the TV app player's Next button, which ends this one). */
+  hasNext?: boolean;
   onStop?: () => void;
   /** Set false to keep playback inline even inside the TV app. */
   allowNative?: boolean;
@@ -75,6 +77,7 @@ export function VideoPlayer({
   onStop,
   allowNative = true,
   onExternalLaunch,
+  hasNext,
   onRefreshSource,
   recents,
   onPickRecent,
@@ -162,8 +165,8 @@ export function VideoPlayer({
     if (!fallbackSrc) return false;
     const startAt = startRef.current.at;
     debugLog("native", "Handing stream to the TV app player", { url: redactUrl(fallbackSrc), live, startPosition: startAt });
-    return playNative({ url: fallbackSrc, title: title ?? "", live, startPosition: startAt });
-  }, [fallbackSrc, title, live]);
+    return playNative({ url: fallbackSrc, title: title ?? "", live, startPosition: startAt, hasNext: !!hasNext && !live });
+  }, [fallbackSrc, title, live, hasNext]);
 
   useEffect(() => {
     if (!allowNative || !src || !fallbackSrc || !hasNativePlayer()) {

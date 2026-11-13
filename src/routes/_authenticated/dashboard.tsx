@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { withUpNext } from "@/lib/next-episode";
 import { Tv } from "lucide-react";
 
 import { SubscriptionBanner } from "@/components/subscription-banner";
@@ -75,11 +76,10 @@ function Dashboard() {
     );
   }
 
-  const resumable = (progress.data ?? []).filter(
-    (row) =>
-      !row.completed &&
-      row.playlistId === activeId &&
-      (row.positionSeconds > 30 || row.external),
+  const resumable = withUpNext(
+    [...(progress.data ?? [])]
+      .filter((row) => row.playlistId === activeId)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
   );
 
   return (
@@ -119,12 +119,14 @@ function Dashboard() {
                 params={{
                   id: row.itemKind === "episode" && row.seriesId ? row.seriesId : row.itemId,
                 }}
-                search={row.itemKind === "episode" ? { play: true, episodeId: row.itemId, season: row.season ?? undefined, episode: row.episode ?? undefined } : { play: true }}
+                search={row.itemKind === "episode" ? { play: true, episodeId: row.itemId, season: row.season ?? undefined, episode: row.episode ?? undefined, next: row.upNext || undefined } : { play: true }}
                 title={row.title}
                 image={row.posterUrl}
                 onLongPress={() => setRemoving(row)}
                 subtitle={
-                  row.external
+                  row.upNext
+                    ? `Up next · after S${row.season} E${row.episode}`
+                    : row.external
                     ? "Watching in an external player"
                     : row.season != null && row.episode != null
                       ? `S${row.season} E${row.episode}`

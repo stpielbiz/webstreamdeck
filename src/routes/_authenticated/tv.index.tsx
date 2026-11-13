@@ -4,6 +4,7 @@ import { Clapperboard, Download, ListVideo, MessageSquare, MonitorPlay, Settings
 import { useQueryClient } from "@tanstack/react-query";
 import type { CatalogItem } from "@/lib/iptv-types";
 import { syncedResumeRows, useSyncPlaylists } from "@/lib/playlist-sync";
+import { withUpNext } from "@/lib/next-episode";
 import { useEffect, useMemo, useState } from "react";
 import { FavouritesLists } from "@/components/favourites-lists";
 import { toast } from "sonner";
@@ -67,10 +68,10 @@ function TvHome() {
   const queryClient = useQueryClient();
   const movieItems = queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, "movie"]);
   const showItems = queryClient.getQueryData<CatalogItem[]>(["system-catalogue", activeId, "series"]);
-  const resume = useMemo(() => syncedResumeRows(
+  const resume = useMemo(() => withUpNext(syncedResumeRows(
     progress, activeId, syncPlaylists,
     movieItems, showItems,
-  ).filter((row) => !row.completed && row.positionSeconds > 30), [progress, activeId, syncPlaylists, movieItems, showItems]);
+  )), [progress, activeId, syncPlaylists, movieItems, showItems]);
   const favouriteChannels = (favorites ?? []).filter(
     (row) => row.playlistId === activeId && row.itemKind === "live",
   );
@@ -143,11 +144,11 @@ function TvHome() {
                     kind="continue"
                     title={row.title}
                     image={row.posterUrl}
-                    subtitle={row.external ? "External player" : row.itemKind === "episode" ? `S${row.season} E${row.episode} · Resume ${Math.floor(row.positionSeconds / 60)}:${String(Math.floor(row.positionSeconds % 60)).padStart(2, "0")}` : row.durationSeconds ? `${Math.max(1, Math.round((row.durationSeconds - row.positionSeconds) / 60))} min left` : null}
-                    progress={row.external ? null : row.durationSeconds ? row.positionSeconds / row.durationSeconds : null}
+                    subtitle={row.upNext ? `Up next · after S${row.season} E${row.episode}` : row.external ? "External player" : row.itemKind === "episode" ? `S${row.season} E${row.episode} · Resume ${Math.floor(row.positionSeconds / 60)}:${String(Math.floor(row.positionSeconds % 60)).padStart(2, "0")}` : row.durationSeconds ? `${Math.max(1, Math.round((row.durationSeconds - row.positionSeconds) / 60))} min left` : null}
+                    progress={row.upNext || row.external ? null : row.durationSeconds ? row.positionSeconds / row.durationSeconds : null}
                     zoneEntry={index === 0}
                     edgeLeft={index === 0}
-                    onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId }, search: { from: "home", episodeId: row.itemId, season: row.season ?? undefined, episode: row.episode ?? undefined, position: row.positionSeconds } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })}
+                    onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId }, search: { from: "home", episodeId: row.itemId, season: row.season ?? undefined, episode: row.episode ?? undefined, position: row.positionSeconds, next: row.upNext || undefined } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })}
                     onLongPress={() => setRemoving(row)}
                   />
                 ))}
