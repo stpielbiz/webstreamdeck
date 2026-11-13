@@ -26,12 +26,20 @@ import { compareTitles, isFavorite, useFavorites, useToggleFavorite } from "@/li
 import { useLongPress } from "@/lib/use-long-press";
 import { MultiView } from "@/components/multi-view";
 import { ChannelActionMenu, type ProgrammeInfo } from "@/components/channel-action-menu";
+import type { ShowSlot } from "@/lib/record-times";
 import { FAVOURITES_CATEGORY, RECENT_CATEGORY, orderByRecent, useRecentChannels, useTouchRecent } from "@/lib/recent-channels";
 import { toast } from "sonner";
 import { debugLog, describeElement, trace } from "@/lib/debug-log";
 
-const GUIDE_HOURS = 12;
-const GUIDE_WIDTH = 2880;
+/** Guide width per half hour, in px. */
+const SLOT_WIDTH = 120;
+/** Half-hour slots from `start` to the end of tomorrow (local time). */
+function guideSlots(start: number): number {
+  const end = new Date(start);
+  end.setDate(end.getDate() + 2);
+  end.setHours(0, 0, 0, 0);
+  return Math.max(24, Math.ceil((end.getTime() - start) / (30 * 60_000)));
+}
 const ROW_HEIGHT = 48;
 const PAGE_SIZE = 40;
 
@@ -192,7 +200,10 @@ function TvLive() {
     return now.getTime();
   });
   const guideRef = useRef<HTMLDivElement>(null);
-  const windowEnd = windowStart + GUIDE_HOURS * 60 * 60_000;
+  const [slots] = useState(() => guideSlots(windowStart));
+  const GUIDE_WIDTH = slots * SLOT_WIDTH;
+  const windowEnd = windowStart + slots * 30 * 60_000;
+  const [menuShow, setMenuShow] = useState<ShowSlot | null>(null);
 
   const categories = useQuery({
     queryKey: ["tv-live-categories", activeId],
@@ -793,12 +804,16 @@ function TvLive() {
           >
             <div data-tv-guide-header className="sticky top-0 z-30 flex h-9 min-w-max border-b border-border bg-background">
               <div className="sticky left-0 z-40 flex w-[300px] shrink-0 items-center border-r border-border bg-background px-2 text-xs font-semibold uppercase text-muted-foreground">Channels</div>
-              <div className="grid w-[2880px] shrink-0 grid-cols-24">
-                {Array.from({ length: 24 }).map((_, index) => (
-                   <div key={index} className="border-r border-border px-2 py-2 text-xs font-semibold tabular-nums text-muted-foreground">
-                    {timeLabel(new Date(windowStart + index * 30 * 60_000).toISOString())}
+              <div className="grid shrink-0" style={{ width: GUIDE_WIDTH, gridTemplateColumns: `repeat(${slots}, minmax(0, 1fr))` }}>
+                {Array.from({ length: slots }).map((_, index) => {
+                  const at = new Date(windowStart + index * 30 * 60_000);
+                  const midnight = index > 0 && at.getHours() === 0 && at.getMinutes() === 0;
+                  return (
+                   <div key={index} className={cn("border-r border-border px-2 py-2 text-xs font-semibold tabular-nums text-muted-foreground", midnight && "border-l-2 border-l-primary text-primary")}>
+                    {midnight ? `${at.toDateString() === new Date(Date.now() + 86_400_000).toDateString() ? "Tomorrow" : at.toLocaleDateString([], { weekday: "short" })} ${timeLabel(at.toISOString())}` : timeLabel(at.toISOString())}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -824,9 +839,9 @@ function TvLive() {
                     {item.image && !failedImages.has(item.image) && <img src={item.image} alt="" loading="lazy" className="size-6 shrink-0 object-contain" onError={() => { const image = item.image; if (image) setFailedImages((previous) => new Set(previous).add(image)); }} />}
                     <span className="min-w-0 flex-1 line-clamp-2 break-words text-xs font-semibold leading-4">{item.name}</span>
                   </ChannelNameButton>
-                  <div className="relative h-full w-[2880px] shrink-0 bg-muted/20">
-                    <div className="pointer-events-none absolute inset-0 grid grid-cols-24">
-                      {Array.from({ length: 24 }).map((_, marker) => <span key={marker} className="border-r border-border/60" />)}
+                  <div className="relative h-full shrink-0 bg-muted/20" style={{ width: GUIDE_WIDTH }}>
+                    <div className="pointer-events-none absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${slots}, minmax(0, 1fr))` }}>
+                      {Array.from({ length: slots }).map((_, marker) => <span key={marker} className="border-r border-border/60" />)}
                     </div>
                     {programmes.length === 0 ? (
                       <EmptyGuideButton onLongPress={() => setMenuItem(item)}
@@ -850,12 +865,18 @@ function TvLive() {
                         programme={programme}
                         windowStart={windowStart}
                         windowEnd={windowEnd}
+                        guideWidth={GUIDE_WIDTH}
                         first={programmeIndex === 0}
                         focusKey={programmeIndex === 0 ? `channel-${item.id}` : undefined}
                         zoneEntry={index === 0 && programmeIndex === 0}
                         onFocus={(element) => { setFocusedId(item.id); revealCell(element, programmeIndex === 0); }}
                         onSelect={() => playChannel(item)}
-                        onLongPress={() => setMenuItem(item)}
+                        onLongPress={() => {
+                          const st = Date.parse(programme.start ?? "");
+                          const en = Date.parse(programme.end ?? "");
+                          setMenuShow(en > Date.now() ? { title: programme.title, start: st, end: en } : null);
+                          setMenuItem(item);
+                        }}
                       />
                     ))}
                     {clock >= windowStart && clock <= windowEnd && (
@@ -888,7 +909,9 @@ function TvLive() {
         channel={menuItem}
         starred={!!menuItem && isFavorite(favorites.data, activeId, "live", menuItem.id)}
         onToggleFavorite={() => { if (menuItem) toggleChannelFavorite(menuItem); }}
-        onClose={() => { if (menuItem) lastChannel.current = menuItem.id; setMenuItem(null); restoreChannelFocus(); }}
+        onClose={() => { if (menuItem) lastChannel.current = menuItem.id; setMenuItem(null); setMenuShow(null); restoreChannelFocus(); }}
+        show={menuShow}
+        shows={menuItem ? (scheduleMap.get(menuItem.id) ?? []).flatMap((p) => { const st = Date.parse(p.start ?? ""); const en = Date.parse(p.end ?? ""); return Number.isFinite(st) && Number.isFinite(en) && en > Date.now() ? [{ title: p.title, start: st, end: en }] : []; }) : []}
         programmeAt={(time): ProgrammeInfo | null => {
           if (!menuItem) return null;
           const hit = (scheduleMap.get(menuItem.id) ?? []).find((p) => Date.parse(p.start ?? "") <= time && Date.parse(p.end ?? "") > time);
@@ -919,6 +942,7 @@ function ProgrammeCell({
   programme,
   windowStart,
   windowEnd,
+  guideWidth,
   first,
   focusKey,
   zoneEntry,
@@ -929,6 +953,7 @@ function ProgrammeCell({
   programme: Programme;
   windowStart: number;
   windowEnd: number;
+  guideWidth: number;
   first: boolean;
   focusKey?: string | undefined;
   zoneEntry?: boolean;
@@ -943,8 +968,8 @@ function ProgrammeCell({
   const start = Math.max(windowStart, rawStart);
   const end = Math.min(windowEnd, rawEnd);
   if (end <= start) return null;
-  const left = ((start - windowStart) / (windowEnd - windowStart)) * GUIDE_WIDTH;
-  const width = Math.max(72, ((end - start) / (windowEnd - windowStart)) * GUIDE_WIDTH);
+  const left = ((start - windowStart) / (windowEnd - windowStart)) * guideWidth;
+  const width = Math.max(72, ((end - start) / (windowEnd - windowStart)) * guideWidth);
 
   return (
     <Button

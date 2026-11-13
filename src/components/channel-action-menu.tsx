@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { canRecord, defaultEnd, startRecording } from "@/lib/recordings";
+import { defaultLaterStart, nextShowStart, previousShowStart, showWindow, type ShowSlot } from "@/lib/record-times";
 
 export interface ProgrammeInfo {
   title: string;
@@ -36,6 +37,8 @@ export function ChannelActionMenu({
   programmeAt,
   getStreamUrl,
   tv,
+  shows = [],
+  show = null,
 }: {
   channel: { name: string } | null;
   starred: boolean;
@@ -44,6 +47,10 @@ export function ChannelActionMenu({
   programmeAt: (time: number) => ProgrammeInfo | null;
   getStreamUrl: () => Promise<string | null>;
   tv?: boolean;
+  /** The channel's listed shows (for Later's previous/next show buttons). */
+  shows?: ShowSlot[];
+  /** Opened from a show in the guide: go straight to recording that show. */
+  show?: ShowSlot | null;
 }) {
   const [step, setStep] = useState<Step>("menu");
   const [start, setStart] = useState(0);
@@ -52,9 +59,20 @@ export function ChannelActionMenu({
   // The menu opens while OK is still held: ignore activation until it is released.
   const armed = useRef(false);
 
+  const [showTitle, setShowTitle] = useState<string | null>(null);
   useEffect(() => {
     if (!channel) return;
-    setStep("menu");
+    setShowTitle(null);
+    if (show && show.end > Date.now()) {
+      if (!canRecord()) setStep("unsupported");
+      else {
+        const win = showWindow(show, Date.now());
+        setStart(win.start);
+        setEnd(win.end);
+        setShowTitle(show.title);
+        setStep("length");
+      }
+    } else setStep("menu");
     armed.current = false;
     const arm = (event: KeyboardEvent) => {
       if (event.key === "Enter" || event.key === " " || event.key === "Select") window.setTimeout(() => { armed.current = true; }, 50);
@@ -65,6 +83,7 @@ export function ChannelActionMenu({
       window.clearTimeout(timer);
       window.removeEventListener("keyup", arm, true);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel]);
 
   // Length step opens on the confirm button: the default already ends with the programme.
@@ -84,7 +103,7 @@ export function ChannelActionMenu({
   };
 
   const back = () => {
-    if (step === "menu" || step === "unsupported") onClose();
+    if (step === "menu" || step === "unsupported" || (show && step === "length")) onClose();
     else if (step === "length") setStep(start > Date.now() + 60_000 ? "later" : "when");
     else if (step === "later") setStep("when");
     else setStep("menu");
@@ -98,14 +117,20 @@ export function ChannelActionMenu({
   };
 
   const chooseLater = () => {
-    const base = Date.now() + 60 * 60_000;
-    const rounded = Math.ceil(base / (15 * 60_000)) * 15 * 60_000;
-    setStart(rounded);
+    setStart(defaultLaterStart(shows, Date.now()));
     setStep("later");
   };
 
   const confirmLater = () => {
-    setEnd(defaultEnd(start, programmeAt(start)?.end));
+    const listed = shows.find((s) => s.start === start);
+    if (listed) {
+      setEnd(listed.end + 2 * 60_000);
+      setShowTitle(listed.title);
+      setStart(Math.max(Date.now() + 60_000, start - 60_000));
+    } else {
+      setShowTitle(null);
+      setEnd(defaultEnd(start, programmeAt(start)?.end));
+    }
     setStep("length");
   };
 
@@ -117,7 +142,7 @@ export function ChannelActionMenu({
     try {
       const url = await getStreamUrl();
       if (!url) throw new Error("no url");
-      const programme = programmeAt(start)?.title ?? null;
+      const programme = showTitle ?? programmeAt(start)?.title ?? null;
       const id = startRecording({ title: channel.name, programme, url, startAt: start, endAt: end });
       if (!id) throw new Error("refused");
       toast.success(start > Date.now() + 60_000 ? `Recording of ${channel.name} scheduled for ${fmtDay(start)} ${fmtTime(start)}` : `Recording ${channel.name} until ${fmtTime(end)}`);
@@ -129,7 +154,10 @@ export function ChannelActionMenu({
     }
   };
 
-  const programmeEnd = start ? programmeAt(start)?.end : null;
+  const programmeEnd = showTitle ? null : start ? programmeAt(start)?.end : null;
+  const earliest = Date.now() + 5 * 60_000;
+  const prevShow = previousShowStart(shows, start, earliest);
+  const nextShow = nextShowStart(shows, start);
   const minutes = Math.round((end - start) / 60_000);
   const btn = "h-12 w-full justify-start gap-3 text-base";
 
@@ -149,7 +177,7 @@ export function ChannelActionMenu({
           {step === "menu" && "Choose what to do with this channel."}
           {step === "when" && "When should the recording start?"}
           {step === "later" && "Pick the day and start time."}
-          {step === "length" && "How long should it record?"}
+          {step === "length" && (showTitle ? `Record “${showTitle}”` : "How long should it record?")}
           {step === "unsupported" && "Recording needs the Jolzplay Fire TV app."}
         </DialogDescription>
 
@@ -187,6 +215,9 @@ export function ChannelActionMenu({
 
           {step === "later" && (
             <>
+              {shows.length > 0 && (prevShow != null || nextShow != null) && (
+                <Stepper label="Show" value={programmeAt(start)?.title ?? "—"} onMinus={() => { if (prevShow != null) setStart(prevShow); }} onPlus={() => { if (nextShow != null) setStart(nextShow); }} />
+              )}
               <Stepper label="Day" value={fmtDay(start)} onMinus={() => shiftStart(-24 * 3600_000)} onPlus={() => shiftStart(24 * 3600_000)} />
               <Stepper label="Hour" value={fmtTime(start)} onMinus={() => shiftStart(-3600_000)} onPlus={() => shiftStart(3600_000)} />
               <Stepper label="Minutes" value={fmtTime(start)} onMinus={() => shiftStart(-5 * 60_000)} onPlus={() => shiftStart(5 * 60_000)} />
