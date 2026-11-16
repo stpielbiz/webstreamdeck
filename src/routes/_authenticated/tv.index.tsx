@@ -130,11 +130,6 @@ function TvHome() {
               {!expired && <FullUpdateCard />}
               {!expired && activeId && <div className="sticky top-0 z-20 bg-background pb-3"><GlobalSearch /></div>}
               {!expired && <>
-              <div className="pb-1">
-                <p className="text-xs font-semibold uppercase text-primary">Your library</p>
-                <h2 className="font-display text-2xl font-bold">Welcome back</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Pick up where you stopped or jump into a favourite.</p>
-              </div>
               {!activeId && <HomeMessage title="No playlist yet" body="Add a playlist to see your channels, movies and shows here." to="/playlists" action="Add playlist" />}
               {sync.running && sync.firstLoad && <p role="status" className="text-xs text-muted-foreground">{sync.total ? `Preparing your library… TV guide ${sync.done}/${sync.total} channels` : "Preparing your library…"}</p>}
               <HomeShelf title="Continue watching" empty="Nothing to resume yet.">
@@ -146,7 +141,7 @@ function TvHome() {
                     image={row.posterUrl}
                     subtitle={row.upNext ? `Up next · after S${row.season} E${row.episode}` : row.external ? "External player" : row.itemKind === "episode" ? `S${row.season} E${row.episode} · Resume ${Math.floor(row.positionSeconds / 60)}:${String(Math.floor(row.positionSeconds % 60)).padStart(2, "0")}` : row.durationSeconds ? `${Math.max(1, Math.round((row.durationSeconds - row.positionSeconds) / 60))} min left` : null}
                     progress={row.upNext || row.external ? null : row.durationSeconds ? row.positionSeconds / row.durationSeconds : null}
-                    zoneEntry={index === 0}
+                    zoneEntry={index === 0 && !activeId}
                     edgeLeft={index === 0}
                     onSelect={() => void navigate(row.itemKind === "episode" && row.seriesId ? { to: "/tv/watch/series/$id", params: { id: row.seriesId }, search: { from: "home", episodeId: row.itemId, season: row.season ?? undefined, episode: row.episode ?? undefined, position: row.positionSeconds, next: row.upNext || undefined } } : { to: "/tv/watch/movie/$id", params: { id: row.itemId }, search: { from: "home" } })}
                     onLongPress={() => setRemoving(row)}
