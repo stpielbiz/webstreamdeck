@@ -1,3 +1,4 @@
+import { SAVED_DETAILS_TTL } from "@/lib/device-cache";
 import { useGetCategories, useGetItems, useGetSchedules, useGetPlayback } from "@/lib/device-provider";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -212,8 +213,8 @@ function TvLive() {
       return fetchCategories({ data: { playlistId: activeId, kind: "live" } });
     },
     enabled: !!activeId,
-    staleTime: 30 * 60_000,
-    gcTime: 60 * 60_000,
+    staleTime: SAVED_DETAILS_TTL,
+    gcTime: SAVED_DETAILS_TTL,
   });
 
   const items = useQuery({

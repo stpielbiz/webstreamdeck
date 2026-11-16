@@ -14,3 +14,6 @@ describe("full update reminder", () => {
     expect(needsFullUpdate({ snoozeUntil }, now + 4 * DAY)).toBe(true);
   });
 });
+
+import { SAVED_DETAILS_TTL } from "./device-cache";
+test("saved show/movie details stay fresh for 12 hours", () => expect(SAVED_DETAILS_TTL).toBe(12 * 60 * 60_000));

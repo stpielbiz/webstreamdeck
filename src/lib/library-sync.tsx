@@ -173,13 +173,15 @@ export function useLibraryOverview(playlistId: string | null): LibraryOverview {
 /* -------- user-requested full refresh (Settings → Update library & guide) */
 export interface RefreshStatus { running: boolean; phase: string; done: number; total: number }
 let refreshState: RefreshStatus = { running: false, phase: "", done: 0, total: 0 };
-let refreshRequest: { playlistId: string; n: number } | null = null;
+let refreshRequest: { playlistId: string; n: number; scope: RefreshScope } | null = null;
+/** "titles" refreshes movies and shows only; channels and the guide stay with the background sync. */
+export type RefreshScope = "titles" | "all";
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((listener) => listener());
 function setRefresh(next: RefreshStatus) { refreshState = next; emit(); }
-export function requestLibraryRefresh(playlistId: string) {
+export function requestLibraryRefresh(playlistId: string, scope: RefreshScope = "all") {
   if (refreshState.running) return;
-  refreshRequest = { playlistId, n: (refreshRequest?.n ?? 0) + 1 };
+  refreshRequest = { playlistId, n: (refreshRequest?.n ?? 0) + 1, scope };
   setRefresh({ running: true, phase: "Starting", done: 0, total: 0 });
 }
 export function useLibraryRefreshStatus() {
@@ -209,6 +211,7 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
   const [status, setStatus] = useState<SyncStatus>({ running: false, done: 0, total: 0 });
   const request = useRefreshRequest();
   const force = !!request && request.playlistId === playlistId;
+  const titlesOnly = force && request?.scope === "titles";
 
   useEffect(() => {
     if (!playlistId) return;
@@ -245,16 +248,19 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
       if (!force && Date.now() - (lastFullRunAt.get(playlistId) ?? 0) < GUIDE_TTL) return;
       if (force) {
         phase("Clearing saved copy");
-        await clearPlaylistEntries(playlistId);
-        for (const key of ["tv-live-categories", "tv-live-items", "system-catalogue", "device-guide", "global-search-live", "global-search"]) {
+        if (!titlesOnly) await clearPlaylistEntries(playlistId);
+        const families = titlesOnly ? ["system-catalogue", "global-search"] : ["tv-live-categories", "tv-live-items", "system-catalogue", "device-guide", "global-search-live", "global-search"];
+        for (const key of families) {
           client.removeQueries({ predicate: (q) => q.queryKey[0] === key && q.queryKey.includes(playlistId) });
         }
-        phase("Channels");
+        phase(titlesOnly ? "Movies" : "Channels");
       }
       const first = client.getQueryData(["tv-live-items", playlistId, ""]) === undefined;
       if (first) setStatus({ running: true, done: 0, total: 0, firstLoad: true });
-      await refresh(["tv-live-categories", playlistId], () => fetchCategories({ data: { playlistId, kind: "live" } }));
-      const channels = await refresh<CatalogItem[]>(["tv-live-items", playlistId, ""], () => fetchItems({ data: { playlistId, kind: "live" } }));
+      // A titles-only update keeps the saved channels; the background sync refreshes them.
+      const liveRefresh = titlesOnly ? <T,>(key: readonly unknown[]) => Promise.resolve(client.getQueryData<T>(key)) : refresh;
+      await liveRefresh(["tv-live-categories", playlistId], () => fetchCategories({ data: { playlistId, kind: "live" } }));
+      const channels = await liveRefresh<CatalogItem[]>(["tv-live-items", playlistId, ""], () => fetchItems({ data: { playlistId, kind: "live" } }));
       if (cancelled) return;
       phase("Movies");
       await refresh(["system-catalogue", playlistId, "movie"], () => fetchItems({ data: { playlistId, kind: "movie" } }));
@@ -263,13 +269,13 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
       const finish = () => {
         setStatus({ running: false, done: 0, total: 0 });
         if (force && !cancelled) {
-          lastFullRunAt.set(playlistId, Date.now());
+          if (!titlesOnly) lastFullRunAt.set(playlistId, Date.now());
           setRefresh({ running: false, phase: "", done: 0, total: 0 });
           refreshRequest = null; emit();
           toast.success("Library updated");
         }
       };
-      if (cancelled || !channels?.length) { finish(); return; }
+      if (cancelled || titlesOnly || !channels?.length) { finish(); return; }
 
       // Guide: only channels missing from the saved copy or older than the TTL.
       const store = client.getQueryData<GuideStore>(guideKey(playlistId)) ?? {};
@@ -313,7 +319,7 @@ export function useLibrarySync(playlistId: string | null, auto = true): SyncStat
     const idle = window.setTimeout(() => void run(), force ? 0 : 1500);
     const interval = window.setInterval(() => void run(), GUIDE_TTL);
     return () => { cancelled = true; window.clearTimeout(idle); window.clearInterval(interval); };
-  }, [playlistId, client, fetchCategories, fetchItems, fetchSchedules, force, request?.n, auto]);
+  }, [playlistId, client, fetchCategories, fetchItems, fetchSchedules, force, titlesOnly, request?.n, auto]);
 
   return status;
 }

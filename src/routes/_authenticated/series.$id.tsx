@@ -1,3 +1,4 @@
+import { SAVED_DETAILS_TTL } from "@/lib/device-cache";
 import { useGetSeries, useGetPlayback } from "@/lib/device-provider";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -61,7 +62,7 @@ function SeriesDetail() {
     queryKey: ["series", activeId, id],
     queryFn: () => fetchSeries({ data: { playlistId: activeId!, id } }),
     enabled: !!activeId,
-    staleTime: 10 * 60_000,
+    staleTime: SAVED_DETAILS_TTL, gcTime: SAVED_DETAILS_TTL,
   });
 
   const playback = useQuery({

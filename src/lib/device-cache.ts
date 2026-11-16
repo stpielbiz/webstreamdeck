@@ -10,6 +10,8 @@ import { debugLog, trace } from "@/lib/debug-log";
 const DB_NAME = "streamdeck-library";
 const STORE = "queries";
 const MAX_AGE = 7 * 24 * 60 * 60_000;
+/** Saved show episode lists, movie info and categories count as fresh this long. */
+export const SAVED_DETAILS_TTL = 12 * 60 * 60_000;
 
 /** Query key prefixes worth keeping on the device. */
 const PERSISTED = new Set([
@@ -23,6 +25,9 @@ const PERSISTED = new Set([
   "global-search-movie",
   "global-search-series",
   "device-guide",
+  "movie",
+  "series",
+  "title-metadata-one",
 ]);
 
 /** Large values: saving them is expensive, so it is batched and deferred. */

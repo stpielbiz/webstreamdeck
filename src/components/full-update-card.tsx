@@ -30,7 +30,7 @@ export function FullUpdateCard() {
 
   useEffect(() => { if (activeId) setShow(needsFullUpdate(readFullUpdate(activeId))); }, [activeId]);
 
-  // Channels, movies and shows first; details start once that refresh ends.
+  // Movies and shows first (channels update in the background); details start once that refresh ends.
   useEffect(() => {
     if (phase !== "library" || !activeId) return;
     if (refresh.running) { sawRunning.current = true; return; }
@@ -52,7 +52,7 @@ export function FullUpdateCard() {
 
   if (!activeId || !show) return null;
   const rec = readFullUpdate(activeId);
-  const start = () => { stopped.current = false; sawRunning.current = refresh.running; setPhase("library"); requestLibraryRefresh(activeId); };
+  const start = () => { stopped.current = false; sawRunning.current = refresh.running; setPhase("library"); requestLibraryRefresh(activeId, "titles"); };
   const stop = () => { stopped.current = true; stopBulkRefresh(); };
   const later = () => { writeFullUpdate(activeId, { ...rec, snoozeUntil: snoozeTime() }); setShow(false); };
   const label = bulk.kind === "series" ? "Show details" : "Movie details";
@@ -63,7 +63,7 @@ export function FullUpdateCard() {
       <div className="min-w-0 flex-1">
         <h2 className="font-display text-base font-bold">{phase === "done" ? "All set — everything is saved on this device" : "Get a faster Jolzplay"}</h2>
         {phase === "idle" && <>
-          <p className="text-sm text-muted-foreground">Run a full update to save your channels, movies, shows and their details on this device. Browsing then loads from your device and feels faster.</p>
+          <p className="text-sm text-muted-foreground">Run a full update to save your movies, shows and their details on this device. Browsing then loads from your device and feels faster.</p>
           <p className="text-xs text-muted-foreground">Last full update: {ago(rec.lastAt)}</p>
         </>}
         {phase === "library" && <p className="text-sm text-muted-foreground">Updating {refresh.phase || "library"}{refresh.total > 0 ? ` ${refresh.done.toLocaleString()} / ${refresh.total.toLocaleString()}` : "…"}</p>}

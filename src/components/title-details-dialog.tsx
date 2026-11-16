@@ -1,3 +1,4 @@
+import { SAVED_DETAILS_TTL } from "@/lib/device-cache";
 import { useGetMovie, useGetSeries, useGetPlayback } from "@/lib/device-provider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -108,7 +109,7 @@ function TitleDetailsContent({
     queryKey: ["title-metadata-one", activeId, kind, name],
     queryFn: async () => (await fetchMetadata({ data: { playlistId: activeId ?? "", kind, names: [name ?? ""] } }))[name ?? ""],
     enabled: !providedMetadata && !!activeId && !!id && !!name,
-    staleTime: 30 * 60_000,
+    staleTime: SAVED_DETAILS_TTL, gcTime: SAVED_DETAILS_TTL,
   });
   const selectedMetadata = providedMetadata ?? ownMetadata.data ?? undefined;
   const queryClient = useQueryClient();
@@ -119,13 +120,13 @@ function TitleDetailsContent({
     queryKey: ["movie", activeId, activeItemId],
     queryFn: () => fetchMovie({ data: { playlistId: activeId ?? "", id: activeItemId ?? "" } }),
     enabled: !!activeId && kind === "movie" && !!activeItemId,
-    staleTime: 10 * 60_000,
+    staleTime: SAVED_DETAILS_TTL, gcTime: SAVED_DETAILS_TTL,
   });
   const series = useQuery({
     queryKey: ["series", activeId, activeItemId],
     queryFn: () => fetchSeries({ data: { playlistId: activeId ?? "", id: activeItemId ?? "" } }),
     enabled: !!activeId && kind === "series" && !!activeItemId,
-    staleTime: 10 * 60_000,
+    staleTime: SAVED_DETAILS_TTL, gcTime: SAVED_DETAILS_TTL,
   });
   const mediaId = kind === "movie" ? activeItemId : episode?.id ?? null;
   const mediaExt = kind === "movie" ? movie.data?.ext : episode?.ext;

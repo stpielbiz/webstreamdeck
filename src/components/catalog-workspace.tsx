@@ -1,3 +1,4 @@
+import { SAVED_DETAILS_TTL } from "@/lib/device-cache";
 import { useGetItems, useGetMovie, useGetSeries, useGetPlayback } from "@/lib/device-provider";
 import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -279,13 +280,13 @@ export function CatalogWorkspace({ kind, tv = false }: { kind: Kind; tv?: boolea
     queryKey: ["movie", activeId, selectedId],
     queryFn: () => fetchMovie({ data: { playlistId: activeId ?? "", id: selectedId ?? "" } }),
     enabled: !!activeId && kind === "movie" && !!selectedId,
-    staleTime: 10 * 60_000,
+    staleTime: SAVED_DETAILS_TTL, gcTime: SAVED_DETAILS_TTL,
   });
   const series = useQuery({
     queryKey: ["series", activeId, selectedId],
     queryFn: () => fetchSeries({ data: { playlistId: activeId ?? "", id: selectedId ?? "" } }),
     enabled: !!activeId && kind === "series" && !!selectedId,
-    staleTime: 10 * 60_000,
+    staleTime: SAVED_DETAILS_TTL, gcTime: SAVED_DETAILS_TTL,
   });
   const mediaId = kind === "movie" ? selectedId : episode?.id ?? null;
   const mediaExt = kind === "movie" ? movie.data?.ext : episode?.ext;

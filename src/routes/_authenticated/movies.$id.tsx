@@ -1,3 +1,4 @@
+import { SAVED_DETAILS_TTL } from "@/lib/device-cache";
 import { useGetMovie, useGetPlayback } from "@/lib/device-provider";
 import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -59,7 +60,7 @@ function MovieDetail() {
     queryKey: ["movie", activeId, id],
     queryFn: () => fetchMovie({ data: { playlistId: activeId!, id } }),
     enabled: !!activeId,
-    staleTime: 10 * 60_000,
+    staleTime: SAVED_DETAILS_TTL, gcTime: SAVED_DETAILS_TTL,
   });
 
   const playback = useQuery({

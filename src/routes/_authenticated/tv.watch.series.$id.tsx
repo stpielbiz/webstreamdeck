@@ -1,3 +1,4 @@
+import { SAVED_DETAILS_TTL } from "@/lib/device-cache";
 import { useGetSeries, useGetPlayback } from "@/lib/device-provider";
 import { findResume, useSyncPlaylists } from "@/lib/playlist-sync";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -54,7 +55,7 @@ function TvWatchSeries() {
     queryKey: ["series", activeId, id],
     queryFn: () => fetchSeries({ data: { playlistId: activeId!, id } }),
     enabled: !!activeId,
-    staleTime: 10 * 60_000,
+    staleTime: SAVED_DETAILS_TTL, gcTime: SAVED_DETAILS_TTL,
   });
 
   const playback = useQuery({
